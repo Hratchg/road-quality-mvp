@@ -10,10 +10,10 @@
 - [x] Docker Compose (db with PostGIS + pgRouting, backend, frontend services)
 - [x] Database schema: road_segments, segment_defects, segment_scores, route_requests
 - [x] .gitattributes for LF line endings on shell scripts
+- [x] FastAPI backend skeleton + /health endpoint
 
 ## In Progress
 
-- [ ] FastAPI backend skeleton + /health endpoint
 - [ ] Scoring logic (weight normalization + segment cost)
 - [ ] Pydantic request/response models
 - [ ] GET /segments endpoint (GeoJSON bbox query)
