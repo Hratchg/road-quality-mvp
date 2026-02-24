@@ -19,9 +19,9 @@
 - [x] Seed data script (osmnx LA 10km + synthetic IRI/potholes)
 - [x] React frontend skeleton (Vite + TypeScript + Tailwind)
 - [x] Map View page (segment overlay + controls + legend)
+- [x] Route Finder page (click-to-select + route comparison)
 
 ## In Progress
-- [ ] Route Finder page (click-to-select + route comparison)
 - [ ] README with quick start + scoring docs
 
 ## Planned (Post-MVP)
