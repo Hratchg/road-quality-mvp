@@ -14,9 +14,9 @@
 - [x] Scoring logic (weight normalization + segment cost)
 - [x] Pydantic request/response models
 - [x] GET /segments endpoint (GeoJSON bbox query)
+- [x] POST /route endpoint (pgRouting k-shortest paths + scoring)
 
 ## In Progress
-- [ ] POST /route endpoint (pgRouting k-shortest paths + scoring)
 - [ ] ML interface stub (PotholeDetector protocol + StubDetector)
 - [ ] Seed data script (osmnx LA 10km + synthetic IRI/potholes)
 - [ ] React frontend skeleton (Vite + TypeScript + Tailwind)
