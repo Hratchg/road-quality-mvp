@@ -1,3 +1,4 @@
 osmnx==2.0.1
-psycopg2-binary==2.9.10
-numpy==2.2.1
+psycopg2-binary==2.9.11
+numpy>=2.2
+geopandas>=0.14

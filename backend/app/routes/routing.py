@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.db import get_connection
 from app.models import RouteRequest, RouteResponse, RouteInfo, SegmentMetric
 from app.scoring import normalize_weights, compute_segment_cost
+from app.cache import get_route_cached, set_route_cached, make_route_cache_key
 
 router = APIRouter()
 
@@ -43,15 +44,30 @@ def find_route(req: RouteRequest):
         req.weight_iri, req.weight_potholes,
     )
 
+    cache_key = make_route_cache_key(
+        req.origin.lat, req.origin.lon,
+        req.destination.lat, req.destination.lon,
+        req.include_iri, req.include_potholes,
+        req.weight_iri, req.weight_potholes,
+        req.max_extra_minutes,
+    )
+
     with get_connection() as conn:
         with conn.cursor() as cur:
-            # Log request
+            # Log request -- always, even on cache hits
             cur.execute(
                 "INSERT INTO route_requests (params_json) VALUES (%s)",
                 (json.dumps(req.model_dump()),),
             )
             conn.commit()
 
+    # Check cache after audit log but before expensive pgr_ksp
+    cached = get_route_cached(cache_key)
+    if cached is not None:
+        return RouteResponse(**cached)
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
             # Snap to nearest nodes
             cur.execute(SNAP_NODE_SQL, (req.origin.lon, req.origin.lat))
             origin_node = cur.fetchone()["id"]
@@ -163,9 +179,14 @@ def find_route(req: RouteRequest):
             info.total_severe_score = p["total_severe_score"]
         return info
 
-    return RouteResponse(
+    response = RouteResponse(
         fastest_route=to_route_info(fastest),
         best_route=to_route_info(best, include_details=True),
         warning=warning,
         per_segment_metrics=best["metrics"],
     )
+
+    # Cache the computed response as a dict for serialization
+    set_route_cached(cache_key, response.model_dump())
+
+    return response

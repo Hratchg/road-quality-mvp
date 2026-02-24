@@ -56,8 +56,8 @@ React (Leaflet/Mapbox)  →  FastAPI Backend  →  PostgreSQL + PostGIS + pgRout
 - `geom` GEOMETRY(LineString, 4326)
 - `length_m` DOUBLE PRECISION
 - `travel_time_s` DOUBLE PRECISION (from OSM speed limits)
-- `source` INTEGER (pgRouting node)
-- `target` INTEGER (pgRouting node)
+- `source` BIGINT (pgRouting node)
+- `target` BIGINT (pgRouting node)
 - `iri_value` DOUBLE PRECISION (raw m/km)
 - `iri_norm` DOUBLE PRECISION (0-1 normalized)
 - `created_at` TIMESTAMPTZ

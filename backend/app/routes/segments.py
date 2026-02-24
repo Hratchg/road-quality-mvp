@@ -1,6 +1,7 @@
 import json
 from fastapi import APIRouter, Query, HTTPException
 from app.db import get_connection
+from app.cache import get_segments_cached, set_segments_cached
 
 router = APIRouter()
 
@@ -15,6 +16,11 @@ def get_segments(bbox: str = Query(..., description="min_lon,min_lat,max_lon,max
         min_lon, min_lat, max_lon, max_lat = (float(p) for p in parts)
     except ValueError:
         raise HTTPException(status_code=400, detail="bbox values must be numbers")
+
+    # Check cache before hitting the database
+    cached = get_segments_cached(bbox)
+    if cached is not None:
+        return cached
 
     sql = """
         SELECT
@@ -48,4 +54,6 @@ def get_segments(bbox: str = Query(..., description="min_lon,min_lat,max_lon,max
             },
         })
 
-    return {"type": "FeatureCollection", "features": features}
+    result = {"type": "FeatureCollection", "features": features}
+    set_segments_cached(bbox, result)
+    return result

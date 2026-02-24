@@ -141,6 +141,7 @@ cd backend && python -m pytest -v
 
 ## Documentation
 
+- [Setup, Run & Usage Guide](docs/SETUP.md) — complete guide for installation, running, and using the application
 - [PRD](docs/PRD.md) — implemented vs. planned features
 - [Design Document](docs/plans/2026-02-23-pothole-tracker-design.md) — architecture, schema, scoring math
 - [Implementation Plan](docs/plans/2026-02-23-implementation-plan.md) — 14-task build plan

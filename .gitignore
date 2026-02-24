@@ -24,3 +24,7 @@ pgdata/
 # Environment
 .env
 .env.local
+
+# Runtime / ML models
+cache/
+models/

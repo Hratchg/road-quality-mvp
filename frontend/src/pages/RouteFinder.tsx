@@ -1,33 +1,33 @@
 import { useState } from "react";
-import { MapContainer, TileLayer, Polyline, useMapEvents, Marker } from "react-leaflet";
+import { MapContainer, TileLayer, Polyline, Marker } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import ControlPanel, { ControlState } from "../components/ControlPanel";
 import RouteResults from "../components/RouteResults";
+import AddressInput from "../components/AddressInput";
 import { fetchRoute, RouteRequestBody } from "../api";
 
 const LA_CENTER: [number, number] = [34.0522, -118.2437];
 
-// Fix default marker icons in react-leaflet
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
-
-function ClickHandler({ onSelect }: { onSelect: (lat: number, lon: number) => void }) {
-  useMapEvents({
-    click(e) {
-      onSelect(e.latlng.lat, e.latlng.lng);
-    },
+function makeCircleIcon(color: string) {
+  return L.divIcon({
+    className: "",
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+    html: `<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="9" cy="9" r="8" fill="${color}" stroke="white" stroke-width="2"/>
+    </svg>`,
   });
-  return null;
 }
+
+const originIcon = makeCircleIcon("#22c55e");
+const destIcon = makeCircleIcon("#ef4444");
 
 function geoJsonToLatLngs(geojson: any): [number, number][] {
   if (!geojson?.coordinates) return [];
-  return geojson.coordinates.map(([lon, lat]: [number, number]) => [lat, lon]);
+  return geojson.coordinates.map(
+    ([lon, lat]: [number, number]) => [lat, lon] as [number, number],
+  );
 }
 
 export default function RouteFinder() {
@@ -39,20 +39,18 @@ export default function RouteFinder() {
   });
   const [origin, setOrigin] = useState<{ lat: number; lon: number } | null>(null);
   const [destination, setDestination] = useState<{ lat: number; lon: number } | null>(null);
-  const [selectingOrigin, setSelectingOrigin] = useState(true);
+  const [originText, setOriginText] = useState("");
+  const [destText, setDestText] = useState("");
   const [maxExtra, setMaxExtra] = useState(5);
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleMapClick = (lat: number, lon: number) => {
-    if (selectingOrigin) {
-      setOrigin({ lat, lon });
-      setSelectingOrigin(false);
-    } else {
-      setDestination({ lat, lon });
-      setSelectingOrigin(true);
-    }
+  const handleSwap = () => {
+    setOrigin(destination);
+    setDestination(origin);
+    setOriginText(destText);
+    setDestText(originText);
   };
 
   const handleSearch = async () => {
@@ -71,6 +69,16 @@ export default function RouteFinder() {
       };
       const data = await fetchRoute(body);
       setResult(data);
+
+      // Snap markers to the route's actual start/end on the road network
+      const routeGeojson = data?.best_route?.geojson ?? data?.fastest_route?.geojson;
+      if (routeGeojson?.coordinates?.length) {
+        const coords = routeGeojson.coordinates;
+        const [startLon, startLat] = coords[0];
+        const [endLon, endLat] = coords[coords.length - 1];
+        setOrigin({ lat: startLat, lon: startLon });
+        setDestination({ lat: endLat, lon: endLon });
+      }
     } catch (err: any) {
       setError(err.message || "Route request failed");
     } finally {
@@ -80,25 +88,44 @@ export default function RouteFinder() {
 
   return (
     <div className="flex h-[calc(100vh-52px)]">
-      <div className="w-80 p-4 space-y-4 overflow-y-auto bg-gray-50 border-r">
+      <div className="w-80 p-4 space-y-3 overflow-y-auto bg-gray-50 border-r">
         <h2 className="font-bold text-lg">Route Finder</h2>
 
-        <p className="text-sm text-gray-500">
-          {selectingOrigin
-            ? "Click the map to set ORIGIN"
-            : "Click the map to set DESTINATION"}
-        </p>
+        <AddressInput
+          label="From"
+          placeholder="Search origin address..."
+          markerColor="#22c55e"
+          value={originText}
+          onSelect={(lat, lon, name) => {
+            setOrigin({ lat, lon });
+            setOriginText(name);
+          }}
+        />
 
-        {origin && (
-          <p className="text-xs">
-            Origin: {origin.lat.toFixed(4)}, {origin.lon.toFixed(4)}
-          </p>
-        )}
-        {destination && (
-          <p className="text-xs">
-            Dest: {destination.lat.toFixed(4)}, {destination.lon.toFixed(4)}
-          </p>
-        )}
+        <div className="flex justify-center">
+          <button
+            onClick={handleSwap}
+            disabled={!origin && !destination}
+            title="Swap origin and destination"
+            className="text-gray-500 hover:text-blue-600 disabled:opacity-30 transition-colors"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 4L6 16M6 16L3 13M6 16L9 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M14 16L14 4M14 4L11 7M14 4L17 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <AddressInput
+          label="To"
+          placeholder="Search destination address..."
+          markerColor="#ef4444"
+          value={destText}
+          onSelect={(lat, lon, name) => {
+            setDestination({ lat, lon });
+            setDestText(name);
+          }}
+        />
 
         <label className="block text-sm">
           Max extra minutes:
@@ -137,9 +164,8 @@ export default function RouteFinder() {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <ClickHandler onSelect={handleMapClick} />
-        {origin && <Marker position={[origin.lat, origin.lon]} />}
-        {destination && <Marker position={[destination.lat, destination.lon]} />}
+        {origin && <Marker position={[origin.lat, origin.lon]} icon={originIcon} />}
+        {destination && <Marker position={[destination.lat, destination.lon]} icon={destIcon} />}
         {result?.fastest_route?.geojson && (
           <Polyline
             positions={geoJsonToLatLngs(result.fastest_route.geojson)}

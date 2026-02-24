@@ -21,25 +21,15 @@
 - [x] Map View page (segment overlay + controls + legend)
 - [x] Route Finder page (click-to-select + route comparison)
 - [x] README with quick start, scoring docs, and API overview
-
-## In Progress
-
-- [ ] **DEMO LAUNCH** — Docker Desktop installed (requires PC restart), then:
-  1. Restart PC and launch Docker Desktop from Start menu
-  2. Wait for Docker whale icon to turn solid in system tray
-  3. Run: `cd C:\Users\King Hratch\road-quality-mvp && docker compose up db -d`
-  4. Wait ~15s for healthcheck, then: `python scripts/seed_data.py`
-  5. Start backend: `cd backend && uvicorn app.main:app --reload --port 8000`
-  6. Start frontend: `cd frontend && npm run dev`
-  7. Visit http://localhost:3000
+- [x] DEMO LAUNCH (Docker Desktop + seed data + backend + frontend)
+- [x] Integration tests against real DB (6 tests, auto-skip when DB down)
+- [x] Caching layer (in-memory TTL caches for segments + routes, admin endpoints)
+- [x] YOLOv8 detector implementation (protocol + factory + fallback to stub)
+- [x] Real IRI data ingestion (CSV/shapefile + improved synthetic with spatial smoothing)
 
 ## Planned (Post-MVP)
 
-- [ ] Integration tests against real DB
-- [ ] YOLOv8 detector implementation (replace StubDetector)
-- [ ] Real IRI data ingestion (FHWA/state DOT sources)
 - [ ] Mapillary image pipeline
-- [ ] Caching layer for heavy queries
 - [ ] User authentication
 - [ ] Production deployment (Docker to cloud)
 

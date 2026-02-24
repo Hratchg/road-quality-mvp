@@ -4,8 +4,8 @@ CREATE TABLE IF NOT EXISTS road_segments (
     geom          GEOMETRY(LineString, 4326) NOT NULL,
     length_m      DOUBLE PRECISION NOT NULL,
     travel_time_s DOUBLE PRECISION NOT NULL,
-    source        INTEGER,
-    target        INTEGER,
+    source        BIGINT,
+    target        BIGINT,
     iri_value     DOUBLE PRECISION,
     iri_norm      DOUBLE PRECISION,
     created_at    TIMESTAMPTZ DEFAULT NOW()

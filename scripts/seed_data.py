@@ -16,9 +16,9 @@ DATABASE_URL = os.environ.get(
     "DATABASE_URL", "postgresql://rq:rqpass@localhost:5432/roadquality"
 )
 
-# LA center, 10km radius
+# LA center, 20km radius — covers Glendale, Westwood, Santa Monica, Pasadena
 CENTER = (34.0522, -118.2437)
-DIST = 10000
+DIST = 20000
 SEED = 42
 
 
@@ -143,8 +143,12 @@ def main():
     conn.commit()
 
     # Build pgRouting topology
+    # NULL out source/target so pgr_createTopology processes all edges
+    # (osmnx node IDs were inserted as placeholders but pgr needs its own IDs)
     print("Building pgRouting topology...")
-    cur.execute("SELECT pgr_createTopology('road_segments', 0.0001, 'geom', 'id')")
+    cur.execute("UPDATE road_segments SET source = NULL, target = NULL")
+    conn.commit()
+    cur.execute("SELECT pgr_createTopology('road_segments', 0.0001, 'geom', 'id', clean := true)")
     conn.commit()
 
     cur.execute("SELECT COUNT(*) FROM road_segments")
