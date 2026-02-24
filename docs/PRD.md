@@ -20,9 +20,11 @@
 - [x] React frontend skeleton (Vite + TypeScript + Tailwind)
 - [x] Map View page (segment overlay + controls + legend)
 - [x] Route Finder page (click-to-select + route comparison)
+- [x] README with quick start, scoring docs, and API overview
 
 ## In Progress
-- [ ] README with quick start + scoring docs
+
+(none — MVP feature-complete)
 
 ## Planned (Post-MVP)
 
