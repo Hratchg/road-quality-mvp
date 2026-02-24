@@ -12,9 +12,9 @@
 - [x] .gitattributes for LF line endings on shell scripts
 - [x] FastAPI backend skeleton + /health endpoint
 - [x] Scoring logic (weight normalization + segment cost)
+- [x] Pydantic request/response models
 
 ## In Progress
-- [ ] Pydantic request/response models
 - [ ] GET /segments endpoint (GeoJSON bbox query)
 - [ ] POST /route endpoint (pgRouting k-shortest paths + scoring)
 - [ ] ML interface stub (PotholeDetector protocol + StubDetector)
