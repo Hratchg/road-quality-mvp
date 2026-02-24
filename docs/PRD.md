@@ -13,9 +13,9 @@
 - [x] FastAPI backend skeleton + /health endpoint
 - [x] Scoring logic (weight normalization + segment cost)
 - [x] Pydantic request/response models
+- [x] GET /segments endpoint (GeoJSON bbox query)
 
 ## In Progress
-- [ ] GET /segments endpoint (GeoJSON bbox query)
 - [ ] POST /route endpoint (pgRouting k-shortest paths + scoring)
 - [ ] ML interface stub (PotholeDetector protocol + StubDetector)
 - [ ] Seed data script (osmnx LA 10km + synthetic IRI/potholes)
