@@ -2,11 +2,21 @@
 
 A web application for road-quality-aware route optimization in Los Angeles. Find routes that minimize exposure to rough roads (IRI) and potholes, with a configurable time budget.
 
+## Current Status (2026-02-23)
+
+**MVP code is complete.** 19/19 backend tests passing, frontend builds clean. Docker Desktop has been installed but **PC restart is required** before the demo can run.
+
+### Resume After Restart
+
+1. Restart PC and **launch Docker Desktop** from Start menu
+2. Wait for Docker whale icon to turn solid in system tray (~30-60 seconds)
+3. Open a terminal in this project directory and follow Quick Start below
+
 ## Quick Start
 
 ### Prerequisites
 
-- Docker & Docker Compose
+- Docker & Docker Compose (Docker Desktop installed, needs restart to activate)
 - Python 3.12+ (for seed script)
 - Node.js 20+ (for frontend dev)
 

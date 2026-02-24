@@ -24,7 +24,14 @@
 
 ## In Progress
 
-(none — MVP feature-complete)
+- [ ] **DEMO LAUNCH** — Docker Desktop installed (requires PC restart), then:
+  1. Restart PC and launch Docker Desktop from Start menu
+  2. Wait for Docker whale icon to turn solid in system tray
+  3. Run: `cd C:\Users\King Hratch\road-quality-mvp && docker compose up db -d`
+  4. Wait ~15s for healthcheck, then: `python scripts/seed_data.py`
+  5. Start backend: `cd backend && uvicorn app.main:app --reload --port 8000`
+  6. Start frontend: `cd frontend && npm run dev`
+  7. Visit http://localhost:3000
 
 ## Planned (Post-MVP)
 
