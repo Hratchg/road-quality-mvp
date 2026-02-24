@@ -11,10 +11,9 @@
 - [x] Database schema: road_segments, segment_defects, segment_scores, route_requests
 - [x] .gitattributes for LF line endings on shell scripts
 - [x] FastAPI backend skeleton + /health endpoint
+- [x] Scoring logic (weight normalization + segment cost)
 
 ## In Progress
-
-- [ ] Scoring logic (weight normalization + segment cost)
 - [ ] Pydantic request/response models
 - [ ] GET /segments endpoint (GeoJSON bbox query)
 - [ ] POST /route endpoint (pgRouting k-shortest paths + scoring)
