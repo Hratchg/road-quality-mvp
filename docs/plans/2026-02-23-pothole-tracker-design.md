@@ -153,7 +153,7 @@ Returns GeoJSON FeatureCollection with segment properties: `id`, `iri_norm`, `mo
 ## 7. Frontend
 
 ### Page 1: Map View
-- Full-screen Leaflet map (Mapbox if token set via `REACT_APP_MAPBOX_TOKEN`)
+- Full-screen Leaflet map (Mapbox if token set via `VITE_MAPBOX_TOKEN`)
 - Segment overlay: colored polylines from `/segments?bbox=...`, fetched on map move
 - Color scale: green → yellow → red
 - Control panel: IRI toggle, Potholes toggle, weight sliders
