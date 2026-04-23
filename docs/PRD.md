@@ -16,7 +16,7 @@
 - [x] GET /segments endpoint (GeoJSON bbox query)
 - [x] POST /route endpoint (pgRouting k-shortest paths + scoring)
 - [x] ML interface stub (PotholeDetector protocol + StubDetector)
-- [x] Seed data script (osmnx LA 10km + synthetic IRI/potholes)
+- [x] Seed data script (osmnx LA 20km + synthetic IRI/potholes)
 - [x] React frontend skeleton (Vite + TypeScript + Tailwind)
 - [x] Map View page (segment overlay + controls + legend)
 - [x] Route Finder page (click-to-select + route comparison)

@@ -117,8 +117,8 @@ Post-MVP features shipped + detector accuracy demonstrated on real LA imagery + 
 | Seed=42 for deterministic synthetic IRI/pothole data | Reproducible demos and tests | ✓ Good (shipped in M0) |
 | Leaflet + OSM default, Mapbox via `VITE_MAPBOX_TOKEN` | Free default, optional upgrade; Vite-native env var | ✓ Good (shipped in M0) |
 | PRD is a living document (updated at each checkpoint) | Per user request | — Pending (re-verify at M1 close) |
-| Seed radius = 10 km around (34.05, -118.24) | SPEC wins over SETUP's "~20 km"; verify literal in seed_data.py during M1 | ⚠️ Revisit (INFO item from ingest) |
+| Seed radius = 20 km around (34.05, -118.24) | Code is authoritative per ROADMAP Phase 1 SC #2; `scripts/seed_data.py` `DIST = 20000` confirmed; SETUP.md already agreed; README.md and docs/PRD.md updated in Phase 1 Plan 02 | ✓ Resolved (Phase 1, 2026-04-23) |
 | `road_segments.source`/`target` as BIGINT | SPEC over implementation plan's INTEGER; verify migration literal | ⚠️ Revisit (INFO item from ingest) |
 
 ---
-*Last updated: 2026-04-23 after ingest + roadmap initialization*
+*Last updated: 2026-04-23 after Phase 1 Plan 02 (seed radius drift resolved)*

@@ -35,7 +35,7 @@ pip install -r scripts/requirements.txt
 python scripts/seed_data.py
 ```
 
-This downloads the LA road network (~10km radius) via OSMnx and generates synthetic IRI + pothole data. Takes a few minutes on first run.
+This downloads the LA road network (~20 km radius) via OSMnx and generates synthetic IRI + pothole data. Takes a few minutes on first run.
 
 ### 3. Start backend
 
