@@ -1,0 +1,26 @@
+{
+  "source_path": "/Users/hratchghanime/road-quality-mvp/docs/PRD.md",
+  "type": "PRD",
+  "confidence": "high",
+  "manifest_override": false,
+  "title": "Road Quality / Pothole Tracker — PRD",
+  "summary": "MVP product requirements for a road-quality/pothole tracker covering implemented features, post-MVP plans, and routing scoring rules.",
+  "scope": [
+    "road quality tracking",
+    "pothole detection",
+    "route scoring",
+    "segment defects",
+    "pgRouting-based routing",
+    "FastAPI backend",
+    "React frontend",
+    "YOLOv8 detector",
+    "IRI data ingestion"
+  ],
+  "cross_refs": [
+    "plans/2026-02-23-pothole-tracker-design.md",
+    "docs/plans/2026-02-23-pothole-tracker-design.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

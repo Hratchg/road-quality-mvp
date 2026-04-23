@@ -1,0 +1,22 @@
+{
+  "source_path": "/Users/hratchghanime/road-quality-mvp/docs/plans/2026-02-23-implementation-plan.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": false,
+  "title": "Road Quality / Pothole Tracker MVP — Implementation Plan",
+  "summary": "Task-by-task implementation guide for building a local-first road-quality-aware routing MVP with FastAPI, PostGIS/pgRouting, and React/Leaflet.",
+  "scope": [
+    "Docker Compose setup",
+    "PostgreSQL + PostGIS + pgRouting database",
+    "FastAPI backend",
+    "Scoring logic",
+    "React/Leaflet frontend",
+    "Route optimization",
+    "Map overlay",
+    "LA area MVP"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null,
+  "notes": "Date-prefixed filename superficially matched the ADR numbering regex, but content is a sequential implementation plan (Task 1, Task 2, ...) with code snippets, shell commands, and commit instructions. No frontmatter, no Status/Decision/Consequences sections, no user stories, no API contract tables. Path is docs/plans/ not docs/adr/. Classified as DOC (guide/tutorial)."
+}

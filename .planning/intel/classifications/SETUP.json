@@ -1,0 +1,32 @@
+{
+  "source_path": "/Users/hratchghanime/road-quality-mvp/docs/SETUP.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": false,
+  "title": "Setup, Run & Usage Guide",
+  "summary": "End-user guide for installing, running, seeding, using, configuring, and troubleshooting the Road Quality / Pothole Tracker MVP.",
+  "scope": [
+    "installation",
+    "docker compose",
+    "local development",
+    "database seeding",
+    "OSMnx data pipeline",
+    "IRI ingestion",
+    "map view UI",
+    "route finder UI",
+    "backend API endpoints",
+    "testing",
+    "configuration",
+    "environment variables",
+    "pothole detection pipeline",
+    "architecture overview",
+    "database schema",
+    "scoring formula",
+    "route selection algorithm",
+    "troubleshooting"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

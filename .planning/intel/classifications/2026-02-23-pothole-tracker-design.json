@@ -1,0 +1,28 @@
+{
+  "source_path": "/Users/hratchghanime/road-quality-mvp/docs/plans/2026-02-23-pothole-tracker-design.md",
+  "type": "SPEC",
+  "confidence": "medium",
+  "manifest_override": false,
+  "title": "Road Quality / Pothole Tracker MVP — Design Document",
+  "summary": "Technical design for an LA-area road-quality-aware route optimization web app with map visualization, covering architecture, DB schema, scoring math, API contracts, and pipeline.",
+  "scope": [
+    "route optimization API",
+    "map segments API",
+    "PostgreSQL + PostGIS + pgRouting schema",
+    "IRI and pothole scoring math",
+    "React/Leaflet frontend",
+    "osmnx seed pipeline",
+    "PotholeDetector ML interface",
+    "Docker Compose stack"
+  ],
+  "cross_refs": [
+    "docs/PRD.md",
+    "scripts/seed_data.py",
+    "db/migrations/001_initial.sql",
+    "backend/app/main.py",
+    "data_pipeline/detector.py"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": "Date-prefixed filename matched ADR regex but content is a mixed design document. Dominant signals are SPEC-shaped: DB schema tables, API endpoint definitions with request/response JSON, scoring formulas, and protocol definitions. Contains a 'Decisions' table and 'Status: Approved' which are ADR-like, but the doc covers many decisions rather than one, uses no ADR numbering, and lacks Context/Consequences structure. No user stories or acceptance criteria rule out PRD. Classified SPEC; synthesizer may wish to extract the Decisions table separately as locked architectural choices."
+}
