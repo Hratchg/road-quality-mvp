@@ -144,7 +144,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. `get_detector(use_yolo=True, model_path=...)` loads a real (pretrained or fine-tuned) model from a configurable path, not a hardcoded one
   3. The model path resolves from an environment variable (not CWD-relative), fixing the concerns from `.planning/codebase/CONCERNS.md`
   4. A short writeup in `docs/` records the eval methodology and current numbers, honest enough to cite in the public demo
-**Plans**: TBD
+**Plans**: 5 plans
+- [ ] 02-01-PLAN.md — Config Surface & Factory Wiring: YOLO_MODEL_PATH env + HF-vs-local resolution in detector_factory.py (SC #2, SC #3)
+- [ ] 02-02-PLAN.md — Eval Harness & Metrics: scripts/eval_detector.py + data_pipeline/eval.py (bootstrap CI, per-severity) + fixture tests (SC #1)
+- [ ] 02-03-PLAN.md — Mapillary Client & Dataset Fetcher: data_pipeline/mapillary.py + scripts/fetch_eval_data.py with SHA256 constant-time verify (enables SC #1)
+- [ ] 02-04-PLAN.md — Fine-tuning Script + Multi-Env Guide: scripts/finetune_detector.py + requirements-train.txt + docs/FINETUNE.md (D-03, D-11..D-13, D-16)
+- [ ] 02-05-PLAN.md — Eval Writeup + data.yaml Seed + README link: docs/DETECTOR_EVAL.md + README "Detector Accuracy" section (SC #4)
 
 ### Phase 3: Mapillary Ingestion Pipeline
 **Goal**: Replace the synthetic pothole seed with a real, rerunnable pipeline that pulls Mapillary imagery, runs the detector, and writes detections into the database.
@@ -211,7 +216,7 @@ Phases execute in numeric order within M1: 1 → 2 → 3 → 4 → 5 → 6. Phas
 | 0.6 Caching + Admin | M0 | — | Complete | 2026-02-23 |
 | 0.7 ML Pluggability + IRI Ingestion | M0 | — | Complete | 2026-02-23 |
 | 1. MVP Integrity Cleanup | M1 | 4/4 | Complete | 2026-04-23 |
-| 2. Real-Data Detector Accuracy | M1 | 0/TBD | Not started | - |
+| 2. Real-Data Detector Accuracy | M1 | 0/5 | Planned | - |
 | 3. Mapillary Ingestion Pipeline | M1 | 0/TBD | Not started | - |
 | 4. Authentication | M1 | 0/TBD | Not started | - |
 | 5. Cloud Deployment | M1 | 0/TBD | Not started | - |
@@ -219,3 +224,4 @@ Phases execute in numeric order within M1: 1 → 2 → 3 → 4 → 5 → 6. Phas
 
 ---
 *Roadmap initialized: 2026-04-23 after ingest synthesis + codebase map*
+*Phase 2 planned: 2026-04-23*
