@@ -130,10 +130,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. `backend/requirements.txt` pins `psycopg2-binary` consistently with what is actually installed (2.9.11 per codebase map)
   5. A `.env.example` lives at repo root listing every env var the stack reads (DATABASE_URL, VITE_API_URL, VITE_MAPBOX_TOKEN, and any new ones added in later phases)
 **Plans**: 4 plans
-- [ ] 01-01-PLAN.md — Verify BIGINT source/target in migration + psycopg2-binary pin consistency (SC #1 + SC #4)
-- [ ] 01-02-PLAN.md — Reconcile seed radius drift across README.md, docs/PRD.md, .planning/PROJECT.md (SC #2)
-- [ ] 01-03-PLAN.md — Retire REACT_APP_MAPBOX_TOKEN from historical design doc (SC #3)
-- [ ] 01-04-PLAN.md — Create repo-root .env.example with DATABASE_URL, VITE_API_URL, VITE_MAPBOX_TOKEN (SC #5)
+- [x] 01-01-PLAN.md — Verify BIGINT source/target in migration + psycopg2-binary pin consistency (SC #1 + SC #4)
+- [x] 01-02-PLAN.md — Reconcile seed radius drift across README.md, docs/PRD.md, .planning/PROJECT.md (SC #2)
+- [x] 01-03-PLAN.md — Retire REACT_APP_MAPBOX_TOKEN from historical design doc (SC #3)
+- [x] 01-04-PLAN.md — Create repo-root .env.example with DATABASE_URL, VITE_API_URL, VITE_MAPBOX_TOKEN (SC #5)
 
 ### Phase 2: Real-Data Detector Accuracy
 **Goal**: Prove the YOLOv8 detector is usable against real LA street-level imagery, with honest precision/recall numbers — so the demo has something defensible to claim.
@@ -210,7 +210,7 @@ Phases execute in numeric order within M1: 1 → 2 → 3 → 4 → 5 → 6. Phas
 | 0.5 Frontend | M0 | — | Complete | 2026-02-23 |
 | 0.6 Caching + Admin | M0 | — | Complete | 2026-02-23 |
 | 0.7 ML Pluggability + IRI Ingestion | M0 | — | Complete | 2026-02-23 |
-| 1. MVP Integrity Cleanup | M1 | 0/4 | Not started | - |
+| 1. MVP Integrity Cleanup | M1 | 4/4 | Complete | 2026-04-23 |
 | 2. Real-Data Detector Accuracy | M1 | 0/TBD | Not started | - |
 | 3. Mapillary Ingestion Pipeline | M1 | 0/TBD | Not started | - |
 | 4. Authentication | M1 | 0/TBD | Not started | - |
