@@ -1,0 +1,295 @@
+# Codebase Structure
+
+**Analysis Date:** 2026-04-23
+
+## Directory Layout
+
+```
+road-quality-mvp/
+├── backend/                 # FastAPI backend (Python)
+│   ├── app/
+│   │   ├── main.py         # FastAPI app initialization
+│   │   ├── models.py       # Pydantic request/response schemas
+│   │   ├── db.py           # PostgreSQL connection
+│   │   ├── scoring.py      # Weight normalization & cost calculation
+│   │   ├── cache.py        # TTL-based in-memory caching
+│   │   ├── routes/         # API route handlers
+│   │   │   ├── __init__.py
+│   │   │   ├── health.py   # GET /health
+│   │   │   ├── segments.py # GET /segments (bbox query)
+│   │   │   ├── routing.py  # POST /route (k-shortest paths)
+│   │   │   └── cache_routes.py # Cache management endpoints
+│   │   └── __init__.py
+│   ├── tests/              # Pytest test suite
+│   │   ├── conftest.py     # Pytest fixtures
+│   │   ├── test_health.py
+│   │   ├── test_segments.py
+│   │   ├── test_route.py
+│   │   ├── test_scoring.py
+│   │   ├── test_models.py
+│   │   ├── test_cache.py
+│   │   ├── test_detector.py
+│   │   ├── test_yolo_detector.py
+│   │   ├── test_iri_ingestion.py
+│   │   └── test_integration.py
+│   ├── requirements.txt    # Python dependencies
+│   ├── Dockerfile          # Container build (runs uvicorn)
+│   └── __init__.py
+│
+├── frontend/               # React + TypeScript frontend
+│   ├── src/
+│   │   ├── main.tsx       # React DOM entry point
+│   │   ├── App.tsx        # Router definition (MapView / RouteFinder)
+│   │   ├── api.ts         # API client (fetchSegments, fetchRoute)
+│   │   ├── index.css      # Global styles (Tailwind)
+│   │   ├── vite-env.d.ts  # Vite type definitions
+│   │   ├── pages/         # Page components
+│   │   │   ├── MapView.tsx   # Full-screen segment map
+│   │   │   └── RouteFinder.tsx # Route finder interface
+│   │   ├── components/    # Reusable components
+│   │   │   ├── ControlPanel.tsx # Weight/toggle sliders
+│   │   │   ├── Legend.tsx       # Color scale legend
+│   │   │   ├── AddressInput.tsx # Address search (Nominatim)
+│   │   │   └── RouteResults.tsx # Route metrics display
+│   │   └── hooks/         # Custom React hooks
+│   │       └── useNominatim.ts  # Geocoding via Nominatim API
+│   ├── package.json       # npm dependencies
+│   ├── package-lock.json
+│   ├── tsconfig.json      # TypeScript config
+│   ├── vite.config.ts     # Vite build & dev config (port 3000, /api proxy)
+│   ├── Dockerfile         # Container build (npm run build, serve)
+│   └── index.html         # HTML entry point
+│
+├── data_pipeline/         # ML detection & data ingestion (Python)
+│   ├── detector.py        # PotholeDetector Protocol + StubDetector
+│   ├── detector_factory.py # Factory for instantiating detectors
+│   ├── yolo_detector.py   # YOLOv8 detector stub
+│   ├── __init__.py
+│   └── requirements.txt   # ML dependencies (ultralytics, etc.)
+│
+├── scripts/               # One-off data setup scripts
+│   ├── seed_data.py       # Download OSM road network, insert segments, generate synthetic IRI/potholes
+│   ├── compute_scores.py  # Aggregate segment_defects → segment_scores
+│   ├── ingest_iri.py      # Load IRI data from external sources (stub)
+│   ├── iri_sources.py     # Definitions of IRI data sources (LTPP, etc.)
+│   └── requirements.txt   # Script dependencies
+│
+├── db/                    # Database layer
+│   ├── migrations/
+│   │   └── 001_initial.sql # Schema: road_segments, segment_defects, segment_scores, route_requests
+│   ├── init-pgrouting.sh  # PostGIS/pgRouting extension setup
+│   ├── Dockerfile         # PostgreSQL 16 + PostGIS 3.4 + pgRouting 3.6
+│   └── Dockerfile base    # References postgres:16-alpine
+│
+├── docs/                  # Documentation
+│   ├── SETUP.md          # Installation & usage guide
+│   ├── PRD.md            # Product requirements & feature status
+│   └── plans/
+│       ├── 2026-02-23-pothole-tracker-design.md   # Architecture & schema
+│       └── 2026-02-23-implementation-plan.md      # 14-task build plan
+│
+├── docker-compose.yml    # Orchestrates db, backend, frontend services
+├── .gitignore           # Excludes node_modules, __pycache__, .env
+├── README.md            # Quick start guide
+└── .planning/           # (Generated by GSD)
+    └── codebase/        # Analysis documents
+```
+
+## Directory Purposes
+
+**backend/**
+- Purpose: FastAPI REST API server for route optimization
+- Contains: Python source code, test suite, dependencies, Dockerfile
+- Key files: `main.py` (app init), `models.py` (schemas), `routes/` (handlers)
+
+**backend/app/**
+- Purpose: Application logic organized by concern
+- Contains: Main app, models, database layer, caching, routing logic
+- Key files: `main.py`, `db.py`, `scoring.py`, `cache.py`, `routes/`
+
+**backend/app/routes/**
+- Purpose: API endpoint handlers
+- Contains: Four route modules (health, segments, routing, cache management)
+- Key files: `routing.py` (largest, ~250 lines — core logic), `segments.py` (bbox queries)
+
+**backend/tests/**
+- Purpose: Unit & integration tests for backend
+- Contains: 10 test files covering endpoints, scoring, models, caching, detectors
+- Key files: `test_route.py` (routing logic), `test_integration.py` (end-to-end)
+
+**frontend/**
+- Purpose: React TypeScript web UI
+- Contains: Source code, build config, dependencies, Dockerfile, HTML entry point
+- Key files: `src/App.tsx` (router), `src/pages/` (page components)
+
+**frontend/src/**
+- Purpose: React application source
+- Contains: Entry point, routing, pages, components, API client, hooks
+- Key files: `main.tsx` (React root), `App.tsx` (router setup), `api.ts` (API client)
+
+**frontend/src/pages/**
+- Purpose: Full-page views accessed via React Router
+- Contains: MapView (segment visualization), RouteFinder (route comparison)
+- Key files: `MapView.tsx` (~200 lines — main UI), `RouteFinder.tsx` (route interface)
+
+**frontend/src/components/**
+- Purpose: Reusable UI components
+- Contains: Control panel, legend, address input, route results display
+- Key files: `ControlPanel.tsx` (weight sliders), `AddressInput.tsx` (geocoding)
+
+**frontend/src/hooks/**
+- Purpose: Custom React hooks for cross-component logic
+- Contains: Nominatim geocoding hook
+- Key files: `useNominatim.ts`
+
+**data_pipeline/**
+- Purpose: ML-based pothole detection & detector registry
+- Contains: Detector protocol, stub/YOLO implementations, factory
+- Key files: `detector.py` (Protocol + StubDetector), `yolo_detector.py` (YOLO stub)
+
+**scripts/**
+- Purpose: One-off Python scripts for data setup & ingestion
+- Contains: Seed script (OSMnx), score computation, IRI ingestion stubs
+- Key files: `seed_data.py` (main setup), `compute_scores.py` (aggregation)
+
+**db/**
+- Purpose: PostgreSQL database initialization
+- Contains: Schema migration, extension setup, Dockerfile
+- Key files: `migrations/001_initial.sql` (full schema), `init-pgrouting.sh`
+
+**docs/**
+- Purpose: User & developer documentation
+- Contains: Setup guide, PRD, architecture/design docs, implementation plan
+- Key files: `SETUP.md` (user guide), `PRD.md` (features), plans/ (design docs)
+
+## Key File Locations
+
+**Entry Points:**
+
+- `backend/app/main.py`: FastAPI app initialization, router registration, CORS setup
+- `frontend/src/main.tsx`: React DOM root, BrowserRouter wrapper
+- `frontend/index.html`: HTML entry point (Vite-generated div#root)
+- `docker-compose.yml`: Orchestrates all three services (db, backend, frontend)
+
+**Configuration:**
+
+- `backend/app/db.py`: DATABASE_URL environment variable loading
+- `frontend/vite.config.ts`: Vite dev server (port 3000), /api proxy to backend
+- `db/migrations/001_initial.sql`: Complete PostgreSQL schema
+- `.gitignore`: Excludes node_modules, __pycache__, .env
+
+**Core Logic:**
+
+- `backend/app/scoring.py`: `normalize_weights()`, `compute_segment_cost()` — pure functions
+- `backend/app/routes/routing.py`: K-shortest paths, path scoring, route selection logic (~250 lines)
+- `backend/app/cache.py`: TTL cache implementation using cachetools
+- `frontend/src/api.ts`: API client functions (fetchSegments, fetchRoute)
+
+**Testing:**
+
+- `backend/tests/conftest.py`: Pytest fixtures (test database, mock connections)
+- `backend/tests/test_route.py`: Route endpoint tests
+- `backend/tests/test_integration.py`: End-to-end tests
+- `backend/tests/test_*` (8 other files): Unit tests for specific modules
+
+**UI Components:**
+
+- `frontend/src/pages/MapView.tsx`: Main map interface, segment rendering, control panel
+- `frontend/src/pages/RouteFinder.tsx`: Route finder page with address inputs, comparison view
+- `frontend/src/components/ControlPanel.tsx`: Weight sliders, metric toggles
+- `frontend/src/components/AddressInput.tsx`: Geocoding via Nominatim hook
+
+**Data Pipeline:**
+
+- `scripts/seed_data.py`: OSMnx download, segment insertion, IRI normalization
+- `scripts/compute_scores.py`: Aggregate segment_defects, compute pothole scores
+- `data_pipeline/detector.py`: PotholeDetector Protocol, StubDetector implementation
+- `data_pipeline/yolo_detector.py`: YOLOv8 detector stub (not yet integrated)
+
+## Naming Conventions
+
+**Files:**
+
+- Python modules: `snake_case.py` (e.g., `seed_data.py`, `compute_scores.py`)
+- React components: `PascalCase.tsx` (e.g., `MapView.tsx`, `ControlPanel.tsx`)
+- Route files: Module name = endpoint (e.g., `health.py` for `/health`, `routing.py` for `/route`)
+- Test files: `test_<module>.py` (e.g., `test_route.py` tests `routes/routing.py`)
+- SQL migrations: `NNN_<description>.sql` (e.g., `001_initial.sql`)
+
+**Directories:**
+
+- Python packages: `snake_case/` (e.g., `data_pipeline/`, `backend/`)
+- React folders: `lowercase/` by type (e.g., `pages/`, `components/`, `hooks/`)
+- Test directory: `tests/` (co-located with app for backend, separate from frontend)
+
+**Functions/Classes:**
+
+- Python functions: `snake_case()` (e.g., `normalize_weights()`, `get_connection()`)
+- Python classes: `PascalCase` (e.g., `StubDetector`, `PotholeDetector`)
+- React components: `PascalCase` (e.g., `MapView`, `ControlPanel`)
+- React hooks: `useCamelCase()` (e.g., `useNominatim`, `useMapEvents`)
+- TypeScript interfaces: `PascalCase` (e.g., `RouteRequestBody`, `ControlState`)
+
+**Variables:**
+
+- Python: `snake_case` for constants, functions, variables
+- TypeScript/React: `camelCase` for variables, `CONSTANT_CASE` for constants
+- SQL table names: `snake_case` (e.g., `road_segments`, `segment_scores`)
+
+**Types:**
+
+- Pydantic models: `PascalCase` (e.g., `RouteRequest`, `RouteResponse`, `LatLon`)
+- TypeScript interfaces: `PascalCase` (e.g., `RouteRequestBody`, `ControlState`)
+
+## Where to Add New Code
+
+**New Feature:**
+
+- **Backend endpoint:** Create `backend/app/routes/<feature>.py` with APIRouter, register in `main.py`
+- **Frontend page:** Create `frontend/src/pages/<Feature>.tsx`, add Route in `App.tsx`
+- **Tests:** Add `backend/tests/test_<feature>.py` for backend, component test files in frontend (test files co-located with component)
+- **API client:** Add function to `frontend/src/api.ts` if backend endpoint is new
+
+**New Component/Module:**
+
+- **Backend business logic:** `backend/app/<module>.py` for pure logic (like `scoring.py`), import in route handlers
+- **Frontend component:** `frontend/src/components/<Component>.tsx`, import in pages/components that use it
+- **Custom hook:** `frontend/src/hooks/use<Name>.ts`, import in components that need shared logic
+- **Database migration:** Create `db/migrations/NNN_<description>.sql`, apply via database startup
+
+**Utilities:**
+
+- **Shared Python helpers:** `backend/app/<helper>.py` (e.g., `db.py`, `cache.py`)
+- **Shared React utilities:** No dedicated utils folder yet; utilities are in hooks and shared components
+- **Data pipeline:** `data_pipeline/<module>.py` for detector implementations, `scripts/<task>.py` for one-offs
+
+## Special Directories
+
+**backend/tests/**
+- Purpose: Pytest test suite (unit & integration)
+- Generated: No (hand-written)
+- Committed: Yes (required for CI/CD)
+
+**frontend/node_modules/**
+- Purpose: npm dependencies
+- Generated: Yes (by `npm install`)
+- Committed: No (.gitignore excludes)
+
+**db/migrations/**
+- Purpose: SQL schema versioning
+- Generated: No (hand-written SQL)
+- Committed: Yes (required for reproducible deployments)
+
+**.planning/codebase/**
+- Purpose: GSD codebase analysis documents (ARCHITECTURE.md, STRUCTURE.md, etc.)
+- Generated: Yes (by gsd-map-codebase agent)
+- Committed: Yes (for documentation and planning)
+
+**docs/plans/**
+- Purpose: Design documents and implementation plans from prior phases
+- Generated: No (hand-written by product/design)
+- Committed: Yes (historical reference)
+
+---
+
+*Structure analysis: 2026-04-23*
