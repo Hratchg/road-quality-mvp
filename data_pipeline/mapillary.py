@@ -54,10 +54,19 @@ MAPILLARY_TOKEN = os.environ.get("MAPILLARY_ACCESS_TOKEN")
 # loudly if an operator tries to pass something larger.
 MAX_BBOX_AREA_DEG2 = 0.01
 
-# IEEE 754 tolerance: (0.1 - 0.0) * (0.1 - 0.0) evaluates to 0.010000000000000002,
-# so we allow a tiny epsilon over MAX_BBOX_AREA_DEG2 to avoid rejecting perfectly
-# valid lat/lon corners whose computed area hits a floating-point artifact.
-_BBOX_AREA_TOLERANCE = 1e-9
+# IEEE 754 tolerance (unit: deg^2): (0.1 - 0.0) * (0.1 - 0.0) evaluates to
+# 0.010000000000000002, an artifact of order 2e-18. We allow a tiny epsilon
+# over MAX_BBOX_AREA_DEG2 to avoid rejecting perfectly valid lat/lon corners
+# whose computed area hits that floating-point artifact.
+#
+# WR-05: the previous value 1e-9 was ~1e9x the demonstrated artifact and
+# ~1e-5x MAX_BBOX_AREA_DEG2 itself, meaning a bbox whose intended area was
+# 0.010000001 deg^2 (a genuinely-oversized request, not a float artifact)
+# would slip past the DoS guard. Tighten to 1e-15 which is comfortably
+# above 2e-18 (the real artifact) and safely below any meaningfully-larger
+# bbox area. Regression tests in backend/tests/test_mapillary.py pin the
+# ceiling and floor.
+_BBOX_AREA_TOLERANCE = 1e-15
 
 # Security V5: SHA256 hex must be 64 lowercase hex chars (defensive parse)
 _SHA256_HEX_RE = re.compile(r"^[0-9a-f]{64}$")

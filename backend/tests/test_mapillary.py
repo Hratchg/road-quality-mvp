@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from data_pipeline.mapillary import (  # noqa: E402
     MAX_BBOX_AREA_DEG2,
+    _BBOX_AREA_TOLERANCE,
     download_image,
     search_images,
     validate_bbox,
@@ -59,6 +60,41 @@ class TestValidateBbox:
         # Pitfall 3 records the API's 0.01 deg2 limit; a refactor that
         # quietly raises this should fail the test.
         assert MAX_BBOX_AREA_DEG2 == 0.01
+
+    def test_bbox_tolerance_ceiling_pins_dos_guard(self):
+        """WR-05: pin both sides of the IEEE-754 tolerance so nobody can
+        quietly widen the DoS guard back out to the old 1e-9 slop.
+
+        A bbox whose area sits half-a-tolerance above MAX must pass; a
+        bbox whose area sits two-tolerances above MAX must fail.
+        """
+        # Construct bboxes whose area is deterministically computed from the
+        # constants so the test self-adjusts if _BBOX_AREA_TOLERANCE is ever
+        # tuned again (the *shape* of the assertion is what matters).
+        import math
+
+        # Just-inside-limit: area == MAX + tol/2 must PASS.
+        target_pass = MAX_BBOX_AREA_DEG2 + _BBOX_AREA_TOLERANCE / 2
+        side_pass = math.sqrt(target_pass)
+        validate_bbox((0.0, 0.0, side_pass, side_pass))
+
+        # Just-outside-limit: area == MAX + 2*tol must FAIL.
+        target_fail = MAX_BBOX_AREA_DEG2 + 2 * _BBOX_AREA_TOLERANCE
+        side_fail = math.sqrt(target_fail)
+        with pytest.raises(ValueError, match="exceeds Mapillary"):
+            validate_bbox((0.0, 0.0, side_fail, side_fail))
+
+    def test_bbox_tolerance_is_tight_enough_to_catch_genuine_overrun(self):
+        """WR-05: a bbox exactly 1e-8 deg^2 over the limit (well above any
+        IEEE-754 artifact of ~2e-18) MUST be rejected. Guards against a
+        regression to the old 1e-9 tolerance which silently accepted this.
+        """
+        import math
+
+        target = MAX_BBOX_AREA_DEG2 + 1e-8
+        side = math.sqrt(target)
+        with pytest.raises(ValueError, match="exceeds Mapillary"):
+            validate_bbox((0.0, 0.0, side, side))
 
 
 # ---------------------------------------------------------------------------
