@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: Phase 1 shipped; next up Phase 2
 stopped_at: Phase 2 context gathered
-last_updated: "2026-04-23T16:32:23.397Z"
+last_updated: "2026-04-24T02:04:31.859Z"
 last_activity: 2026-04-23 -- Phase 1 completed
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 4
+  total_plans: 9
   completed_plans: 4
-  percent: 100
+  percent: 44
 ---
 
 # Project State
@@ -102,5 +102,5 @@ Last session: --stopped-at
 Stopped at: Phase 2 context gathered
 Resume file: --resume-file
 
-**Planned Phase:** 1 (MVP Integrity Cleanup) — 4 plans — 2026-04-23T06:08:45.620Z
+**Planned Phase:** 2 (Real-Data Detector Accuracy) — 5 plans — 2026-04-24T02:04:31.847Z
 **Completed Phase:** 1 (MVP Integrity Cleanup) — 4 plans — 2026-04-23
