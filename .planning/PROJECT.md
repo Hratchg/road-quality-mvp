@@ -39,7 +39,7 @@ Given any two points in LA, show the user a route that is demonstrably smoother 
 <!-- M1 scope. These drive the current roadmap. -->
 
 - [ ] `REQ-mvp-integrity-cleanup` — Reconcile ingest-conflict INFO items with shipped code (BIGINT migration types, VITE_MAPBOX_TOKEN env var, seed radius literal, psycopg2 pin) before building on top
-- [ ] `REQ-real-data-accuracy` — YOLOv8 pothole detector runs on real LA street imagery with measurable precision/recall on a labelled eval set (no longer just synthetic)
+- [x] `REQ-real-data-accuracy` — YOLOv8 pothole detector runs on real LA street imagery with measurable precision/recall on a labelled eval set (no longer just synthetic) — *tooling validated in Phase 02; real-data numbers pending operator runbook (02-HUMAN-UAT.md)*
 - [ ] `REQ-mapillary-pipeline` — Automated pipeline pulls Mapillary imagery, runs the real detector, and writes detections into `segment_defects` without manual steps
 - [ ] `REQ-user-auth` — Backend enforces authenticated access to `/route` and `/cache/*`; users can sign up, sign in, and sign out
 - [ ] `REQ-prod-deploy` — The stack deploys to a cloud host from `main` via a reproducible process, with production-safe config (CORS, secrets, CORS origins, pooling)
