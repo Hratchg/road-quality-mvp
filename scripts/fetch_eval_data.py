@@ -206,6 +206,27 @@ def _build_fresh(
             }
         )
 
+    # WR-03: reject a silently-zero build. If every download failed (Pitfall 5
+    # URL TTL, rate limits, transient network) we must NOT exit 0 with an empty
+    # manifest — a CI job on the next step would then "verify OK" a 0-file
+    # dataset. Fail loudly so the operator investigates.
+    if not manifest_entries:
+        print(
+            "ERROR: no files survived download. Check Mapillary rate limits "
+            "and URL TTL (Pitfall 5 in 02-RESEARCH.md).",
+            file=sys.stderr,
+        )
+        return EXIT_OTHER
+    # And guard against a degenerate split (e.g. --count 1 per bbox) that
+    # produces a zero-image test or val split — a training dead end.
+    if n_total < 3:
+        print(
+            f"ERROR: only {n_total} sequence(s) available; need >=3 to split "
+            "into train/val/test (D-09). Pass a larger --count or widen bboxes.",
+            file=sys.stderr,
+        )
+        return EXIT_OTHER
+
     # Write manifest + data.yaml
     manifest_path = out_root / "manifest.json"
     write_manifest(
