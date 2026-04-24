@@ -6,9 +6,22 @@ Modes:
                              any file missing / corrupt.
 
     --build:                 Fresh pull from Mapillary across configurable
-                             LA bboxes, writes YOLO layout + regenerates
-                             manifest.json. Requires MAPILLARY_ACCESS_TOKEN.
-                             OVERWRITES existing data/eval_la/ contents.
+                             LA bboxes. Writes new images into
+                             data/eval_la/images/<split>/, regenerates
+                             manifest.json (overwriting), and creates empty
+                             stub label files only where none exist. Existing
+                             hand-labels under data/eval_la/labels/ are
+                             PRESERVED so annotation work is not lost across
+                             re-runs; pass --clean to wipe images/ and labels/
+                             before downloading. Stale files whose image_id
+                             does not reappear in the new query will remain
+                             on disk unless --clean is passed. Requires
+                             MAPILLARY_ACCESS_TOKEN.
+
+    --clean:                 Only meaningful with --build. rmtree's
+                             <root>/images/ and <root>/labels/ before the
+                             fresh pull so the resulting dataset is a
+                             bit-for-bit fresh state (WR-02 contract).
 
 Usage:
     # Verify (default, safe):
@@ -17,6 +30,9 @@ Usage:
 
     # Build fresh (requires env token, long-running, network-heavy):
     MAPILLARY_ACCESS_TOKEN=... python scripts/fetch_eval_data.py --build --count 100
+
+    # Build fresh, wiping any prior images/labels first:
+    MAPILLARY_ACCESS_TOKEN=... python scripts/fetch_eval_data.py --build --clean
 
 Exit codes (D-18):
     0 = OK
@@ -35,6 +51,7 @@ import json
 import logging
 import os
 import random
+import shutil
 import sys
 from pathlib import Path
 
@@ -74,8 +91,16 @@ def _build_fresh(
     out_root: Path,
     count_per_bbox: int,
     splits: tuple[float, float, float],
+    clean: bool = False,
 ) -> int:
-    """Fresh pull: search each default LA bbox, download, split, write manifest."""
+    """Fresh pull: search each default LA bbox, download, split, write manifest.
+
+    When ``clean`` is True, ``<out_root>/images/`` and ``<out_root>/labels/``
+    are ``shutil.rmtree``-d before any download so the resulting tree is a
+    genuine fresh state (WR-02 contract). Otherwise, existing hand-labels are
+    preserved and stale files whose image_id does not reappear in the new
+    query will remain on disk.
+    """
     if not MAPILLARY_TOKEN:
         print(
             "ERROR: --build requires MAPILLARY_ACCESS_TOKEN. "
@@ -96,6 +121,16 @@ def _build_fresh(
     # Pitfall 3 pre-flight -- fail loudly before any network I/O
     for name, bbox in _DEFAULT_LA_BBOXES.items():
         validate_bbox(bbox)
+
+    # WR-02: when --clean is set, wipe images/ and labels/ so the fresh pull
+    # starts from an empty tree. Without this flag, stale files whose image_id
+    # does not reappear in the new query remain on disk (documented contract).
+    if clean:
+        for sub in ("images", "labels"):
+            d = out_root / sub
+            if d.exists():
+                shutil.rmtree(d)
+                logger.info("--clean: removed %s", d)
 
     all_fetched: list[dict] = []
     for zone, bbox in _DEFAULT_LA_BBOXES.items():
@@ -154,6 +189,10 @@ def _build_fresh(
         )
         # Stub empty label file (operator hand-labels later with CVAT / LabelStudio).
         # Empty .txt = no pothole; operator replaces with YOLO-format labels.
+        # Intentionally do NOT overwrite an existing label file: hand-annotation
+        # work is preserved across `--build` re-runs. Operators who need a
+        # fresh state should pass `--clean`, which wipes the labels/ tree
+        # before this loop (see WR-02 in 02-REVIEW.md).
         label_path = out_root / "labels" / split / f"{img['id']}.txt"
         label_path.parent.mkdir(parents=True, exist_ok=True)
         if not label_path.exists():
@@ -298,6 +337,16 @@ def main() -> int:
         default=0.1,
         help="Test fraction (D-09 = 0.1)",
     )
+    parser.add_argument(
+        "--clean",
+        action="store_true",
+        help=(
+            "With --build only: shutil.rmtree <root>/images/ and <root>/labels/ "
+            "before downloading, for a genuinely fresh state. Without this flag, "
+            "existing hand-labels are preserved and stale images may remain on "
+            "disk (WR-02 contract)."
+        ),
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -316,6 +365,7 @@ def main() -> int:
                 args.root,
                 count_per_bbox=args.count,
                 splits=(args.split_train, args.split_val, args.split_test),
+                clean=args.clean,
             )
         return _verify(manifest_path, args.root)
     except FileNotFoundError as e:
