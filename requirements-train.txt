@@ -1,0 +1,14 @@
+# Phase 2: fine-tuning-only deps. NOT installed in the backend or for eval.
+# Install: pip install -r requirements-train.txt
+#
+# Kept separate from data_pipeline/requirements.txt so the runtime backend
+# and the eval harness do not pull in torch (~2.5 GB wheel).
+#
+# Pitfall 2: torch 2.4.0 is EXPLICITLY rejected by ultralytics' version check
+# (pyproject.toml: torch != 2.4.0, >= 1.8.0). Pin excludes it below.
+
+-r data_pipeline/requirements.txt
+
+torch>=2.4.1,<2.10
+torchvision>=0.19,<0.25
+pyyaml>=6.0
