@@ -54,6 +54,11 @@ MAPILLARY_TOKEN = os.environ.get("MAPILLARY_ACCESS_TOKEN")
 # loudly if an operator tries to pass something larger.
 MAX_BBOX_AREA_DEG2 = 0.01
 
+# IEEE 754 tolerance: (0.1 - 0.0) * (0.1 - 0.0) evaluates to 0.010000000000000002,
+# so we allow a tiny epsilon over MAX_BBOX_AREA_DEG2 to avoid rejecting perfectly
+# valid lat/lon corners whose computed area hits a floating-point artifact.
+_BBOX_AREA_TOLERANCE = 1e-9
+
 # Security V5: SHA256 hex must be 64 lowercase hex chars (defensive parse)
 _SHA256_HEX_RE = re.compile(r"^[0-9a-f]{64}$")
 
@@ -76,7 +81,7 @@ def validate_bbox(bbox: tuple[float, float, float, float]) -> None:
     if max_lon <= min_lon or max_lat <= min_lat:
         raise ValueError(f"bbox corners out of order: {bbox}")
     area = (max_lon - min_lon) * (max_lat - min_lat)
-    if area > MAX_BBOX_AREA_DEG2:
+    if area > MAX_BBOX_AREA_DEG2 + _BBOX_AREA_TOLERANCE:
         raise ValueError(
             f"bbox area {area:.4f} deg2 exceeds Mapillary direct-query limit "
             f"{MAX_BBOX_AREA_DEG2} deg2 (Pitfall 3). Split into smaller bboxes."
