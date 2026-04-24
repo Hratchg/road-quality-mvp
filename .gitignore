@@ -28,3 +28,12 @@ pgdata/
 # Runtime / ML models
 cache/
 models/
+
+# ----- Phase 2: Eval dataset -----
+# The dataset content is large and Mapillary-derived (CC-BY-SA).
+# Only the manifest + data.yaml are committed so other developers can
+# rebuild/verify the same set via scripts/fetch_eval_data.py.
+data/eval_la/*
+!data/eval_la/manifest.json
+!data/eval_la/data.yaml
+!data/eval_la/.gitkeep

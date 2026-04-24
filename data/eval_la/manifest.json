@@ -1,0 +1,6 @@
+{
+  "version": "1.0",
+  "source_bucket": "placeholder -- populated by scripts/fetch_eval_data.py --build",
+  "license": "CC-BY-SA 4.0 (Mapillary open imagery -- attribution via source_mapillary_id)",
+  "files": []
+}
