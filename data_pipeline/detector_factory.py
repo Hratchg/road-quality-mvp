@@ -71,7 +71,13 @@ def _resolve_model_path(value: str | None) -> str:
     # HF repo id (optional :filename suffix, optional @revision)
     repo_with_rev, _, filename = target.partition(":")
     repo_id, _, revision = repo_with_rev.partition("@")
-    if not _HF_REPO_PATTERN.match(repo_with_rev):
+    # WR-06: reject repo ids whose second segment ends in ``.pt``. The regex
+    # matches "foo/bar.pt" because ``.`` is in the character class, but no
+    # legitimate HF repo is named ``*.pt`` — it is almost certainly a typo'd
+    # local path, and handing it to hf_hub_download opens a remote-pickle
+    # (T-02-01 ACE) vector if an attacker has registered that name. Treat as
+    # local; YOLOv8Detector will raise FileNotFoundError with a clear message.
+    if not _HF_REPO_PATTERN.match(repo_with_rev) or repo_id.endswith(".pt"):
         # Not a recognizable HF id; treat as local path, let YOLOv8Detector raise on load
         return target
 

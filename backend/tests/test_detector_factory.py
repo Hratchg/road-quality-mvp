@@ -89,6 +89,32 @@ class TestResolveModelPath:
             assert resolved == "../models/my.pt"
             mock_dl.assert_not_called()
 
+    def test_local_path_without_prefix_not_treated_as_hf(self):
+        """WR-06: a typo'd local path like ``models/latest.pt`` must NOT be
+        handed to hf_hub_download — that would open an ACE vector (T-02-01)
+        if an attacker registered a same-named HF repo. Treat as local path
+        so YOLOv8Detector raises a clear FileNotFoundError instead.
+        """
+        factory = _reload_factory()
+        with patch("huggingface_hub.hf_hub_download") as mock_dl:
+            assert (
+                factory._resolve_model_path("models/latest.pt")
+                == "models/latest.pt"
+            )
+            mock_dl.assert_not_called()
+
+    def test_any_repo_id_ending_pt_is_rejected_as_hf(self):
+        """WR-06 corollary: ``user/weights.pt`` (even a real repo name) is
+        refused as an HF identifier to remove the .pt ambiguity entirely.
+        """
+        factory = _reload_factory()
+        with patch("huggingface_hub.hf_hub_download") as mock_dl:
+            assert (
+                factory._resolve_model_path("user/weights.pt")
+                == "user/weights.pt"
+            )
+            mock_dl.assert_not_called()
+
 
 class TestGetDetectorEnvVar:
     def test_env_var_is_used_when_model_path_arg_none(self, monkeypatch):
