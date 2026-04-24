@@ -146,8 +146,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. A short writeup in `docs/` records the eval methodology and current numbers, honest enough to cite in the public demo
 **Plans**: 5 plans
 - [x] 02-01-PLAN.md — Config Surface & Factory Wiring: YOLO_MODEL_PATH env + HF-vs-local resolution in detector_factory.py (SC #2, SC #3)
-- [ ] 02-02-PLAN.md — Eval Harness & Metrics: scripts/eval_detector.py + data_pipeline/eval.py (bootstrap CI, per-severity) + fixture tests (SC #1)
-- [ ] 02-03-PLAN.md — Mapillary Client & Dataset Fetcher: data_pipeline/mapillary.py + scripts/fetch_eval_data.py with SHA256 constant-time verify (enables SC #1)
+- [x] 02-02-PLAN.md — Eval Harness & Metrics: scripts/eval_detector.py + data_pipeline/eval.py (bootstrap CI, per-severity) + fixture tests (SC #1)
+- [x] 02-03-PLAN.md — Mapillary Client & Dataset Fetcher: data_pipeline/mapillary.py + scripts/fetch_eval_data.py with SHA256 constant-time verify (enables SC #1)
 - [ ] 02-04-PLAN.md — Fine-tuning Script + Multi-Env Guide: scripts/finetune_detector.py + requirements-train.txt + docs/FINETUNE.md (D-03, D-11..D-13, D-16)
 - [ ] 02-05-PLAN.md — Eval Writeup + data.yaml Seed + README link: docs/DETECTOR_EVAL.md + README "Detector Accuracy" section (SC #4)
 
