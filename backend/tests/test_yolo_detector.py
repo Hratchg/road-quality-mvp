@@ -178,3 +178,61 @@ def test_severity_mapping_unknown_class():
 
         assert YOLOv8Detector._map_severity("car", 0.95) is None
         assert YOLOv8Detector._map_severity("crack", 0.80) is None
+
+
+# ---------------------------------------------------------------------------
+# 8. Factory — explicit model_path arg (Phase 2 SC #2)
+# ---------------------------------------------------------------------------
+
+
+def test_factory_with_explicit_path():
+    """get_detector(use_yolo=True, model_path='./local.pt') passes path to YOLOv8Detector."""
+    import importlib
+    import types
+    mock_mod = types.ModuleType("ultralytics")
+    mock_mod.YOLO = MagicMock
+    with patch.dict(sys.modules, {"ultralytics": mock_mod}):
+        from data_pipeline import detector_factory
+        importlib.reload(detector_factory)
+        detector = detector_factory.get_detector(use_yolo=True, model_path="./local.pt")
+        assert detector.model_path == "./local.pt"
+
+
+# ---------------------------------------------------------------------------
+# 9. Factory resolves HF repo ID via hf_hub_download (Phase 2 D-14)
+# ---------------------------------------------------------------------------
+
+
+def test_factory_resolves_hf_repo(monkeypatch):
+    """get_detector(use_yolo=True, model_path='user/repo') calls hf_hub_download."""
+    import importlib
+    import types
+    monkeypatch.delenv("YOLO_MODEL_PATH", raising=False)
+    mock_mod = types.ModuleType("ultralytics")
+    mock_mod.YOLO = MagicMock
+    with patch.dict(sys.modules, {"ultralytics": mock_mod}), \
+         patch("huggingface_hub.hf_hub_download", return_value="/tmp/fetched.pt") as mock_dl:
+        from data_pipeline import detector_factory
+        importlib.reload(detector_factory)
+        detector = detector_factory.get_detector(use_yolo=True, model_path="owner/model")
+        assert detector.model_path == "/tmp/fetched.pt"
+        assert mock_dl.call_args.kwargs["repo_id"] == "owner/model"
+
+
+# ---------------------------------------------------------------------------
+# 10. Env-var path resolution (Phase 2 SC #3)
+# ---------------------------------------------------------------------------
+
+
+def test_env_var_path_resolution(monkeypatch):
+    """YOLO_MODEL_PATH env var is consumed; unset falls back to default HF repo."""
+    import importlib
+    import types
+    monkeypatch.setenv("YOLO_MODEL_PATH", "./from-env.pt")
+    mock_mod = types.ModuleType("ultralytics")
+    mock_mod.YOLO = MagicMock
+    with patch.dict(sys.modules, {"ultralytics": mock_mod}):
+        from data_pipeline import detector_factory
+        importlib.reload(detector_factory)
+        detector = detector_factory.get_detector(use_yolo=True)
+        assert detector.model_path == "./from-env.pt"

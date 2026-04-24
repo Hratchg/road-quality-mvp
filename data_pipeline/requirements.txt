@@ -1,2 +1,4 @@
 ultralytics>=8.1
 opencv-python-headless>=4.8
+huggingface_hub>=0.24,<1.0
+scipy>=1.13
