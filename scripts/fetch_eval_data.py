@@ -310,12 +310,17 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
+    # WR-04: argparse's add_mutually_exclusive_group only blocks BOTH flags
+    # being passed on the same line. With default=True on --verify-only, the
+    # mutex was silently always-True regardless of --build, giving readers a
+    # false sense that "exactly one mode" is enforced. Drop default=True and
+    # resolve the mode explicitly below.
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
         "--verify-only",
         action="store_true",
-        default=True,
-        help="Hash-check existing dataset (default mode)",
+        default=False,
+        help="Hash-check existing dataset (default mode when neither flag set)",
     )
     group.add_argument(
         "--build",
