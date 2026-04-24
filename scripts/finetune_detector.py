@@ -80,13 +80,19 @@ def _default_device() -> str:
 def _build_model_card(
     repo_id: str, base_model: str, eval_metrics: dict | None
 ) -> str:
+    def _fmt(v: float | str | None) -> str:
+        # Guard against partial dicts: if a metric key is missing or non-numeric,
+        # fall back to "TBD" rather than crashing in ``str.__format__`` after a
+        # successful HF upload has already happened (WR-01 in 02-REVIEW.md).
+        return f"{v:.3f}" if isinstance(v, (int, float)) else "TBD"
+
     metrics_md = ""
     if eval_metrics:
         metrics_md = (
             "## Eval Results (test split, held out per D-09)\n"
-            f"- Precision: {eval_metrics.get('precision', 'TBD'):.3f}\n"
-            f"- Recall:    {eval_metrics.get('recall', 'TBD'):.3f}\n"
-            f"- mAP@0.5:   {eval_metrics.get('map50', 'TBD'):.3f}\n\n"
+            f"- Precision: {_fmt(eval_metrics.get('precision'))}\n"
+            f"- Recall:    {_fmt(eval_metrics.get('recall'))}\n"
+            f"- mAP@0.5:   {_fmt(eval_metrics.get('map50'))}\n\n"
         )
     return f"""---
 license: agpl-3.0
