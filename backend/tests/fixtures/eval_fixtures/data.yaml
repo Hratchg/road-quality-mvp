@@ -1,0 +1,11 @@
+# Tiny committed fixture for unit + smoke tests.
+# Not a real eval set — real set lives under data/eval_la/ (gitignored,
+# populated by scripts/fetch_eval_data.py, Plan 03).
+path: backend/tests/fixtures/eval_fixtures
+train: images/test  # reuse test split so ultralytics doesn't complain about missing splits
+val: images/test
+test: images/test
+
+nc: 1
+names:
+  0: pothole
