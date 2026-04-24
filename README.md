@@ -114,6 +114,29 @@ Find the best quality-aware route.
 ### GET /segments?bbox=min_lon,min_lat,max_lon,max_lat
 Returns GeoJSON FeatureCollection of road segments within the bounding box, with properties: `id`, `iri_norm`, `moderate_score`, `severe_score`, `pothole_score_total`.
 
+## Detector Accuracy
+
+The YOLOv8 pothole detector is evaluated on a hand-labelled LA eval set
+(~300 Mapillary images, 70/20/10 sequence-grouped split) with precision,
+recall, mAP@0.5, and image-level bootstrap 95% CIs. Full methodology and
+numbers: [`docs/DETECTOR_EVAL.md`](docs/DETECTOR_EVAL.md).
+
+Reproduce from a clean checkout — see
+[`docs/FINETUNE.md`](docs/FINETUNE.md) for laptop/Colab/EC2 fine-tuning
+recipes, then:
+
+```bash
+# verify dataset integrity
+python scripts/fetch_eval_data.py
+
+# run eval on the held-out test split
+python scripts/eval_detector.py --data data/eval_la/data.yaml --split test
+```
+
+Configuration: set `YOLO_MODEL_PATH` in `.env` to either a HuggingFace repo
+id (e.g. `<user>/road-quality-la-yolov8@<revision>`) or a local `.pt`
+file path. Default falls back to `keremberke/yolov8s-pothole-segmentation`.
+
 ## Frontend Pages
 
 - **Map View** (`/`): Full-screen map with color-coded road segments. Toggle IRI/potholes and adjust weights via sliders.
@@ -145,3 +168,5 @@ cd backend && python -m pytest -v
 - [PRD](docs/PRD.md) — implemented vs. planned features
 - [Design Document](docs/plans/2026-02-23-pothole-tracker-design.md) — architecture, schema, scoring math
 - [Implementation Plan](docs/plans/2026-02-23-implementation-plan.md) — 14-task build plan
+- [Detector Accuracy Report](docs/DETECTOR_EVAL.md) — evaluation methodology, numbers, reproduction
+- [Fine-Tuning Guide](docs/FINETUNE.md) — laptop / Colab / EC2 recipes
