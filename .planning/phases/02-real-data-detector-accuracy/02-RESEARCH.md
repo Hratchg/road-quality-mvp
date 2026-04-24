@@ -894,32 +894,37 @@ An "eval metrics correctness gate" is defined as **not fully automated in CI** (
 
 **If this table is empty:** Would indicate research was complete without extrapolation; three `[ASSUMED]` items here (A1, A7, A8) warrant user confirmation during planning.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Two-class labelling vs single-class + confidence-mapped severity**
    - What we know: Current `YOLOv8Detector._map_severity` already supports both; eval must mirror runtime.
    - What's unclear: Does the user want human operators making severity calls during labelling (slower, subjective) OR just "is there a pothole here" labels (faster, defers severity to the model's confidence)?
    - Recommendation: Use single-class labels + confidence→severity at inference. Saves labelling time, matches the "current single-class branch" of existing code, keeps D-06's per-severity breakdown valid (severity comes from confidence threshold). Plan should lock this before labelling begins.
+   - **RESOLVED:** Single-class labelling adopted per D-05 (locked in CONTEXT.md). Plan 02-02 severity mapping mirrors `yolo_detector._map_severity` via shared `data_pipeline/eval.py::map_severity` (per-severity breakdown from confidence thresholds). Plan 02-05 data.yaml Task 1 sets `nc: 1` single-class.
 
 2. **Default `YOLO_MODEL_PATH` when unset — which HF revision to pin?**
    - What we know: D-14 says default falls back to "a versioned HF name hardcoded in `detector_factory.py`."
    - What's unclear: Is "versioned" a git tag on the HF repo (e.g., `@v0.1.0`) or just the repo ID with implicit `@main`?
    - Recommendation: Start unversioned (`keremberke/yolov8s-pothole-segmentation`) because that's the base before fine-tuning exists. Once Phase 2 publishes `<user>/road-quality-la-yolov8`, switch default to a pinned revision so CI+production can't silently drift.
+   - **RESOLVED:** Phase 2 ships with unversioned `_DEFAULT_HF_REPO = "keremberke/yolov8s-pothole-segmentation"` (Plan 02-01). Revision-pinning (`@<commit-sha>`) is supported by `_resolve_model_path` regex but not enforced as default; operator pins after first fine-tune publish. DETECTOR_EVAL.md (Plan 02-05) documents the pin-after-publish expectation.
 
 3. **HF Dataset hosting vs S3 for the eval images**
    - What we know: D-04 says bucket provider is Claude's discretion.
    - What's unclear: Will the user ever want to restrict dataset access? (Affects HF-public vs HF-gated vs private-S3.)
    - Recommendation: HF Dataset, public, CC-BY-SA. Zero auth for reproducibility. User can gate later if needed.
+   - **RESOLVED:** HF Datasets (public, CC-BY-SA) chosen per D-04. Plan 02-03 manifest-driven fetcher treats HF as one bucket backend; `manifest.json` abstracts provider so future migration to S3/GCS/Backblaze is mechanical. Per-image `source_mapillary_id` in manifest satisfies CC-BY-SA attribution chain.
 
 4. **Number of fine-tuning epochs for 300 images**
    - What we know: 50-100 epochs with early stopping is the field recommendation; 300 is the "safe high end".
    - What's unclear: Time budget on operator machine — CPU training of 300 images × 100 epochs at batch 8 is several hours.
    - Recommendation: Start with `--epochs 50 --patience 10` for a first pass. If the early-stopping patience isn't triggered, bump to 100. Document in `docs/FINETUNE.md`.
+   - **RESOLVED:** Plan 02-04 `finetune_detector.py` defaults to `--epochs 50 --patience 10 --device cpu --seed 42`. FINETUNE.md documents bumping to 100 epochs if early-stopping does not trigger. Per-recipe time estimates (laptop CPU / Colab T4 / EC2 g5) included in FINETUNE.md.
 
 5. **Does the `segment_defects` schema need to accommodate a confidence/bbox for eval traceability?**
    - What we know: Phase 3 writes detections into `segment_defects` with `severity`, `count`, `confidence_sum`. No per-detection bbox stored.
    - What's unclear: Would it help the demo to show "here's the image, here's the box" alongside a detection?
    - Recommendation: Out of scope for Phase 2 (eval runs offline, not against DB). Flag for Phase 3 research.
+   - **RESOLVED:** Deferred to Phase 3 research. Phase 2 eval runs offline against fixtures + `data/eval_la/` on disk; no DB writes. Per-detection bbox persistence is NOT in Phase 2 scope (matches CONTEXT.md `<deferred>` section).
 
 ## Sources
 
