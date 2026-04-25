@@ -280,3 +280,64 @@ class TestEmptyTargetExits2:
         assert result.returncode == 2
         combined = (result.stdout + result.stderr).lower()
         assert "0 segments" in combined or "matched 0" in combined
+
+
+# ---------- Plan 03-04: --wipe-synthetic / --no-recompute / --force-wipe (pure unit) ----------
+
+class TestPlan04Flags:
+    """Plan 03-04: new flags appear in --help and the helpers are importable.
+
+    Pure-unit checks; integration coverage of the flag *behavior* lives in
+    backend/tests/test_integration.py (Task 2 of plan 03-04).
+    """
+
+    def test_help_lists_wipe_synthetic_flag(self):
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "--help"],
+            capture_output=True, text=True, cwd=REPO_ROOT,
+        )
+        assert result.returncode == 0, result.stderr
+        assert "--wipe-synthetic" in result.stdout
+
+    def test_help_lists_no_recompute_flag(self):
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "--help"],
+            capture_output=True, text=True, cwd=REPO_ROOT,
+        )
+        assert result.returncode == 0, result.stderr
+        assert "--no-recompute" in result.stdout
+
+    def test_help_lists_force_wipe_flag(self):
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "--help"],
+            capture_output=True, text=True, cwd=REPO_ROOT,
+        )
+        assert result.returncode == 0, result.stderr
+        assert "--force-wipe" in result.stdout
+
+    def test_wipe_synthetic_rows_helper_exists(self):
+        """The helper must be importable as a public function on the module."""
+        assert hasattr(ing, "wipe_synthetic_rows")
+        assert callable(ing.wipe_synthetic_rows)
+
+    def test_trigger_recompute_helper_exists(self):
+        assert hasattr(ing, "trigger_recompute")
+        assert callable(ing.trigger_recompute)
+
+    def test_wipe_synthetic_rows_uses_hardcoded_where(self):
+        """T-03-18 mitigation: the WHERE clause is a hard-coded literal —
+        no parameterization, no operator-controllable extension. We verify
+        the source contains the exact literal string."""
+        src = SCRIPT.read_text()
+        assert "DELETE FROM segment_defects WHERE source = 'synthetic'" in src
+
+    def test_trigger_recompute_invokes_compute_scores_py(self):
+        """The recompute hook must reference compute_scores.py and use
+        sys.executable (not /bin/sh, not shell=True) so PATH cannot be
+        hijacked (T-03-20 mitigation)."""
+        src = SCRIPT.read_text()
+        assert "compute_scores.py" in src
+        assert "sys.executable" in src
+        # No shell=True anywhere in the file (a regression on this would
+        # silently re-introduce the PATH-hijack threat).
+        assert "shell=True" not in src
