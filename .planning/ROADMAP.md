@@ -162,7 +162,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. `/route` returns different rankings for real vs synthetic data on the same bbox, verifying the pipeline end-to-end
   5. Mapillary access token is env-only; no credentials in code, docker-compose, or docs
 **Plans**: 5 plans
-- [ ] 03-01-PLAN.md — Schema migration + docker-compose mount + .gitignore + migration test (foundation for SC #2 idempotency)
+- [x] 03-01-PLAN.md — Schema migration + docker-compose mount + .gitignore + migration test (foundation for SC #2 idempotency)
 - [ ] 03-02-PLAN.md — `compute_scores.py --source {synthetic|mapillary|all}` filter + tests (SC #4 demonstrability)
 - [ ] 03-03-PLAN.md — `scripts/ingest_mapillary.py` core: target resolution + snap-match + ingestion loop + manifest + tests (SC #1, SC #5)
 - [ ] 03-04-PLAN.md — `--wipe-synthetic` + auto-recompute + run-summary JSON + integration tests (SC #1-#4 end-to-end)
