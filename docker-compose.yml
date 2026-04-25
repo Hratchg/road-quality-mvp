@@ -9,6 +9,7 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./db/init-pgrouting.sh:/docker-entrypoint-initdb.d/01-pgrouting.sh
       - ./db/migrations/001_initial.sql:/docker-entrypoint-initdb.d/02-schema.sql
+      - ./db/migrations/002_mapillary_provenance.sql:/docker-entrypoint-initdb.d/03-mapillary.sql
     ports:
       - "5432:5432"
     healthcheck:

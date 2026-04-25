@@ -37,3 +37,10 @@ data/eval_la/*
 !data/eval_la/manifest.json
 !data/eval_la/data.yaml
 !data/eval_la/.gitkeep
+
+# ----- Phase 3: Mapillary ingest cache -----
+# Per-segment image downloads + per-run manifests. Ephemeral by design;
+# manifest.json files live under per-segment dirs and are not whitelisted
+# (operators can opt to commit specific archived manifests separately).
+data/ingest_la/*
+!data/ingest_la/.gitkeep
