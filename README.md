@@ -137,6 +137,28 @@ Configuration: set `YOLO_MODEL_PATH` in `.env` to either a HuggingFace repo
 id (e.g. `<user>/road-quality-la-yolov8@<revision>`) or a local `.pt`
 file path. Default falls back to `keremberke/yolov8s-pothole-segmentation`.
 
+## Real-Data Ingest
+
+The `scripts/ingest_mapillary.py` CLI pulls Mapillary imagery for a target
+list of road segments, runs the YOLOv8 detector, and writes detections back
+into `segment_defects` with full provenance (`source = 'mapillary'`,
+`source_mapillary_id = <image_id>`). Re-runs are idempotent.
+
+Three target modes — explicit ids, ids-file, or `--where` SQL predicate.
+After each ingest, the CLI auto-runs `scripts/compute_scores.py` so
+`/segments` and `/route` reflect the new detections.
+
+See [`docs/MAPILLARY_INGEST.md`](docs/MAPILLARY_INGEST.md) for the operator
+runbook: prerequisites, all flags, the SC #4 ranking-comparison demo
+workflow, the Phase 6 public-demo cutover sequence, and the trust model
+for `--where`.
+
+Quick start (after `MAPILLARY_ACCESS_TOKEN` is set):
+
+```bash
+python scripts/ingest_mapillary.py --segment-ids 1,2,3 --limit-per-segment 5
+```
+
 ## Frontend Pages
 
 - **Map View** (`/`): Full-screen map with color-coded road segments. Toggle IRI/potholes and adjust weights via sliders.
@@ -169,4 +191,5 @@ cd backend && python -m pytest -v
 - [Design Document](docs/plans/2026-02-23-pothole-tracker-design.md) — architecture, schema, scoring math
 - [Implementation Plan](docs/plans/2026-02-23-implementation-plan.md) — 14-task build plan
 - [Detector Accuracy Report](docs/DETECTOR_EVAL.md) — evaluation methodology, numbers, reproduction
+- [Mapillary Ingest Runbook](docs/MAPILLARY_INGEST.md) — operator workflow, SC #4 demo, Phase 6 cutover
 - [Fine-Tuning Guide](docs/FINETUNE.md) — laptop / Colab / EC2 recipes
