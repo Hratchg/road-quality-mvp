@@ -1174,33 +1174,33 @@ def search_with_retry(bbox, limit, max_attempts=3):
 
 **A1, A4, A9, A11** are the items the planner / discuss-phase should consider for explicit user confirmation. The rest are low-risk and verifiable in execution.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should `ingest_mapillary.py` accept a `--conf-threshold` flag to override YOLO's default 0.25?**
    - What we know: Default 0.25 is YOLOv8's standard [CITED: https://docs.ultralytics.com/usage/cfg/]; existing `YOLOv8Detector.__init__(conf_threshold=0.25)`; CONTEXT.md flags 0.25–0.5 as Claude's discretion.
    - What's unclear: Whether the operator should be allowed to tune this per run. Pros: useful for "be more strict on freeway segments." Cons: yet another flag; the existing detector path doesn't accept it post-construction.
-   - Recommendation: **Skip for Phase 3.** Default 0.25 is well-understood. If first runs produce noise, plan a Phase 3.1 follow-up.
+   - RESOLVED: **Skip for Phase 3.** Default 0.25 is well-understood. If first runs produce noise, plan a Phase 3.1 follow-up.
 
 2. **Should `--no-keep` operate per-image (delete after each detect) or per-run (delete after all detects in run)?**
    - What we know: D-11 says "deletes images after detection" — ambiguous between per-image and per-run.
    - What's unclear: Per-image saves disk during run; per-run is simpler logic.
-   - Recommendation: **Per-image.** A 300-image run with --no-keep per-run holds 300 × 200 KB = 60 MB on disk peak. With per-image, peak is 1 image. Makes the tool friendlier on disk-constrained CI runners. Caveat: write manifest.json AFTER all images are processed but BEFORE per-image unlinks (since `write_manifest` reads files for SHA256). Solution: track manifest entries during loop, deferred-write at end, then delete files in a separate pass — OR adapt the per-image flow to write a partial manifest.json after each segment. **Plan-time decision; either is defensible.**
+   - RESOLVED: **Per-image.** A 300-image run with --no-keep per-run holds 300 × 200 KB = 60 MB on disk peak. With per-image, peak is 1 image. Makes the tool friendlier on disk-constrained CI runners. Caveat: write manifest.json AFTER all images are processed but BEFORE per-image unlinks (since `write_manifest` reads files for SHA256). Solution: track manifest entries during loop, deferred-write at end, then delete files in a separate pass — OR adapt the per-image flow to write a partial manifest.json after each segment. **Plan-time decision; either is defensible.**
 
 3. **Does `compute_scores.py` need to be re-run automatically after `ingest_mapillary.py` finishes, or is it operator-invoked?**
    - What we know: D-14 says `--wipe-synthetic` "triggers `compute_scores.py` after"; D-17 says SC #3 is satisfied by "ingest → recompute scores → hit /segments". CONTEXT.md is silent on whether the recompute is automatic.
    - What's unclear: Does the CLI subprocess `compute_scores.py` automatically?
-   - Recommendation: **Yes, by default.** Add `--no-recompute` flag for operators who want to chain multiple ingests + a single recompute. Shown in Pattern 2 sketch.
+   - RESOLVED: **Yes, by default.** Add `--no-recompute` flag for operators who want to chain multiple ingests + a single recompute. Shown in Pattern 2 sketch.
    - **STATUS: this affects the integration test design (SC #3 expects it to "just work" end-to-end).**
 
 4. **Should the run summary be printed to stdout (machine-readable) or stderr (human-readable)?**
    - What we know: Phase 2 patterns vary — `eval_detector.py` writes JSON to `--json-out` and human-readable to stdout; `fetch_eval_data.py` prints to stdout.
    - What's unclear: Whether the summary should be parseable by Phase 6's demo runbook or just operator-readable.
-   - Recommendation: **Both.** JSON via `--json-out` (machine), table via stderr/stdout (human). Mirrors Phase 2 D-18 `eval_detector.py`.
+   - RESOLVED: **Both.** JSON via `--json-out` (machine), table via stderr/stdout (human). Mirrors Phase 2 D-18 `eval_detector.py`.
 
 5. **What happens if `--wipe-synthetic` is passed but there are no Mapillary detections to write?**
    - What we know: D-14 wipes synthetic before writing real data. If real data set is empty (e.g., `--limit-per-segment 0`), the operator has just deleted their synthetic data with nothing to replace it — `/segments` will show all zeros.
    - What's unclear: Is this user error or should the CLI guard?
-   - Recommendation: **Guard.** If `--wipe-synthetic` is passed with an empty target list OR if the detection phase produces zero rows, abort with exit code 2 BEFORE the wipe. Show `--force-wipe` to override. Document.
+   - RESOLVED: **Guard.** If `--wipe-synthetic` is passed with an empty target list OR if the detection phase produces zero rows, abort with exit code 2 BEFORE the wipe. Show `--force-wipe` to override. Document.
 
 ## Sources
 

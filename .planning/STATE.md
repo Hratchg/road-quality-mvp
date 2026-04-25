@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: planning
 stopped_at: Phase 3 context gathered
-last_updated: "2026-04-25T19:10:19.241Z"
+last_updated: "2026-04-25T20:14:20.883Z"
 last_activity: 2026-04-24
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 9
+  total_plans: 14
   completed_plans: 9
-  percent: 100
+  percent: 64
 ---
 
 # Project State
@@ -104,5 +104,5 @@ Last session: --stopped-at
 Stopped at: Phase 3 context gathered
 Resume file: --resume-file
 
-**Planned Phase:** 2 (Real-Data Detector Accuracy) — 5 plans — 2026-04-24T02:04:31.847Z
+**Planned Phase:** 3 (Mapillary Ingestion Pipeline) — 5 plans — 2026-04-25T20:14:20.871Z
 **Completed Phase:** 1 (MVP Integrity Cleanup) — 4 plans — 2026-04-23

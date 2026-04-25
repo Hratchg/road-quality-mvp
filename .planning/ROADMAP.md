@@ -161,7 +161,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. After ingestion, `scripts/compute_scores.py` refreshes `segment_scores` and `/segments` reflects real (non-synthetic) pothole data
   4. `/route` returns different rankings for real vs synthetic data on the same bbox, verifying the pipeline end-to-end
   5. Mapillary access token is env-only; no credentials in code, docker-compose, or docs
-**Plans**: TBD
+**Plans**: 5 plans
+- [ ] 03-01-PLAN.md — Schema migration + docker-compose mount + .gitignore + migration test (foundation for SC #2 idempotency)
+- [ ] 03-02-PLAN.md — `compute_scores.py --source {synthetic|mapillary|all}` filter + tests (SC #4 demonstrability)
+- [ ] 03-03-PLAN.md — `scripts/ingest_mapillary.py` core: target resolution + snap-match + ingestion loop + manifest + tests (SC #1, SC #5)
+- [ ] 03-04-PLAN.md — `--wipe-synthetic` + auto-recompute + run-summary JSON + integration tests (SC #1-#4 end-to-end)
+- [ ] 03-05-PLAN.md — `docs/MAPILLARY_INGEST.md` operator runbook + README link + Phase 6 cutover forward-flag
 
 ### Phase 4: Authentication
 **Goal**: Users can sign up, sign in, and sign out; state-mutating and expensive endpoints require auth so the public demo can't be drained by anonymous traffic.
@@ -217,7 +222,7 @@ Phases execute in numeric order within M1: 1 → 2 → 3 → 4 → 5 → 6. Phas
 | 0.7 ML Pluggability + IRI Ingestion | M0 | — | Complete | 2026-02-23 |
 | 1. MVP Integrity Cleanup | M1 | 4/4 | Complete | 2026-04-23 |
 | 2. Real-Data Detector Accuracy | M1 | 0/5 | Planned | - |
-| 3. Mapillary Ingestion Pipeline | M1 | 0/TBD | Not started | - |
+| 3. Mapillary Ingestion Pipeline | M1 | 0/5 | Planned | - |
 | 4. Authentication | M1 | 0/TBD | Not started | - |
 | 5. Cloud Deployment | M1 | 0/TBD | Not started | - |
 | 6. Public Demo Launch | M1 | 0/TBD | Not started | - |
@@ -225,3 +230,4 @@ Phases execute in numeric order within M1: 1 → 2 → 3 → 4 → 5 → 6. Phas
 ---
 *Roadmap initialized: 2026-04-23 after ingest synthesis + codebase map*
 *Phase 2 planned: 2026-04-23*
+*Phase 3 planned: 2026-04-25*
