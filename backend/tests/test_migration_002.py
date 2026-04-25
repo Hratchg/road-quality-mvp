@@ -85,7 +85,12 @@ def test_unique_allows_multiple_null_synthetic_rows(applied_migration, a_segment
                 (a_segment_id, "moderate", 1, 0.5,
                  a_segment_id, "moderate", 1, 0.6),
             )
-            applied_migration.commit()
+            # WR-02 fix: do NOT commit. The assertion is "the multi-row
+            # INSERT with NULL source_mapillary_id did not raise a
+            # UniqueViolation" -- which is established the moment cur.execute
+            # returns. Committing here used to leak two synthetic rows on
+            # the seed segment because the rollback below became a no-op,
+            # polluting the DB for downstream tests and operator inspection.
         finally:
             applied_migration.rollback()
 
