@@ -4,6 +4,8 @@ Operator-facing CLI:
     python scripts/ingest_mapillary.py --segment-ids 1,2,3
     python scripts/ingest_mapillary.py --segment-ids-file priority.txt
     python scripts/ingest_mapillary.py --where "iri_norm > 0.5 ORDER BY iri_norm DESC LIMIT 50"
+    python scripts/ingest_mapillary.py --segment-ids 1,2,3 --wipe-synthetic
+    python scripts/ingest_mapillary.py --where "..." --no-recompute  # ingest-only, manual recompute later
 
 Workflow per target segment:
     1. Compute padded bbox via ST_Buffer(geom::geography, pad_m)::geometry -> ST_Envelope.
@@ -28,11 +30,16 @@ Token & client reuse:
 Exit codes (D-18 inherited):
     0 OK
     1 generic error (token missing, DB connection failed)
-    2 validation error (--where rejected, --segment-ids invalid, no targets matched)
+    2 validation error (--where rejected, --segment-ids invalid, no targets matched,
+       --wipe-synthetic with 0 detections and no --force-wipe)
     3 missing resource (segment id not found)
 
-NOTE: --wipe-synthetic, --no-recompute, and structured JSON run-summary land in plan 03-04.
-This plan ships the core; plan 04 extends.
+Phase 6 demo cutover (D-14 + D-17):
+    --wipe-synthetic deletes `source='synthetic'` rows BEFORE writing real data.
+    Guarded: aborts with exit 2 if zero detections will be written, unless
+    --force-wipe is also passed. After successful ingest, the CLI subprocess-runs
+    `compute_scores.py --source all` so /segments + /route reflect the new rows
+    immediately; pass --no-recompute to opt out and run compute_scores manually.
 """
 
 from __future__ import annotations
@@ -320,6 +327,48 @@ def with_retry(fn, *args, max_attempts: int = 3, base_delay: float = 1.0, **kwar
     raise RuntimeError("with_retry: no attempts executed")
 
 
+# ---------- Wipe + recompute hooks (Plan 03-04, D-14 + D-17) ----------
+
+def wipe_synthetic_rows(conn) -> int:
+    """D-14: DELETE FROM segment_defects WHERE source = 'synthetic'.
+
+    Returns the deleted row count. Hard-coded WHERE clause -- no parameterization,
+    no operator-controlled filter (T-03-18 mitigation). The CHECK constraint
+    from plan 03-01 already bounds `source` to two literal values, so even a
+    typo'd extension cannot reach unrelated rows.
+    """
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM segment_defects WHERE source = 'synthetic'")
+        deleted = cur.rowcount
+    conn.commit()
+    logger.info("--wipe-synthetic: deleted %d rows", deleted)
+    return deleted
+
+
+def trigger_recompute(repo_root: Path, source: str = "all") -> int:
+    """D-17: subprocess-run scripts/compute_scores.py --source <source>.
+
+    T-03-20 mitigation: invokes [sys.executable, str(repo_root/scripts/...)]
+    -- hard-coded interpreter + hard-coded path inside the repo, never $PATH.
+    No shell=True. Returns the subprocess return code. Logs stdout/stderr.
+    """
+    import subprocess
+    cmd = [
+        sys.executable,
+        str(repo_root / "scripts" / "compute_scores.py"),
+        "--source", source,
+    ]
+    logger.info("triggering recompute: %s", " ".join(cmd))
+    result = subprocess.run(
+        cmd, capture_output=True, text=True, cwd=str(repo_root)
+    )
+    if result.stdout:
+        logger.info("compute_scores stdout: %s", result.stdout.strip())
+    if result.stderr:
+        logger.warning("compute_scores stderr: %s", result.stderr.strip())
+    return result.returncode
+
+
 # ---------- Per-segment workflow (D-10, RESEARCH Pattern 2) ----------
 
 def ingest_segment(
@@ -469,6 +518,22 @@ def main() -> int:
         "--json-out", type=Path, default=None,
         help="Write run summary JSON to this path",
     )
+    parser.add_argument(
+        "--wipe-synthetic", action="store_true",
+        help="DELETE FROM segment_defects WHERE source='synthetic' BEFORE writing "
+             "real data. Phase 6 demo cutover. Aborts (exit 2) if target list is "
+             "empty or zero detections produced -- pass --force-wipe to override.",
+    )
+    parser.add_argument(
+        "--force-wipe", action="store_true",
+        help="Allow --wipe-synthetic even when zero detections will be written. "
+             "Use with caution: deletes synthetic data with nothing to replace it.",
+    )
+    parser.add_argument(
+        "--no-recompute", action="store_true",
+        help="Skip the post-ingest `python scripts/compute_scores.py --source all` "
+             "subprocess. Default: auto-recompute on success.",
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -523,6 +588,13 @@ def main() -> int:
             manifest_entries: list[dict[str, Any]] = []
             all_rows: list[tuple[int, str, int, float, str, str]] = []
 
+            # Plan 03-04: track wipe state for the run summary. The wipe runs
+            # AFTER detections are queued (we need to know `len(all_rows)` for
+            # the guard) but BEFORE the INSERT so the demo cutover ordering
+            # holds (D-15: synthetic gone, mapillary written, scores rebuilt).
+            wipe_planned = bool(args.wipe_synthetic)
+            wipe_applied = False
+
             for seg_id in segment_ids:
                 logger.info("--- segment %s ---", seg_id)
                 try:
@@ -548,7 +620,26 @@ def main() -> int:
                 counters["segments_processed"] += 1
                 all_rows.extend(rows)
 
+            # Plan 03-04 (D-14 + Open Question #5):
+            # Wipe synthetic rows ONLY if we have something to write,
+            # OR the operator explicitly passed --force-wipe. The wipe
+            # MUST run before the INSERT so /segments never sees the
+            # synthetic+mapillary union for this segment-set.
+            if wipe_planned:
+                if not all_rows and not args.force_wipe:
+                    print(
+                        "ERROR: --wipe-synthetic with 0 detections to write would "
+                        "delete synthetic data with nothing to replace it. "
+                        "Pass --force-wipe to override.",
+                        file=sys.stderr,
+                    )
+                    return EXIT_VALIDATION
+                deleted = wipe_synthetic_rows(conn)
+                counters["synthetic_rows_wiped"] = deleted
+                wipe_applied = True
+
             # Idempotent batch INSERT (Pattern 4).
+            rows_attempted = len(all_rows)
             if all_rows:
                 execute_values(
                     cur,
@@ -564,9 +655,12 @@ def main() -> int:
                     page_size=500,
                 )
                 conn.commit()
-                counters["rows_inserted"] = cur.rowcount or 0
+                inserted = cur.rowcount or 0
             else:
-                counters["rows_inserted"] = 0
+                inserted = 0
+            counters["rows_inserted"] = inserted
+            # Plan 03-04: idempotent-skip count for the run summary.
+            counters["rows_skipped_idempotent"] = rows_attempted - inserted
 
             # Manifest write BEFORE --no-keep unlinks (Pattern 5 caveat).
             if manifest_entries:
@@ -589,8 +683,29 @@ def main() -> int:
                     p = args.cache_root / entry["path"]
                     p.unlink(missing_ok=True)
 
-            # Run summary.
-            summary = {"counters": counters, "segments": segment_ids[:50]}
+            # Plan 03-04 (D-17): auto-recompute is the default behavior;
+            # operators opt out with --no-recompute (e.g. when chaining
+            # multiple ingest runs and recomputing once at the end).
+            recompute_invoked = False
+            if not args.no_recompute:
+                rc = trigger_recompute(
+                    repo_root=Path(__file__).resolve().parents[1],
+                    source="all",
+                )
+                if rc != 0:
+                    logger.warning(
+                        "compute_scores.py exited %d; segment_scores may be stale",
+                        rc,
+                    )
+                recompute_invoked = True
+
+            # Run summary (extended in plan 03-04 with three new top-level keys).
+            summary = {
+                "counters": counters,
+                "segments": segment_ids[:50],
+                "wipe_synthetic_applied": wipe_applied,
+                "recompute_invoked": recompute_invoked,
+            }
             if args.json_out:
                 args.json_out.write_text(json.dumps(summary, indent=2))
             print(json.dumps(summary, indent=2))

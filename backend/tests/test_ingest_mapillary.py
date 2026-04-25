@@ -334,10 +334,21 @@ class TestPlan04Flags:
     def test_trigger_recompute_invokes_compute_scores_py(self):
         """The recompute hook must reference compute_scores.py and use
         sys.executable (not /bin/sh, not shell=True) so PATH cannot be
-        hijacked (T-03-20 mitigation)."""
+        hijacked (T-03-20 mitigation).
+
+        The shell=True check is AST-based (not a substring scan) so the
+        rule does not fire on the *documentation* string "No shell=True"
+        we keep in helper docstrings/comments to flag the anti-pattern.
+        """
+        import ast
         src = SCRIPT.read_text()
         assert "compute_scores.py" in src
         assert "sys.executable" in src
-        # No shell=True anywhere in the file (a regression on this would
-        # silently re-introduce the PATH-hijack threat).
-        assert "shell=True" not in src
+        tree = ast.parse(src)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                for kw in node.keywords or []:
+                    if kw.arg == "shell" and isinstance(kw.value, ast.Constant):
+                        assert kw.value.value is False or kw.value.value is None, (
+                            "subprocess invocation uses shell=True (T-03-20 regression)"
+                        )
