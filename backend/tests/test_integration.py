@@ -498,59 +498,101 @@ def test_wipe_synthetic_preserves_mapillary(
     Mapillary returns nothing useful), then asserts the marker survives
     while synthetic rows are gone.
 
-    NOTE: this test is intentionally placed LAST among the Phase 3 SC tests
-    -- it leaves the DB with synthetic rows wiped. Subsequent integration
-    tests that depend on synthetic rows would need a reseed.
+    WR-03 fix: previously this test relied on lexical execution order
+    ("place me last") to avoid corrupting downstream tests that depend on
+    synthetic rows. pytest plugins (pytest-randomly, --lf, pytest-xdist)
+    can break that ordering contract silently. We now snapshot every
+    synthetic row before the wipe and restore the rows in a finally block,
+    so the test is order-independent and leaves the DB in its pre-test
+    state regardless of ordering or mid-test failure.
     """
     seg_id = _seed_target_segment_id(db_conn)
     marker = "test030412345678"  # all-digits
 
-    # Insert one mapillary row that must survive
+    # Snapshot every synthetic row so we can restore them after the wipe.
+    # Selecting all columns by name keeps the snapshot resilient to
+    # column-order changes in segment_defects.
     with db_conn.cursor() as cur:
         cur.execute(
-            "DELETE FROM segment_defects WHERE source_mapillary_id = %s",
-            (marker,),
+            "SELECT segment_id, severity, count, confidence_sum, "
+            "       source_mapillary_id, source "
+            "FROM segment_defects WHERE source = 'synthetic'"
         )
-        cur.execute(
-            "INSERT INTO segment_defects "
-            "(segment_id, severity, count, confidence_sum, "
-            " source_mapillary_id, source) "
-            "VALUES (%s, 'severe', 1, 0.9, %s, 'mapillary')",
-            (seg_id, marker),
+        snapshot_rows = cur.fetchall()
+
+    def _row_tuple(r):
+        if isinstance(r, dict):
+            return (
+                r["segment_id"], r["severity"], r["count"],
+                r["confidence_sum"], r["source_mapillary_id"], r["source"],
+            )
+        return tuple(r)
+
+    snapshot = [_row_tuple(r) for r in snapshot_rows]
+
+    try:
+        # Insert one mapillary row that must survive
+        with db_conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM segment_defects WHERE source_mapillary_id = %s",
+                (marker,),
+            )
+            cur.execute(
+                "INSERT INTO segment_defects "
+                "(segment_id, severity, count, confidence_sum, "
+                " source_mapillary_id, source) "
+                "VALUES (%s, 'severe', 1, 0.9, %s, 'mapillary')",
+                (seg_id, marker),
+            )
+        db_conn.commit()
+
+        mly_before = _count_mapillary(db_conn)
+        assert mly_before >= 1
+
+        # Run with --wipe-synthetic + --force-wipe (the mocked Mapillary may
+        # or may not yield rows; --force-wipe makes the test independent of
+        # that).
+        rc = _invoke_ingest(
+            monkeypatch, "--segment-ids", str(seg_id),
+            "--cache-root", str(cache_root),
+            "--no-recompute", "--wipe-synthetic", "--force-wipe",
+            "--limit-per-segment", "2",
         )
-    db_conn.commit()
+        assert rc == 0, "wipe + ingest should succeed with --force-wipe"
 
-    mly_before = _count_mapillary(db_conn)
-    assert mly_before >= 1
+        synth_after = _count_synthetic(db_conn)
+        assert synth_after == 0, f"synthetic rows survived wipe: {synth_after}"
 
-    # Run with --wipe-synthetic + --force-wipe (the mocked Mapillary may or
-    # may not yield rows; --force-wipe makes the test independent of that).
-    rc = _invoke_ingest(
-        monkeypatch, "--segment-ids", str(seg_id),
-        "--cache-root", str(cache_root),
-        "--no-recompute", "--wipe-synthetic", "--force-wipe",
-        "--limit-per-segment", "2",
-    )
-    assert rc == 0, "wipe + ingest should succeed with --force-wipe"
-
-    synth_after = _count_synthetic(db_conn)
-    assert synth_after == 0, f"synthetic rows survived wipe: {synth_after}"
-
-    # The pre-existing marker row must survive
-    with db_conn.cursor() as cur:
-        cur.execute(
-            "SELECT COUNT(*) AS c FROM segment_defects "
-            "WHERE source_mapillary_id = %s",
-            (marker,),
-        )
-        row = cur.fetchone()
-    n = row["c"] if isinstance(row, dict) else row[0]
-    assert n == 1, "specific pre-existing mapillary marker row was wiped"
-
-    # CLEANUP: remove our marker row.
-    with db_conn.cursor() as cur:
-        cur.execute(
-            "DELETE FROM segment_defects WHERE source_mapillary_id = %s",
-            (marker,),
-        )
-    db_conn.commit()
+        # The pre-existing marker row must survive
+        with db_conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) AS c FROM segment_defects "
+                "WHERE source_mapillary_id = %s",
+                (marker,),
+            )
+            row = cur.fetchone()
+        n = row["c"] if isinstance(row, dict) else row[0]
+        assert n == 1, "specific pre-existing mapillary marker row was wiped"
+    finally:
+        # CLEANUP: remove our marker row and restore snapshotted synthetic
+        # rows. This runs regardless of test outcome so we never leave the
+        # DB without its synthetic baseline -- the original ordering-based
+        # workaround that motivated WR-03.
+        with db_conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM segment_defects WHERE source_mapillary_id = %s",
+                (marker,),
+            )
+            if snapshot:
+                # ON CONFLICT DO NOTHING covers the case where the wipe
+                # somehow did not run (e.g. early assertion failure).
+                from psycopg2.extras import execute_values as _ev
+                _ev(
+                    cur,
+                    "INSERT INTO segment_defects "
+                    "(segment_id, severity, count, confidence_sum, "
+                    " source_mapillary_id, source) VALUES %s "
+                    "ON CONFLICT DO NOTHING",
+                    snapshot,
+                )
+        db_conn.commit()
