@@ -641,7 +641,12 @@ def main() -> int:
             # Idempotent batch INSERT (Pattern 4).
             rows_attempted = len(all_rows)
             if all_rows:
-                execute_values(
+                # WR-01 fix: cur.rowcount after execute_values reflects ONLY
+                # the final internal page (page_size=500), so for batches >
+                # 500 rows the operator-facing count was wrong. Use
+                # RETURNING + fetch=True so execute_values aggregates the
+                # returned rows across all internal pages.
+                returned = execute_values(
                     cur,
                     """
                     INSERT INTO segment_defects
@@ -650,12 +655,14 @@ def main() -> int:
                     VALUES %s
                     ON CONFLICT (segment_id, source_mapillary_id, severity)
                     DO NOTHING
+                    RETURNING 1
                     """,
                     all_rows,
                     page_size=500,
+                    fetch=True,
                 )
                 conn.commit()
-                inserted = cur.rowcount or 0
+                inserted = len(returned) if returned is not None else 0
             else:
                 inserted = 0
             counters["rows_inserted"] = inserted
