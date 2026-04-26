@@ -40,7 +40,7 @@ Given any two points in LA, show the user a route that is demonstrably smoother 
 
 - [ ] `REQ-mvp-integrity-cleanup` — Reconcile ingest-conflict INFO items with shipped code (BIGINT migration types, VITE_MAPBOX_TOKEN env var, seed radius literal, psycopg2 pin) before building on top
 - [x] `REQ-real-data-accuracy` — YOLOv8 pothole detector runs on real LA street imagery with measurable precision/recall on a labelled eval set (no longer just synthetic) — *tooling validated in Phase 02; real-data numbers pending operator runbook (02-HUMAN-UAT.md)*
-- [ ] `REQ-mapillary-pipeline` — Automated pipeline pulls Mapillary imagery, runs the real detector, and writes detections into `segment_defects` without manual steps
+- [x] `REQ-mapillary-pipeline` — Automated pipeline pulls Mapillary imagery, runs the real detector, and writes detections into `segment_defects` without manual steps — *Phase 03 shipped: `scripts/ingest_mapillary.py` + migration 002 + `compute_scores.py --source` filter + `docs/MAPILLARY_INGEST.md`. Live Mapillary smoke + SC #4 ranking-diff demo pending operator runbook (03-HUMAN-UAT.md).*
 - [ ] `REQ-user-auth` — Backend enforces authenticated access to `/route` and `/cache/*`; users can sign up, sign in, and sign out
 - [ ] `REQ-prod-deploy` — The stack deploys to a cloud host from `main` via a reproducible process, with production-safe config (CORS, secrets, CORS origins, pooling)
 - [ ] `REQ-public-demo` — A public URL serves the live frontend against real LA pothole data, usable without any local setup
@@ -121,4 +121,4 @@ Post-MVP features shipped + detector accuracy demonstrated on real LA imagery + 
 | `road_segments.source`/`target` as BIGINT | SPEC over implementation plan's INTEGER; verify migration literal | ⚠️ Revisit (INFO item from ingest) |
 
 ---
-*Last updated: 2026-04-23 after Phase 1 Plan 02 (seed radius drift resolved)*
+*Last updated: 2026-04-25 after Phase 3 (REQ-mapillary-pipeline shipped: ingest CLI + migration 002 + compute_scores --source filter + operator runbook)*
