@@ -8,7 +8,20 @@ Wider spacing causes exponential blowup on the 62k-segment network.
 """
 import pytest
 
+from app.main import app
+from app.auth.dependencies import get_current_user_id
+
 pytestmark = pytest.mark.integration
+
+
+@pytest.fixture(autouse=True)
+def _override_auth_for_integration():
+    """Phase 4 added auth gates on /route + /cache/*. These integration tests
+    cover routing/cache logic, not the auth gate (covered by test_auth_routes.py).
+    Bypass JWT verification via FastAPI's dependency_overrides seam."""
+    app.dependency_overrides[get_current_user_id] = lambda: 1
+    yield
+    app.dependency_overrides.pop(get_current_user_id, None)
 
 # ---------------------------------------------------------------------------
 # Segments endpoint

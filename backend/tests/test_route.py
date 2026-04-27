@@ -1,6 +1,18 @@
 from unittest.mock import patch, MagicMock
+
+import pytest
 from fastapi.testclient import TestClient
 from app.main import app
+from app.auth.dependencies import get_current_user_id
+
+
+@pytest.fixture(autouse=True)
+def _override_auth():
+    """Bypass JWT verification for all tests in this module — these tests
+    cover route logic, not the auth gate (covered by test_auth_routes.py)."""
+    app.dependency_overrides[get_current_user_id] = lambda: 1
+    yield
+    app.dependency_overrides.pop(get_current_user_id, None)
 
 
 def _mock_ksp_results():
