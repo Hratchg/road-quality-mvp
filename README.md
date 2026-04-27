@@ -309,7 +309,7 @@ Run these once, in order, from your local machine. After this, every push to `ma
     gh workflow run deploy.yml --ref main -f seed=true
     ```
 
-    This triggers the `seed-on-demand` job which runs `python scripts/seed_data.py` inside the deployed backend container. The seed takes ~5 minutes (downloads OSMnx data + inserts ~10k segments + builds pgRouting topology).
+    This triggers the `seed-on-demand` job which runs `python scripts/seed_data.py` from the GH Actions runner (host venv) against the deployed Fly DB via `flyctl proxy`. The seed takes ~5 minutes (downloads OSMnx data + inserts ~10k segments + builds pgRouting topology).
 
 6. Verify the deploy:
 
