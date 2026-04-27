@@ -44,3 +44,4 @@ data/eval_la/*
 # (operators can opt to commit specific archived manifests separately).
 data/ingest_la/*
 !data/ingest_la/.gitkeep
+.secrets-local/
