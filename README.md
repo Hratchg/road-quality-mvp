@@ -202,8 +202,9 @@ docker compose restart backend
 #    /docker-entrypoint-initdb.d/04-users.sql.
 docker compose exec -T db psql -U rq -d roadquality < db/migrations/003_users.sql
 
-# 4. Seed the demo user.
-python scripts/seed_demo_user.py
+# 4. Seed the demo user. --password is required (no default lives in source;
+#    rotate by passing a fresh value here and updating this README).
+python scripts/seed_demo_user.py --password demo1234
 # → "Demo user seeded: id=1, email=demo@road-quality-mvp.dev"
 ```
 
