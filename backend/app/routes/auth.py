@@ -56,7 +56,11 @@ def register(req: RegisterRequest):
     email = _normalize_email(req.email)
     pwd_hash = hash_password(req.password)  # ~150-300ms argon2id (sync; FastAPI runs in threadpool)
     try:
-        with get_connection() as conn:
+        # WR-03: psycopg2's connection-as-context-manager handles
+        # transaction commit/rollback but NOT socket close. Wrap in
+        # contextlib.closing() so the connection is always released
+        # (matches the pattern locked in fd9c24f for compute_scores.py).
+        with closing(get_connection()) as conn, conn:
             with conn.cursor() as cur:
                 cur.execute(
                     "INSERT INTO users (email, password_hash) "
@@ -65,7 +69,6 @@ def register(req: RegisterRequest):
                 )
                 row = cur.fetchone()
                 user_id = row["id"] if isinstance(row, dict) else row[0]
-                conn.commit()
     except IntegrityError:
         # 23505 unique_violation on users_email_key. We catch the broader
         # IntegrityError (parent of UniqueViolation) for forward-compat.
@@ -84,7 +87,9 @@ def register(req: RegisterRequest):
 @router.post("/login", response_model=Token)
 def login(req: LoginRequest):
     email = _normalize_email(req.email)
-    with get_connection() as conn:
+    # WR-03: contextlib.closing ensures the connection socket is released
+    # even though psycopg2's `with conn:` only handles the transaction.
+    with closing(get_connection()) as conn, conn:
         with conn.cursor() as cur:
             cur.execute(
                 "SELECT id, password_hash FROM users WHERE email = %s",
