@@ -5,3 +5,7 @@ pydantic==2.10.4
 pytest==8.3.4
 httpx==0.28.1
 cachetools>=5.3
+# Phase 4 auth additions (REQ-user-auth, 04-CONTEXT.md D-02 + D-06; RESEARCH A7)
+pwdlib[argon2]>=0.2.1,<0.4
+python-jose[cryptography]>=3.3.0,<4
+email-validator>=2.0,<3
