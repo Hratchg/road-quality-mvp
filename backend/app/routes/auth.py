@@ -7,7 +7,6 @@ Pitfalls actively defended:
   wall-clock time matches the wrong-password path (no enumeration oracle).
 """
 import logging
-from contextlib import closing
 
 from fastapi import APIRouter, HTTPException, status, Response
 from pydantic import BaseModel, EmailStr, Field
@@ -56,11 +55,12 @@ def register(req: RegisterRequest):
     email = _normalize_email(req.email)
     pwd_hash = hash_password(req.password)  # ~150-300ms argon2id (sync; FastAPI runs in threadpool)
     try:
-        # WR-03: psycopg2's connection-as-context-manager handles
-        # transaction commit/rollback but NOT socket close. Wrap in
-        # contextlib.closing() so the connection is always released
-        # (matches the pattern locked in fd9c24f for compute_scores.py).
-        with closing(get_connection()) as conn, conn:
+        # Phase 5 SC #6 + #9: get_connection() is now a @contextmanager
+        # backed by ThreadedConnectionPool — outer `with` releases the pool
+        # slot via putconn (try/finally), inner `, conn:` is psycopg2's
+        # connection context manager handling commit/rollback. Together
+        # they give txn-safe + slot-safe behavior on every exit path.
+        with get_connection() as conn, conn:
             with conn.cursor() as cur:
                 cur.execute(
                     "INSERT INTO users (email, password_hash) "
@@ -87,9 +87,12 @@ def register(req: RegisterRequest):
 @router.post("/login", response_model=Token)
 def login(req: LoginRequest):
     email = _normalize_email(req.email)
-    # WR-03: contextlib.closing ensures the connection socket is released
-    # even though psycopg2's `with conn:` only handles the transaction.
-    with closing(get_connection()) as conn, conn:
+    # Phase 5: outer `with get_connection()` releases the pool slot via
+    # putconn (try/finally inside the wrapper); inner `, conn:` is
+    # psycopg2's connection context manager (commit on success, rollback
+    # on exception). The redundant contextlib.closing() wrapper is gone —
+    # the new get_connection() returns a context manager, not a connection.
+    with get_connection() as conn, conn:
         with conn.cursor() as cur:
             cur.execute(
                 "SELECT id, password_hash FROM users WHERE email = %s",
@@ -115,7 +118,7 @@ def login(req: LoginRequest):
     # do, verify_and_update returns a fresh hash so we can transparently
     # upgrade the stored hash on the user's next successful login.
     if new_hash is not None:
-        with closing(get_connection()) as conn, conn:
+        with get_connection() as conn, conn:
             with conn.cursor() as cur:
                 cur.execute(
                     "UPDATE users SET password_hash = %s WHERE id = %s",
