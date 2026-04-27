@@ -32,3 +32,10 @@ COPY db/init-pgrouting.sh                      /docker-entrypoint-initdb.d/00-in
 COPY db/migrations/001_initial.sql             /docker-entrypoint-initdb.d/01-schema.sql
 COPY db/migrations/002_mapillary_provenance.sql /docker-entrypoint-initdb.d/02-mapillary.sql
 COPY db/migrations/003_users.sql               /docker-entrypoint-initdb.d/03-users.sql
+
+# Fly volumes mount as root; the postgres image runs as uid 999 and can't
+# create $PGDATA under a root-owned mount root. fly-entrypoint.sh chowns
+# the mount root to postgres before exec'ing the upstream entrypoint.
+COPY deploy/db/fly-entrypoint.sh /usr/local/bin/fly-entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/fly-entrypoint.sh"]
+CMD ["postgres"]

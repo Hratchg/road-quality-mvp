@@ -13,17 +13,25 @@ app = "road-quality-db"
 primary_region = "lax"  # closest to LA dataset center (34.0522, -118.2437)
 
 [build]
-  dockerfile = "deploy/db/Dockerfile"
+  # Path is relative to this fly.toml's directory; build context is the repo
+  # root (passed as the last positional arg to `flyctl deploy`) so the
+  # Dockerfile's `COPY db/migrations/*` resolves.
+  dockerfile = "Dockerfile"
 
 [env]
   POSTGRES_DB = "roadquality"
   POSTGRES_USER = "rq"
+  # PGDATA must be a SUBDIR of the volume mount, not the mount itself —
+  # Fly volumes ship with a `lost+found` directory that makes the
+  # postgres:* image's initdb refuse to initialize ("directory exists
+  # but is not empty"). The pgdata/ subdir avoids this gotcha.
+  PGDATA = "/var/lib/postgresql/data/pgdata"
   # The DB password is intentionally absent from this file. It is set via
   # `fly secrets set --app road-quality-db <SECRET_NAME>=<value>` per CONTEXT
   # D-05 — never committed to git.
 
 [[mounts]]
-  source = "pgdata"
+  source = "rq_db"
   destination = "/var/lib/postgresql/data"
   initial_size = "1gb"
   # Fly snapshots run daily (default 5-day retention) — no extra config.
