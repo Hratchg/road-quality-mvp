@@ -3,12 +3,45 @@ status: partial
 phase: 05-cloud-deployment
 source: [05-VERIFICATION.md]
 started: 2026-04-27T20:00:00Z
-updated: 2026-04-27T20:00:00Z
+updated: 2026-04-27T23:05:00Z
 ---
 
 ## Current Test
 
-[awaiting human testing — all 5 items require Fly account auth + first deploy from main]
+[paused mid-walkthrough at 78% context, 2026-04-27T23:05Z; resume with frontend deploy + topology seed + browser-based CORS/VITE_API_URL]
+
+## Live Deploy State (as of pause)
+
+Manually deployed via `flyctl deploy --remote-only` (NOT via GH Actions yet — master→main rename + push deferred to next session).
+
+Apps created (all `personal` org, region `lax`):
+  - road-quality-db        → started, /health (TCP) passing, machine 918544e6c9e568
+  - road-quality-backend   → started, /health (HTTP) passing, machine 91854462ad05d8
+  - road-quality-frontend  → CREATED but NOT yet deployed
+
+Volume: `rq_db` (1 GB, lax/zone a376, encrypted, daily snapshots default 5d retention)
+
+Secrets staged + active:
+  - road-quality-db: POSTGRES_PASSWORD
+  - road-quality-backend: AUTH_SIGNING_KEY, MAPILLARY_ACCESS_TOKEN, ALLOWED_ORIGINS, DATABASE_URL
+
+Live URLs:
+  - https://road-quality-backend.fly.dev/health     → 200 {"status":"ok","db":"reachable"}  (SC #5 ✓)
+  - https://road-quality-backend.fly.dev/segments   → 200 (empty bbox)  (SC #2 partial)
+  - https://road-quality-backend.fly.dev/route      → 401 "Not authenticated" (auth gate working)
+  - https://road-quality-frontend.fly.dev           → NOT YET DEPLOYED
+
+## Bugs Found and Fixed Inline (Phase 5 plan/CONTEXT defects)
+
+1. `deploy/db/fly.toml [env].PGDATA` — Fly volume `lost+found` breaks initdb. Added `PGDATA=/var/lib/postgresql/data/pgdata`. Commit `bca06a6`.
+2. `deploy/db/fly-entrypoint.sh` — Volume mounts as root, postgres user can't mkdir. New chown wrapper. Commit `bca06a6`.
+3. `deploy/db/fly.toml [[mounts]].source` — was `pgdata`, volume was `rq_db`. Aligned. Commit `bca06a6`.
+4. `deploy/db/fly.toml [build].dockerfile` — was `deploy/db/Dockerfile`, flyctl resolves relative to toml dir → doubled path. Now `Dockerfile`. Commit `bca06a6`.
+5. `deploy/backend/fly.toml [build].dockerfile` — was `Dockerfile`, looked for `deploy/backend/Dockerfile`. Now `../../backend/Dockerfile`. Commit `fdd8fd4`.
+6. DATABASE_URL secret — RESEARCH/CONTEXT D-05 said `<app>.flycast`, but inter-app private DNS is `<app>.internal`. Plus had wrong user/db (`postgres/postgres` vs project's `rq/roadquality`). Rotated via `fly secrets set` (not committed — secrets only).
+7. flyctl 0.4.40 first-deploy chicken-and-egg ("Verifying app config" needs ≥1 existing machine to validate against). Worked around by `cd backend/` first or by accepting first-attempt failure that creates the machine then re-deploying.
+
+These should be folded into Phase 5.1 polish or a CONTEXT/RESEARCH amendment.
 
 ## Tests
 
