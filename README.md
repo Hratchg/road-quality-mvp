@@ -91,7 +91,16 @@ cost = travel_time + w_IRI * IRI_norm + w_pothole * pothole_score_total
 ## API Endpoints
 
 ### GET /health
-Returns `{"status": "ok"}`
+
+LB-probe-friendly DB-reachability check.
+
+- Success: `200` + `{"status": "ok", "db": "reachable"}`
+- DB unreachable: `503` + `{"detail": {"status": "unhealthy", "db": "unreachable"}}`
+
+Fly's HTTP health check treats non-2xx as unhealthy and depools the machine
+(does not restart it), so the 503 path is the right code for a transient DB
+hiccup. The PRD M0 contract `{"status": "ok"}` is preserved as an additive
+superset (the `db` field is new in Phase 5).
 
 ### POST /route
 Find the best quality-aware route.
