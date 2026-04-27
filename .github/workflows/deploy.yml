@@ -1,0 +1,194 @@
+# .github/workflows/deploy.yml — Phase 5 deploy automation (REQ-prod-deploy SC #1).
+#
+# Triggers:
+#   - push to main (auto-deploy what changed; pre-deploy pytest gate)
+#   - workflow_dispatch (manual trigger, with optional seed=true to run
+#     scripts/seed_data.py against the deployed DB after deploy)
+#
+# Jobs:
+#   1. changes — dorny/paths-filter@v3 computes outputs.{db,backend,frontend}
+#   2. test — host-venv pytest against postgis+pgrouting service container
+#      (Correction C: in-container tests fail because backend/Dockerfile
+#      doesn't COPY db/; host-venv has the full repo on disk so the
+#      test_migration_*.py path resolution `parents[2] / "db" / "migrations"`
+#      works correctly. Also runs deploy/db/test-build.sh and
+#      deploy/frontend/test-build.sh as build smoke tests.)
+#   3. deploy-db — flyctl deploy --config deploy/db/fly.toml (only if db
+#      paths changed; otherwise skipped via paths-filter output)
+#   4. deploy-backend — same shape, after deploy-db
+#   5. deploy-frontend — same shape, after deploy-backend
+#   6. seed-on-demand — workflow_dispatch only; runs seed_data.py via flyctl ssh
+#
+# Pitfall 7 defense: every dependent job uses `if: always() && (needs.X.result
+# == 'success' || needs.X.result == 'skipped')` to defeat GH's skip-cascade
+# default. A frontend-only commit must deploy frontend even though backend
+# wasn't deployed.
+#
+# Pitfall 8 defense: concurrency group 'deploy-prod' with cancel-in-progress=false
+# means a second push waits for the first to finish (no mid-deploy races).
+
+name: Deploy to Fly
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: 'Run seed_data.py against deployed DB after deploy'
+        required: false
+        default: 'false'
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      db: ${{ steps.filter.outputs.db }}
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            db:
+              - 'deploy/db/**'
+              - 'db/**'
+            backend:
+              - 'backend/**'
+              - 'deploy/backend/**'
+            frontend:
+              - 'frontend/**'
+              - 'deploy/frontend/**'
+
+  test:
+    name: Pre-deploy CI gate (host venv pytest + build smoke)
+    runs-on: ubuntu-latest
+    needs: changes
+    # Run if any code path changed (deploy/*.toml-only changes can skip pytest).
+    if: |
+      needs.changes.outputs.db == 'true' ||
+      needs.changes.outputs.backend == 'true' ||
+      needs.changes.outputs.frontend == 'true'
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: roadquality
+          POSTGRES_USER: rq
+          POSTGRES_PASSWORD: rqpass
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U rq -d roadquality"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pgRouting in postgres service container
+        run: |
+          docker exec ${{ job.services.postgres.id }} sh -c \
+            'apt-get update && apt-get install -y --no-install-recommends postgresql-16-pgrouting'
+          docker exec ${{ job.services.postgres.id }} sh -c \
+            'psql -U rq -d roadquality -c "CREATE EXTENSION IF NOT EXISTS postgis;"'
+          docker exec ${{ job.services.postgres.id }} sh -c \
+            'psql -U rq -d roadquality -c "CREATE EXTENSION IF NOT EXISTS pgrouting;"'
+      - name: Apply migrations to service DB
+        env:
+          PGPASSWORD: rqpass
+        run: |
+          for f in db/migrations/*.sql; do
+            echo "Applying $f"
+            psql -h localhost -U rq -d roadquality -f "$f"
+          done
+      - name: Install backend deps in host venv
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+      - name: Run pytest from host (NOT in-container — Correction C)
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://rq:rqpass@localhost:5432/roadquality
+          AUTH_SIGNING_KEY: test_key_for_ci_only_padding_padding_padding
+        run: |
+          # Full suite incl. SC #6 (test_db_pool), SC #7 (test_seed_topology),
+          # SC #8 (test_migration_00{2,3} via parents[2] resolution),
+          # SC #9 (test_routing_pool_release), and Phase 5's CORS / health tests.
+          pytest -v
+      - name: Build smoke — deploy/db/Dockerfile (SC #1 + SC #7 foundation)
+        if: needs.changes.outputs.db == 'true'
+        run: bash deploy/db/test-build.sh
+      - name: Build smoke — deploy/frontend/Dockerfile (SC #4 regression gate)
+        if: needs.changes.outputs.frontend == 'true'
+        run: bash deploy/frontend/test-build.sh
+
+  deploy-db:
+    name: Deploy DB
+    needs: [changes, test]
+    if: |
+      always() &&
+      needs.changes.outputs.db == 'true' &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only --config deploy/db/fly.toml --app road-quality-db .
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  deploy-backend:
+    name: Deploy backend
+    needs: [changes, test, deploy-db]
+    if: |
+      always() &&
+      (needs.changes.outputs.backend == 'true' || needs.changes.outputs.db == 'true') &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped') &&
+      (needs.deploy-db.result == 'success' || needs.deploy-db.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only --config deploy/backend/fly.toml --app road-quality-backend .
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  deploy-frontend:
+    name: Deploy frontend
+    needs: [changes, deploy-backend]
+    if: |
+      always() &&
+      needs.changes.outputs.frontend == 'true' &&
+      (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only --config deploy/frontend/fly.toml --app road-quality-frontend .
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  seed-on-demand:
+    name: Seed DB (manual trigger only — SC #7 deploy-time bootstrap)
+    needs: deploy-backend
+    if: |
+      always() &&
+      github.event.inputs.seed == 'true' &&
+      (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Run seed_data.py inside backend container via flyctl ssh
+        run: flyctl ssh console --app road-quality-backend -C "python scripts/seed_data.py"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
