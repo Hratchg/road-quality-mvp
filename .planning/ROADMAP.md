@@ -192,6 +192,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Frontend's `VITE_API_URL` points at the deployed backend; no `localhost` in the production bundle
   5. `GET /health` reports DB reachability (not just `{"status": "ok"}`) so load-balancer probes are meaningful
   6. Database connections are pooled (psycopg2 `SimpleConnectionPool` or equivalent); under burst load the pool does not exhaust PostgreSQL's connection limit
+  7. Fresh deploy initializes a routable graph: `seed_data.py` (or its deploy-time equivalent) populates `road_segments_vertices_pgr` via `pgr_createTopology` so the first `POST /route` after deploy succeeds without a manual SQL step *(folded in from Phase 4 UAT, 2026-04-27)*
+  8. The repo's migration test suite collects and runs cleanly inside the deployed `backend` container — `test_migration_002.py` and `test_migration_003.py` resolve their migration-file paths via the project root, not absolute `/db/...` *(folded in from Phase 4, exposed during in-container test run; affects CI gating once the deploy pipeline runs the suite)*
+  9. `backend/app/routes/routing.py` releases its psycopg2 connection on the exception path (wrap in `contextlib.closing` like Phase 3 plan 03's WR-04 fix and Phase 4 plan 03's WR-03 fix) — required so the SimpleConnectionPool in SC #6 doesn't leak slots under the route load it's meant to handle *(folded in from Phase 4 code review WR-03; pre-existing pattern from Phase 0)*
 **Plans**: TBD
 
 ### Phase 6: Public Demo Launch
