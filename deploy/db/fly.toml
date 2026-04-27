@@ -1,0 +1,46 @@
+# deploy/db/fly.toml — Fly app config for road-quality-db (Phase 5,
+# REQ-prod-deploy SC #1, CONTEXT D-02).
+#
+# Single-primary Postgres + PostGIS + pgRouting backed by a Fly volume.
+# Internal-only — no [http_service]; reachable from other Fly apps via
+# road-quality-db.internal:5432 (basic IPv6 DNS over WireGuard-encrypted
+# Fly private networking; sslmode=require NOT needed per RESEARCH §2 line 364).
+#
+# Volume snapshots: Fly enables daily snapshots with 5-day retention by
+# default (RESEARCH A6); no extra config needed for M1 demo backup posture.
+
+app = "road-quality-db"
+primary_region = "lax"  # closest to LA dataset center (34.0522, -118.2437)
+
+[build]
+  dockerfile = "deploy/db/Dockerfile"
+
+[env]
+  POSTGRES_DB = "roadquality"
+  POSTGRES_USER = "rq"
+  # POSTGRES_PASSWORD set via `fly secrets set --app road-quality-db
+  # POSTGRES_PASSWORD=<value>` — NEVER committed to git per CONTEXT D-05.
+
+[[mounts]]
+  source = "pgdata"
+  destination = "/var/lib/postgresql/data"
+  initial_size = "1gb"
+  # Fly snapshots run daily (default 5-day retention) — no extra config.
+
+# Internal-only — no [http_service] block, no public TCP handlers.
+# Other Fly apps reach this at road-quality-db.internal:5432.
+[[services]]
+  internal_port = 5432
+  protocol = "tcp"
+  auto_stop_machines = false  # DB must stay up — never auto-stop
+  auto_start_machines = false
+  min_machines_running = 1
+
+  [[services.tcp_checks]]
+    grace_period = "30s"
+    interval = "15s"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
