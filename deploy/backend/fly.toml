@@ -1,0 +1,59 @@
+# deploy/backend/fly.toml — Fly app config for road-quality-backend (Phase 5,
+# REQ-prod-deploy SC #1, CONTEXT D-01).
+#
+# References the existing backend/Dockerfile via [build].dockerfile (CONTEXT
+# D-01: Dockerfile is unchanged). Build context is the repo root: GH Actions
+# in Plan 05-05 runs `flyctl deploy --config deploy/backend/fly.toml .` so
+# the path resolves to <repo_root>/backend/Dockerfile (the existing image).
+#
+# Production CMD overrides the dev-only auto-reload flag from
+# backend/Dockerfile via [processes].web (RESEARCH State of the Art line
+# 1066-1074: the dev reloader spawns a watcher child that's correct for
+# dev parity but wasteful in prod).
+#
+# Health probe: GET /health every 30s; 5xx depools the machine but does NOT
+# restart it (RESEARCH Pitfall 5). The /health endpoint (Plan 05-02) returns
+# 503 on DB unreachable, so a transient DB hiccup -> backend depooled ->
+# DB recovers -> next probe succeeds -> re-pooled. Self-healing.
+#
+# All runtime secrets (DB connection string, auth signing key, CORS allowlist,
+# Mapillary API token, YOLO model path) are set via `fly secrets set` per
+# CONTEXT D-05 — never committed to git.
+
+app = "road-quality-backend"
+primary_region = "lax"
+
+[build]
+  dockerfile = "backend/Dockerfile"
+
+[env]
+  # Non-secrets only here. Secrets via `fly secrets set --app
+  # road-quality-backend <KEY>=<value>` per CONTEXT D-05.
+  PYTHONUNBUFFERED = "1"  # stream stdout/stderr to Fly logs without buffering
+
+[processes]
+  # Override backend/Dockerfile's CMD (which has the dev auto-reload flag set
+  # for local-dev parity). Production: no reloader; uvicorn binds 0.0.0.0:8000
+  # and serves directly.
+  web = "uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+[http_service]
+  internal_port = 8000
+  force_https = true        # Fly auto-issues *.fly.dev TLS; force HTTPS-only
+  auto_stop_machines = "stop"  # idle for ~30min -> stop (saves ~$5/mo)
+  auto_start_machines = true   # next request -> cold start (~2-5s; demo ok)
+  min_machines_running = 0     # cheap demo posture; bump to 1 if Phase 6 reveals UX hit
+  processes = ["web"]
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/health"
+    # 2xx = healthy. /health (Plan 05-02) returns 200 + {db:reachable} on
+    # success, 503 + {db:unreachable} on DB failure -> depool, no restart.
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
