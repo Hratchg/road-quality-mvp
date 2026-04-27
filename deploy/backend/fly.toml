@@ -2,9 +2,13 @@
 # REQ-prod-deploy SC #1, CONTEXT D-01).
 #
 # References the existing backend/Dockerfile via [build].dockerfile (CONTEXT
-# D-01: Dockerfile is unchanged). Build context is the repo root: GH Actions
-# in Plan 05-05 runs `flyctl deploy --config deploy/backend/fly.toml .` so
-# the path resolves to <repo_root>/backend/Dockerfile (the existing image).
+# D-01: Dockerfile is unchanged). Build context is the backend/ directory:
+# GH Actions in Plan 05-05 runs `flyctl deploy --config deploy/backend/fly.toml
+# backend/` so the dockerfile path "Dockerfile" resolves to
+# <repo_root>/backend/Dockerfile and `COPY requirements.txt .` /  `COPY . .`
+# resolve relative to backend/ (which is what the existing Dockerfile and
+# `docker-compose.yml`'s `build: ./backend` already assume — preserves dev
+# parity; matches REVIEW CR-01 fix).
 #
 # Production CMD overrides the dev-only auto-reload flag from
 # backend/Dockerfile via [processes].web (RESEARCH State of the Art line
@@ -24,7 +28,11 @@ app = "road-quality-backend"
 primary_region = "lax"
 
 [build]
-  dockerfile = "backend/Dockerfile"
+  # Path is relative to the build context. The deploy invocation passes
+  # `backend/` as the context (last positional arg of `flyctl deploy`), so
+  # this resolves to <repo_root>/backend/Dockerfile — same path local
+  # `docker compose build` resolves against `build: ./backend`.
+  dockerfile = "Dockerfile"
 
 [env]
   # Non-secrets only here. Secrets via `fly secrets set --app

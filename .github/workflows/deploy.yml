@@ -17,7 +17,10 @@
 #      paths changed; otherwise skipped via paths-filter output)
 #   4. deploy-backend — same shape, after deploy-db
 #   5. deploy-frontend — same shape, after deploy-backend
-#   6. seed-on-demand — workflow_dispatch only; runs seed_data.py via flyctl ssh
+#   6. seed-on-demand — workflow_dispatch only; runs seed_data.py from host
+#      venv (CR-01) against the deployed Fly DB through `flyctl proxy` (TCP
+#      tunnel to localhost). Host-venv pattern because `scripts/` is NOT in
+#      the backend image (Dockerfile only COPYs backend/).
 #
 # Pitfall 7 defense: every dependent job uses `if: always() && (needs.X.result
 # == 'success' || needs.X.result == 'skipped')` to defeat GH's skip-cascade
@@ -158,7 +161,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only --config deploy/backend/fly.toml --app road-quality-backend .
+      # CR-01 fix: build context is `backend/` (last positional arg), not the
+      # repo root. The existing backend/Dockerfile uses `COPY requirements.txt .`
+      # / `COPY . .` which only resolves correctly when context = backend/
+      # (matches docker-compose.yml's `build: ./backend`). Repo-root context
+      # would fail at the first COPY because <repo>/requirements.txt does not
+      # exist.
+      - run: flyctl deploy --remote-only --config deploy/backend/fly.toml --app road-quality-backend backend/
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
@@ -187,8 +196,43 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - name: Run seed_data.py inside backend container via flyctl ssh
-        run: flyctl ssh console --app road-quality-backend -C "python scripts/seed_data.py"
+      # CR-01 fix: run seed_data.py from the GitHub runner's host venv against
+      # the deployed Fly DB through `flyctl proxy` (TCP tunnel to localhost).
+      # Previously this ran via `flyctl ssh console -C "python scripts/seed_data.py"`
+      # inside the backend container, but `scripts/` is NOT in the backend image
+      # (the existing Dockerfile only COPYs backend/, matching docker-compose.yml's
+      # `build: ./backend`). Host-venv pattern matches the pre-deploy pytest gate
+      # and sidesteps the image-content question entirely.
+      - name: Install seed deps in host venv
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scripts/requirements.txt
+      - name: Open Fly proxy to deployed Postgres in background
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          # `flyctl proxy 5432:5432 --app road-quality-db` forwards
+          # localhost:5432 to the deployed DB via Fly's WireGuard tunnel.
+          # Backgrounded so the next step can connect; sleep gives the tunnel
+          # time to come up before psycopg2 dials.
+          flyctl proxy 5432:5432 --app road-quality-db &
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            if nc -z localhost 5432 2>/dev/null; then
+              echo "Fly proxy ready on localhost:5432"
+              break
+            fi
+            echo "Waiting for fly proxy ($i/10)..."
+            sleep 2
+          done
+      - name: Run seed_data.py from host venv against deployed DB
+        env:
+          # DATABASE_URL points at the local end of the flyctl-proxy tunnel
+          # (the deployed road-quality-db on the other side). Password lives
+          # in GH Actions secrets (set once at deploy bootstrap; same value
+          # used in `flyctl secrets set --app road-quality-backend DATABASE_URL=...`).
+          DATABASE_URL: postgres://rq:${{ secrets.PG_PASSWORD }}@localhost:5432/roadquality
+        run: python scripts/seed_data.py
