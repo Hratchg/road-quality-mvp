@@ -1,3 +1,5 @@
+import pytest
+
 from app.cache import (
     get_segments_cached,
     set_segments_cached,
@@ -10,6 +12,16 @@ from app.cache import (
 )
 from fastapi.testclient import TestClient
 from app.main import app
+from app.auth.dependencies import get_current_user_id
+
+
+@pytest.fixture(autouse=True)
+def _override_auth():
+    """Bypass JWT verification for /cache/* endpoint tests — these tests
+    cover cache logic, not the auth gate (covered by test_auth_routes.py)."""
+    app.dependency_overrides[get_current_user_id] = lambda: 1
+    yield
+    app.dependency_overrides.pop(get_current_user_id, None)
 
 
 def setup_function():
