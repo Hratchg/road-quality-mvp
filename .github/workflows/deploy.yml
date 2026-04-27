@@ -59,6 +59,15 @@ jobs:
       - uses: dorny/paths-filter@v3
         id: filter
         with:
+          # WR-05: explicit base ref. On a normal `push to main`, github.event.before
+          # is the previous commit on main and the diff resolves correctly. On the
+          # FIRST push (no prior commit) and on `workflow_dispatch` (no diff context),
+          # github.event.before is missing/zero — fall back to 'main' so the action
+          # has a stable target to diff against. Manual workflow_dispatch runs
+          # against current main produce empty change sets (all outputs `false`),
+          # which is the right behaviour for a "seed-only" manual trigger: deploy
+          # jobs skip, only seed-on-demand runs.
+          base: ${{ github.event.before || 'main' }}
           filters: |
             db:
               - 'deploy/db/**'
