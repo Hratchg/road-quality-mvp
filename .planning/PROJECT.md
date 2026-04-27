@@ -42,7 +42,7 @@ Given any two points in LA, show the user a route that is demonstrably smoother 
 - [x] `REQ-real-data-accuracy` — YOLOv8 pothole detector runs on real LA street imagery with measurable precision/recall on a labelled eval set (no longer just synthetic) — *tooling validated in Phase 02; real-data numbers pending operator runbook (02-HUMAN-UAT.md)*
 - [x] `REQ-mapillary-pipeline` — Automated pipeline pulls Mapillary imagery, runs the real detector, and writes detections into `segment_defects` without manual steps — *Phase 03 shipped: `scripts/ingest_mapillary.py` + migration 002 + `compute_scores.py --source` filter + `docs/MAPILLARY_INGEST.md`. Live Mapillary smoke + SC #4 ranking-diff demo pending operator runbook (03-HUMAN-UAT.md).*
 - [x] `REQ-user-auth` — Backend enforces authenticated access to `/route` and `/cache/*`; users can sign up, sign in, and sign out — *Phase 04 shipped: JWT (HS256, AUTH_SIGNING_KEY env), pwdlib argon2id, `/auth/{register,login,logout}`, sign-in modal on `/route`, demo account `demo@road-quality-mvp.dev`. Validated end-to-end via 8-scenario curl UAT against live Docker (2026-04-27). Modal visual styling deferred to operator pre-deploy.*
-- [ ] `REQ-prod-deploy` — The stack deploys to a cloud host from `main` via a reproducible process, with production-safe config (CORS, secrets, CORS origins, pooling)
+- [x] `REQ-prod-deploy` — The stack deploys to a cloud host from `main` via a reproducible process, with production-safe config (CORS, secrets, CORS origins, pooling) — *Phase 05 shipped: Fly.io tri-app (db with PostGIS+pgRouting custom image, backend, frontend with VITE_API_URL build-arg) + GH Actions deploy.yml + ThreadedConnectionPool wrapper + env-driven CORS + /health 503-on-DB-down + 5 regression gates. 2 deploy-blockers found in code review and fixed inline (build context + CI bypass). 9/9 SCs verified at artifact level; 5 live-deploy items pending operator runbook (05-HUMAN-UAT.md).*
 - [ ] `REQ-public-demo` — A public URL serves the live frontend against real LA pothole data, usable without any local setup
 
 ### Out of Scope
@@ -121,4 +121,4 @@ Post-MVP features shipped + detector accuracy demonstrated on real LA imagery + 
 | `road_segments.source`/`target` as BIGINT | SPEC over implementation plan's INTEGER; verify migration literal | ⚠️ Revisit (INFO item from ingest) |
 
 ---
-*Last updated: 2026-04-27 after Phase 4 (REQ-user-auth shipped: JWT + argon2id + /auth endpoints + sign-in modal + demo account; live UAT all-green)*
+*Last updated: 2026-04-27 after Phase 5 (REQ-prod-deploy shipped: Fly.io tri-app + GH Actions deploy + ThreadedConnectionPool + env-driven CORS + /health DB-reachability; 9/9 SCs verified at artifact level, 5 live-deploy items pending in 05-HUMAN-UAT.md)*
