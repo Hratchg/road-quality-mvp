@@ -121,6 +121,13 @@ jobs:
         working-directory: backend
         env:
           DATABASE_URL: postgresql://rq:rqpass@localhost:5432/roadquality
+          # WR-04: AUTH_SIGNING_KEY MUST be >= 32 chars — backend/app/auth/tokens.py
+          # _signing_key() raises at startup if shorter. The literal below is 44
+          # chars (test-only). Production uses `flyctl secrets set --app
+          # road-quality-backend AUTH_SIGNING_KEY=...` with a value generated via
+          # `python -c "import secrets; print(secrets.token_urlsafe(32))"`.
+          # If you trim this literal during a future cleanup, the test job will
+          # fail loud with a startup-time validation error.
           AUTH_SIGNING_KEY: test_key_for_ci_only_padding_padding_padding
         run: |
           # Full suite incl. SC #6 (test_db_pool), SC #7 (test_seed_topology),
