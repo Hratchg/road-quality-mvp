@@ -107,3 +107,29 @@ def close_pool() -> None:
     if _connection_pool is not None:
         _connection_pool.closeall()
         _connection_pool = None
+
+
+def get_pool_stats() -> dict:
+    """Public counter helper for tests / diagnostics.
+
+    Wraps psycopg2's private `_used` / `_pool` attributes behind a stable
+    public surface so the SC #9 leak-detection regression test
+    (test_routing_pool_release.py) does not have to reach into the
+    pool's private API directly. WR-02 fix: a future psycopg2 upgrade
+    that renames or removes those attributes is now isolated to this
+    one function — the test stays stable.
+
+    Don't call this from hot paths: it allocates a fresh dict every time
+    and accesses internal-implementation attributes. Test/diagnostic only.
+
+    Returns:
+        dict with keys "used" (count of borrowed connections) and
+        "available" (count of idle connections in the pool).
+    """
+    pool = _get_pool()
+    # The dict() / list() coercions defend against psycopg2 changing the
+    # underlying container types (e.g., dict -> WeakValueDictionary).
+    return {
+        "used": len(pool._used),
+        "available": len(pool._pool),
+    }

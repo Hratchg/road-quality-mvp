@@ -35,9 +35,11 @@ def test_route_handler_releases_pool_slot_on_exception(db_available, monkeypatch
     with the pool's _used count permanently incremented.
     """
     # Force the pool to initialize with at least one warm connection so we
-    # have a real baseline to compare against.
+    # have a real baseline to compare against. Use the public get_pool_stats()
+    # helper instead of reaching into pool._used directly (WR-02 fix); the
+    # helper isolates the test from psycopg2's private-API renames.
     pool = db._get_pool()
-    baseline_used = len(pool._used)
+    baseline_used = db.get_pool_stats()["used"]
     pool_id = id(pool)
 
     # Clear the in-memory route cache so a previous test that populated it
@@ -82,10 +84,12 @@ def test_route_handler_releases_pool_slot_on_exception(db_available, monkeypatch
     finally:
         app.dependency_overrides.pop(get_current_user_id, None)
 
-    # The CRITICAL assertion: pool slot returned to baseline.
-    after_used = len(pool._used)
+    # The CRITICAL assertion: pool slot returned to baseline. Read via
+    # the public get_pool_stats() helper (WR-02) — keeps the gate stable
+    # if a future psycopg2 release renames or removes _used.
+    after_used = db.get_pool_stats()["used"]
     assert after_used == baseline_used, (
-        f"SC #9 LEAK: pool _used count went from {baseline_used} to {after_used}. "
+        f"SC #9 LEAK: pool used count went from {baseline_used} to {after_used}. "
         f"The pool wrapper's try/finally putconn did not release the slot on "
         f"the exception path. This is the exact bug Phase 5 was supposed to fix."
     )
