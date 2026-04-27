@@ -101,6 +101,7 @@ export default function SignInModal({ open, onClose, onAuthSuccess }: SignInModa
         </form>
 
         <button
+          type="button"
           onClick={handleDemo}
           disabled={loading}
           className="w-full mt-3 bg-gray-100 text-gray-700 rounded py-2 hover:bg-gray-200 disabled:opacity-50"
@@ -113,6 +114,7 @@ export default function SignInModal({ open, onClose, onAuthSuccess }: SignInModa
             <>
               No account?{" "}
               <button
+                type="button"
                 onClick={() => {
                   setMode("register");
                   setError(null);
@@ -126,6 +128,7 @@ export default function SignInModal({ open, onClose, onAuthSuccess }: SignInModa
             <>
               Have an account?{" "}
               <button
+                type="button"
                 onClick={() => {
                   setMode("login");
                   setError(null);
