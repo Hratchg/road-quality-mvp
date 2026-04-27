@@ -18,8 +18,9 @@ primary_region = "lax"  # closest to LA dataset center (34.0522, -118.2437)
 [env]
   POSTGRES_DB = "roadquality"
   POSTGRES_USER = "rq"
-  # POSTGRES_PASSWORD set via `fly secrets set --app road-quality-db
-  # POSTGRES_PASSWORD=<value>` — NEVER committed to git per CONTEXT D-05.
+  # The DB password is intentionally absent from this file. It is set via
+  # `fly secrets set --app road-quality-db <SECRET_NAME>=<value>` per CONTEXT
+  # D-05 — never committed to git.
 
 [[mounts]]
   source = "pgdata"
