@@ -15,14 +15,18 @@ Phase 5 SC #9 + RESEARCH §7 + Pattern 4 (the pool wrapper IS the leak fix).
 from __future__ import annotations
 
 import pytest
+from fastapi.testclient import TestClient
 
 from app import db
+from app.cache import route_cache
+from app.main import app
+from app.auth.dependencies import get_current_user_id
 from app.routes import routing as routing_module
 
 pytestmark = pytest.mark.integration
 
 
-def test_route_handler_releases_pool_slot_on_exception(authed_client, monkeypatch):
+def test_route_handler_releases_pool_slot_on_exception(db_available, monkeypatch):
     """When /route raises mid-query, the pool slot MUST release.
 
     This is the SC #9 regression gate. If the pool wrapper's try/finally
@@ -36,6 +40,11 @@ def test_route_handler_releases_pool_slot_on_exception(authed_client, monkeypatc
     baseline_used = len(pool._used)
     pool_id = id(pool)
 
+    # Clear the in-memory route cache so a previous test that populated it
+    # (via mocked fixtures in test_route.py) cannot serve a 200 response
+    # for our request body and bypass the SQL we want to fail.
+    route_cache.clear()
+
     # Inject invalid SQL into routing.py's SNAP_NODE_SQL constant so the
     # FIRST cur.execute() inside the route handler raises a psycopg2
     # syntax error. This simulates the real-world failure mode (a
@@ -44,23 +53,34 @@ def test_route_handler_releases_pool_slot_on_exception(authed_client, monkeypatc
     invalid_sql = "SELECT this_column_does_not_exist FROM definitely_no_such_table_xyz"
     monkeypatch.setattr(routing_module, "SNAP_NODE_SQL", invalid_sql)
 
-    body = {
-        "origin": {"lat": 34.05, "lon": -118.24},
-        "destination": {"lat": 34.06, "lon": -118.25},
-        "include_iri": True,
-        "include_potholes": True,
-        "weight_iri": 50,
-        "weight_potholes": 50,
-        "max_extra_minutes": 5,
-    }
+    # Use raise_server_exceptions=False so Starlette converts the unhandled
+    # psycopg2 error into a 500 response instead of re-raising it into the
+    # test. The pool-release behavior we're verifying happens INSIDE the
+    # request lifecycle either way — this just gives us a status code to
+    # assert on without losing the test outcome.
+    app.dependency_overrides[get_current_user_id] = lambda: 42
+    try:
+        client = TestClient(app, raise_server_exceptions=False)
 
-    # The request MUST raise inside the route handler. FastAPI surfaces
-    # the unhandled psycopg2 error as a 500. We don't care about the exact
-    # status — we care about the pool state AFTER.
-    response = authed_client.post("/route", json=body)
-    assert response.status_code >= 500, (
-        f"injected SQL must trigger 5xx; got {response.status_code}: {response.text[:200]}"
-    )
+        body = {
+            "origin": {"lat": 34.05, "lon": -118.24},
+            "destination": {"lat": 34.06, "lon": -118.25},
+            "include_iri": True,
+            "include_potholes": True,
+            "weight_iri": 50,
+            "weight_potholes": 50,
+            "max_extra_minutes": 5,
+        }
+
+        # The request MUST raise inside the route handler. FastAPI surfaces
+        # the unhandled psycopg2 error as a 500. We don't care about the exact
+        # status — we care about the pool state AFTER.
+        response = client.post("/route", json=body)
+        assert response.status_code >= 500, (
+            f"injected SQL must trigger 5xx; got {response.status_code}: {response.text[:200]}"
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_user_id, None)
 
     # The CRITICAL assertion: pool slot returned to baseline.
     after_used = len(pool._used)
