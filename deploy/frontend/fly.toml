@@ -1,0 +1,43 @@
+# deploy/frontend/fly.toml — Fly app config for road-quality-frontend (Phase 5,
+# REQ-prod-deploy SC #1 + SC #4, CONTEXT D-03).
+#
+# nginx-served Vite static bundle. Cross-origin to road-quality-backend.fly.dev
+# (D-03: separate Fly app proves SC #2's CORS contract).
+#
+# VITE_API_URL is set INLINE in [build.args] (RESEARCH §2 line 279: more
+# reproducible than `flyctl deploy --build-arg VITE_API_URL=...` because
+# the value lives in git; the demo's backend URL is locked).
+#
+# This is the SC #4 closure: the Vite build picks up VITE_API_URL from
+# Docker's --build-arg (which Fly populates from [build.args]) and bakes
+# the literal string into the JS bundle at compile time. RESEARCH Pitfall 4
+# explains why setting VITE_API_URL via fly secrets / [env] would NOT work
+# (Vite reads at build time, not runtime).
+
+app = "road-quality-frontend"
+primary_region = "lax"
+
+[build]
+  dockerfile = "deploy/frontend/Dockerfile"
+  [build.args]
+    # Locked to the deployed backend URL. Future custom domain (Phase 6+)
+    # would update this string and trigger a redeploy.
+    VITE_API_URL = "https://road-quality-backend.fly.dev"
+
+[http_service]
+  internal_port = 80          # nginx default port
+  force_https = true          # Fly auto-issues *.fly.dev TLS; force HTTPS-only
+  auto_stop_machines = "stop"  # idle → stop (saves ~$5/mo)
+  auto_start_machines = true   # next request → cold start
+  min_machines_running = 0     # demo posture; bump to 1 if Phase 6 reveals UX hit
+
+  [[http_service.checks]]
+    grace_period = "5s"   # nginx starts ~instantly
+    interval = "30s"
+    method = "GET"
+    timeout = "3s"
+    path = "/"            # nginx serves /usr/share/nginx/html/index.html — 200 OK = healthy
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"  # nginx is light; 256mb is plenty
