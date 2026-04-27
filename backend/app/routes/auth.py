@@ -7,13 +7,14 @@ Pitfalls actively defended:
   wall-clock time matches the wrong-password path (no enumeration oracle).
 """
 import logging
+from contextlib import closing
 
 from fastapi import APIRouter, HTTPException, status, Response
 from pydantic import BaseModel, EmailStr, Field
 from psycopg2 import IntegrityError
 
 from app.db import get_connection
-from app.auth.passwords import hash_password, verify_password
+from app.auth.passwords import hash_password, verify_password, verify_and_maybe_rehash
 from app.auth.tokens import encode_token, Token
 
 logger = logging.getLogger(__name__)
@@ -99,11 +100,22 @@ def login(req: LoginRequest):
         )
     stored_hash = row["password_hash"] if isinstance(row, dict) else row[1]
     user_id = row["id"] if isinstance(row, dict) else row[0]
-    if not verify_password(req.password, stored_hash):
+    valid, new_hash = verify_and_maybe_rehash(req.password, stored_hash)
+    if not valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
         )
+    # Pitfall 4: pwdlib's recommended() params may bump over time. When they
+    # do, verify_and_update returns a fresh hash so we can transparently
+    # upgrade the stored hash on the user's next successful login.
+    if new_hash is not None:
+        with closing(get_connection()) as conn, conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE users SET password_hash = %s WHERE id = %s",
+                    (new_hash, user_id),
+                )
     token = encode_token(user_id=user_id)
     return Token(access_token=token)
 
