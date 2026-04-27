@@ -2,7 +2,9 @@
 
 04-CONTEXT.md D-05 locks:
 - email: demo@road-quality-mvp.dev
-- password: demo1234 (rotatable; documented in README; rotate via --password $NEW)
+- password: rotatable; documented in README and frontend SignInModal; the
+  current value MUST be passed via --password on every invocation so the
+  literal does not live in this script's source (WR-04 rotation drift fix).
 
 Idempotent via ON CONFLICT (email) DO UPDATE — re-running with the same
 credentials updates the password_hash to a freshly-computed argon2id hash.
@@ -10,7 +12,7 @@ This means future pwdlib param bumps (RESEARCH Pitfall 4) re-strengthen the
 demo hash on each re-run, transparently.
 
 Usage:
-  python scripts/seed_demo_user.py
+  python scripts/seed_demo_user.py --password demo1234
   python scripts/seed_demo_user.py --email demo@road-quality-mvp.dev --password demo1234
   python scripts/seed_demo_user.py --password $NEW_DEMO_PW   # rotation
 
@@ -46,15 +48,19 @@ DATABASE_URL = os.environ.get(
     "DATABASE_URL", "postgresql://rq:rqpass@localhost:5432/roadquality"
 )
 DEFAULT_EMAIL = "demo@road-quality-mvp.dev"  # 04-CONTEXT.md D-05
-DEFAULT_PASSWORD = "demo1234"                # 04-CONTEXT.md D-05 (rotatable)
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--email", default=DEFAULT_EMAIL,
                     help=f"Demo email (default: {DEFAULT_EMAIL})")
-    ap.add_argument("--password", default=DEFAULT_PASSWORD,
-                    help="Demo password (default: from D-05; rotatable)")
+    # WR-04: --password is required; the literal must NOT live in this
+    # script's source. README is the single human-readable truth source
+    # for the current demo password value; SignInModal.tsx hardcodes it
+    # for the 'Try as demo' UX. Rotating the demo password = update those
+    # two sites + re-run this script with the new value.
+    ap.add_argument("--password", required=True,
+                    help="Demo password (rotatable; see README for current value)")
     args = ap.parse_args()
 
     email = args.email.strip().lower()  # mirror app-layer normalization (Pitfall 3)
