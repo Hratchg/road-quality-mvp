@@ -26,6 +26,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://rq:rqpass@db:5432/roadquality
+      AUTH_SIGNING_KEY: ${AUTH_SIGNING_KEY:-}
     ports:
       - "8000:8000"
     volumes:
