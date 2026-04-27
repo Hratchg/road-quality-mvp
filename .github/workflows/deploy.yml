@@ -173,10 +173,16 @@ jobs:
 
   deploy-frontend:
     name: Deploy frontend
-    needs: [changes, deploy-backend]
+    # CR-02 fix: explicitly depend on `test` AND require its success. Without
+    # the test linkage, a failing `test` job makes deploy-backend `skipped`
+    # (its `if:` requires test.result == success), which then satisfies the
+    # `skipped`-fallback arm below and the frontend deploys with failing
+    # tests. Adding `test` to needs + gating on its result closes the bypass.
+    needs: [changes, test, deploy-backend]
     if: |
       always() &&
       needs.changes.outputs.frontend == 'true' &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped') &&
       (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
@@ -188,10 +194,14 @@ jobs:
 
   seed-on-demand:
     name: Seed DB (manual trigger only — SC #7 deploy-time bootstrap)
-    needs: deploy-backend
+    # CR-02 fix: same shape as deploy-frontend — explicitly require test
+    # success so a failing pytest gate cannot cascade through deploy-backend
+    # (skipped) and then run the seed against an unhealthy/stale backend.
+    needs: [test, deploy-backend]
     if: |
       always() &&
       github.event.inputs.seed == 'true' &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped') &&
       (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
