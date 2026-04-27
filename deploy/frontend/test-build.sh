@@ -40,15 +40,23 @@ if ! docker run --rm "$IMAGE_TAG" sh -c \
 fi
 echo "  PASS: $TARGET_URL found in /usr/share/nginx/html/assets/"
 
-echo "Asserting localhost is NOT baked into the JS bundle (SC #4 negative half)..."
+echo "Asserting no localhost API endpoint is baked into the JS bundle (SC #4 negative half)..."
+# Match the actual API-misconfig signatures: localhost:<port> or 127.0.0.1.
+# Bare "http://localhost" (no port) is a react-router internal (URL parse
+# base, see react-router@7.1.1 dist/production/index.js); it's dead code in
+# the browser path because window.location.origin overrides it. The real
+# SC #4 failure mode is api.ts falling back to a localhost API URL like
+# "http://localhost:8000" (uvicorn dev port) or "http://localhost:3000".
 if docker run --rm "$IMAGE_TAG" sh -c \
-    "grep -rq 'localhost' /usr/share/nginx/html/assets/" 2>/dev/null; then
-    echo "FAIL: SC #4 violation — localhost was found in the production bundle" >&2
+    "grep -rqE 'localhost:[0-9]+|127\\.0\\.0\\.1' /usr/share/nginx/html/assets/" 2>/dev/null; then
+    echo "FAIL: SC #4 violation — a localhost API URL was found in the production bundle" >&2
     echo "  Confirm VITE_API_URL was passed via --build-arg and did not fall through" >&2
     echo "  to api.ts's '|| \"/api\"' default." >&2
+    docker run --rm "$IMAGE_TAG" sh -c \
+        "grep -roE '(localhost:[0-9]+|127\\.0\\.0\\.1)[a-zA-Z0-9:/.-]*' /usr/share/nginx/html/assets/ | sort -u" >&2
     exit 1
 fi
-echo "  PASS: no 'localhost' in production bundle"
+echo "  PASS: no localhost API endpoint in production bundle"
 
 echo "Asserting nginx config is in place..."
 if ! docker run --rm "$IMAGE_TAG" test -f /etc/nginx/conf.d/default.conf; then
