@@ -1,40 +1,65 @@
 # Detector Accuracy — LA Evaluation Report
 
-**Version:** 0.1.0
-**Last Updated:** 2026-04-23
-**Status:** Methodology fixed; numbers populated after first eval run
+**Version:** 0.2.0
+**Last Updated:** 2026-04-28
+**Status:** Phase 6 baseline numbers populated. Phase 7 will replace these with fine-tuned-on-LA detector results.
 
 ---
 
-This document records the methodology and reported accuracy of the YOLOv8
-pothole detector used by road-quality-mvp, evaluated on hand-labelled Los
-Angeles street-level imagery sourced from Mapillary. It is the citation
-target for the public demo (ROADMAP M1 Phase 6).
+This document records the methodology and reported accuracy of the
+pothole detector used by road-quality-mvp, evaluated on hand-labelled
+Los Angeles street-level imagery sourced from Mapillary. It is the
+citation target for the public demo (ROADMAP M1 Phase 6).
 
-## TL;DR
+## Sample size caveat (Phase 6 baseline)
 
-- **Dataset:** ~300 hand-labelled LA images from Mapillary, single-class
-  ("pothole"), sequence-grouped 70/20/10 train/val/test split (D-09)
-- **Base model:** [`keremberke/yolov8s-pothole-segmentation`](https://huggingface.co/keremberke/yolov8s-pothole-segmentation)
-  fine-tuned on the LA train split (D-11)
-- **Metrics (test split):**
+The numbers below are computed against a **17-image / 3-positive-bbox**
+LA test split (per Phase 6 Plan 06-04). Confidence intervals are
+correspondingly wide — recall in particular has only 3 ground-truth
+positives, so a single false negative moves the point estimate by 33%.
+**These are honest baselines, not production claims.**
 
-  | Metric | Value | [95% CI] |
-  |--------|-------|----------|
-  | Precision | TBD | [95% CI: TBD, TBD] |
-  | Recall    | TBD | [95% CI: TBD, TBD] |
-  | mAP@0.5   | TBD | — |
+Phase 6 D-09 deferred LA-specific fine-tuning to Phase 7 after the
+158-image / 17-bbox dataset proved too sparse for stable training
+(8 train bboxes is below SGD's noise floor). Phase 7 will source
+~10x more imagery, hand-label more aggressively, and replace these
+numbers with measurements from a fine-tuned LA-specific detector. The
+"Previous baseline" section below will preserve these numbers for
+traceability.
 
-  *Numbers are populated from `eval_report.json` produced by
-  `scripts/eval_detector.py`. Update after re-training.*
+## TL;DR — Phase 6 baseline (public model on LA test split)
 
-- **Severity breakdown (test split):**
+- **Dataset:** 158 hand-labelled LA images from Mapillary (110/31/17
+  train/val/test); 17 total positive bboxes (8/6/3 across splits).
+  Single-class ("pothole"), sequence-grouped 70/20/10 split (D-09).
+- **Model:** [`keremberke/yolov8s-pothole-segmentation`](https://huggingface.co/keremberke/yolov8s-pothole-segmentation)
+  pinned at revision `d6d5df4ac1a9e40b0180635b03198ddec88c4875` —
+  used **unmodified** (no LA fine-tune; that's Phase 7 work).
+- **Metrics (test split, IoU=0.5):**
 
-  | Severity | Count |
-  |----------|-------|
-  | Severe (confidence ≥ 0.7) | TBD |
-  | Moderate (0.4 ≤ confidence < 0.7) | TBD |
-  | Dropped (confidence < 0.4) | TBD |
+  | Metric | Value | 95% CI |
+  |--------|-------|--------|
+  | Precision | 0.143 | [0.000, 0.500] |
+  | Recall    | 0.333 | [0.000, 1.000] |
+  | TP / FP / FN | 1 / 6 / 2 | — |
+
+  *Numbers from `eval_results.json` produced by Phase 6 Plan 06-05's
+  manual eval bypass (ultralytics' built-in `val()` is incompatible with
+  segmentation-model + bbox-only labels — manual IoU + bootstrap
+  replicates the Phase 2 D-07/D-08 methodology: IoU=0.5, 1000 image-
+  level bootstrap resamples, seed=42).*
+
+- **Reading the numbers:** the public model on this LA imagery has high
+  false-positive rate (6 of 7 predicted bboxes were not real potholes —
+  shadows, paint, manhole covers misread). Recall of 33% means it caught
+  1 of 3 real potholes. Both numbers are inside the wide CI bands; with
+  3 positives, the data simply can't distinguish "this model is bad" from
+  "this model is great" — Phase 7's larger test set will tighten that.
+
+- **Severity breakdown:** N/A in Phase 6 baseline. The severity bins
+  (Moderate/Severe by confidence threshold) describe model output, not
+  ground truth — they're meaningful when comparing trained-on-LA output
+  to the public baseline, which is Phase 7 work.
 
 ---
 

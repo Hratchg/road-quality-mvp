@@ -40,7 +40,18 @@ logger = logging.getLogger(__name__)
 # Default HF repo to fall back to if YOLO_MODEL_PATH is unset AND use_yolo=True.
 # Bumped explicitly when a new fine-tune is published (see Pitfall 8 in
 # .planning/phases/02-real-data-detector-accuracy/02-RESEARCH.md).
-_DEFAULT_HF_REPO = "keremberke/yolov8s-pothole-segmentation"
+#
+# Phase 6 Plan 06-05 pinned the revision SHA to protect against pickle-ACE
+# drift — without `@<sha>`, anyone with HF write access (including a future
+# compromised token) could replace `best.pt` with a malicious payload that
+# `huggingface_hub.hf_hub_download` then deserializes via `YOLO()`. Pinning
+# freezes the artifact bytes (`best.pt` is a torch pickle).
+#
+# To bump: capture the new SHA via `huggingface_hub.HfApi().model_info(repo).sha`
+# AFTER verifying the new revision against the LA test set, and replace the
+# segment after `@`. Phase 7 will swap this entirely to
+# `Hratchg/road-quality-la-yolov8@<sha>` when the trained model ships.
+_DEFAULT_HF_REPO = "keremberke/yolov8s-pothole-segmentation@d6d5df4ac1a9e40b0180635b03198ddec88c4875"
 _DEFAULT_HF_FILENAME = "best.pt"
 
 # Matches "user/repo" or "user/repo@revision" — NOT "./path" or "/abs/path".
