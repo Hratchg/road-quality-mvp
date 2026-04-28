@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: ready_to_plan
-stopped_at: Phase 3 context gathered
-last_updated: "2026-04-27T19:36:28.219Z"
-last_activity: 2026-04-27 -- Phase 05 execution started
+stopped_at: Phase 5 UAT complete; ready to plan Phase 6 (Public Demo Launch)
+last_updated: "2026-04-28T05:55:00.000Z"
+last_activity: 2026-04-28 -- Phase 05 UAT walkthrough complete; 5/5 UAT items pass
 progress:
   total_phases: 6
   completed_phases: 5
@@ -103,9 +103,10 @@ Carried forward to later phases (not blockers now, will be addressed in-phase):
 
 ## Session Continuity
 
-Last session: --stopped-at
-Stopped at: Phase 3 context gathered
-Resume file: --resume-file
+Last session: 2026-04-28T05:55Z
+Stopped at: Phase 5 live-deploy UAT walkthrough complete (5/5 pass); ready to plan Phase 6
+Resume file: (none — handoff artifacts cleaned up after UAT closure)
 
 **Planned Phase:** 3 (Mapillary Ingestion Pipeline) — 5 plans — 2026-04-25T20:14:20.871Z
 **Completed Phase:** 1 (MVP Integrity Cleanup) — 4 plans — 2026-04-23
+**Phase 5 UAT walkthrough:** 2026-04-27 → 2026-04-28 — 16 defects surfaced + fixed inline (8 commits) — see .planning/phases/05-cloud-deployment/05-HUMAN-UAT.md
