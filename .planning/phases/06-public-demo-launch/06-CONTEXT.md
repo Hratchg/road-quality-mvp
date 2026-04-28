@@ -128,46 +128,55 @@ The public URL `road-quality-frontend.fly.dev` is ALREADY accessible (Phase 5). 
 <specifics>
 ## Specific Ideas
 
-**Plan structure (~6 plans, multi-day):**
+**Plan structure (~7 plans, multi-day; reordered 2026-04-28 to push automatable work ahead of the human-gated labeling step):**
 
-- **Plan 06-01: Eval dataset prep** (automatable; mostly DONE 2026-04-28)
-  - ✅ Subdivide bboxes (commit pending)
-  - 🚧 Run `fetch_eval_data.py --build --clean` (in progress as of 2026-04-28T07:24Z)
-  - Verify ~300 images written under `data/eval_la/images/{train,val,test}/`
-  - Verify manifest.json hashes
-  - Commit the dataset (or just the manifest, since images may be too large) per repo convention
+- **Plan 06-01: Eval dataset prep** ✅ DONE 2026-04-28 (commit 8303be4)
+  - Subdivided bboxes (12 sub-tiles vs 3 zones) to dodge Mapillary 500 errors
+  - 158 LA images downloaded across 110/31/17 train/val/test
+  - 316 files (images + stub labels) hash-verified
 
-- **Plan 06-02: Hand-labeling** (USER GATE — 3-6 hours human work)
-  - Operator opens CVAT (cloud at app.cvat.ai or self-hosted)
-  - Creates single-class project, uploads images
-  - Draws bboxes around potholes (ignore non-pothole defects per D-02)
-  - Exports as YOLO 1.1 format
-  - Drops .txt files into `data/eval_la/labels/{train,val,test}/`
+- **Plan 06-02: Pre-label assist** (NEW; automatable; ~5–15 min) — RUN NOW
+  - Goal: reduce CVAT labeling burden 3–5× via auto-suggested first-draft labels
+  - Run `data_pipeline/detector_factory.get_detector()` with the public default model (`keremberke/yolov8s-pothole-segmentation` per D-11) against all 158 images
+  - Write YOLO-format predictions to `data/eval_la/labels/<split>/<image_id>.txt` (overwriting the empty stubs created by fetch_eval_data)
+  - Operator imports these auto-labels into CVAT and CORRECTS (not creates from scratch)
+  - Out of scope: any change to detector_factory or the model itself
+  - Acceptance: 158 .txt files present (some empty if no pothole detected), each parseable as YOLO format
+
+- **Plan 06-03: Real Mapillary ingestion against prod DB** (automatable; ~10–30 min) — RUN NOW
+  - Goal: populate `segment_defects` with `source='mapillary'` rows so Phase 6 SC #2 ("Map View shows real Mapillary-ingested detections") becomes literally true today
+  - Use `flyctl proxy 15432:5432 -a road-quality-db` (proxy is fine for short INSERT queries — the Phase 5 anti-pattern is specifically about long DDL like pgr_createTopology)
+  - Parse prod password from `.secrets-local/fly-prod.env`
+  - Run `scripts/ingest_mapillary.py` against `localhost:15432` with the public detector
+  - Run `scripts/compute_scores.py --source mapillary` to refresh segment_scores
+  - Acceptance: `SELECT count(*) FROM segment_defects WHERE source='mapillary'` returns > 0
+  - Re-run after Plan 06-06 (post-training) to swap in trained-detector output
+
+- **Plan 06-04: Hand-labeling** (USER GATE — was 06-02; ~30–60 min with pre-label assist; 3–6 hr from scratch)
+  - Operator opens CVAT (cloud at app.cvat.ai)
+  - Creates single-class project, uploads images + the pre-labeled .txt files from Plan 06-02
+  - CORRECTS bboxes (deletes wrong, adds missed) rather than creating from scratch
+  - Exports as YOLO 1.1, drops .txt files back into `data/eval_la/labels/{train,val,test}/` (overwriting the auto-labels)
   - Commits the labels
   - Phase 6 execution PAUSES until this is complete
 
-- **Plan 06-03: Train detector** (automatable; ~hours of compute)
-  - Operator picks recipe A/B/C from docs/FINETUNE.md based on hardware availability
-  - Runs `python scripts/finetune_detector.py --data data/eval_la/data.yaml --epochs 50`
-  - Verifies `runs/detect/train*/weights/best.pt` is non-empty
-  - Optional: `--push-to-hub Hratchg/road-quality-la-yolov8` to publish
+- **Plan 06-05: Train detector** (was 06-03; automatable; ~hours of compute)
+  - Operator picks recipe A/B/C from docs/FINETUNE.md
+  - `python scripts/finetune_detector.py --data data/eval_la/data.yaml --epochs 50`
+  - Verifies `runs/detect/train*/weights/best.pt` non-empty
+  - Optional: `--push-to-hub Hratchg/road-quality-la-yolov8`
 
-- **Plan 06-04: Eval + HF publish + revision pin** (automatable, ~10 min)
+- **Plan 06-06: Eval + HF publish + revision pin + re-ingest** (was 06-04 + 06-05 epilogue; ~30 min)
   - `python scripts/eval_detector.py --data data/eval_la/data.yaml --split test --json-out eval_results.json`
   - Substitute 14 TBDs in docs/DETECTOR_EVAL.md from eval_results.json
-  - If not already pushed in Plan 06-03, push to HF
+  - If not already pushed in 06-05, push to HF
   - Capture HF commit SHA, update `_DEFAULT_HF_REPO` to `Hratchg/road-quality-la-yolov8@<sha>`
+  - Re-run `scripts/ingest_mapillary.py` against prod DB to swap public-model detections (from Plan 06-03) for trained-detector detections
 
-- **Plan 06-05: Real Mapillary ingestion against prod DB** (automatable, ~10-30 min)
-  - Use the same direct-flyctl-ssh pattern from Phase 5 UAT — NOT proxy
-  - Run `scripts/ingest_mapillary.py` against road-quality-db
-  - Verify `segment_defects` has rows with `source='mapillary'`
-  - Run `scripts/compute_scores.py --source mapillary` to update segment_scores
-
-- **Plan 06-06: README + announcement** (automatable, ~30 min)
+- **Plan 06-07: README + announcement** (was 06-06; ~30 min)
   - Update README.md with public URL + data-source + accuracy paragraph
-  - Add disclaimer ("LA-only, ~300 image train, demo not production")
-  - Commit + push (this is the announcement gate)
+  - Add disclaimer ("LA-only, ~150 image train, demo not production")
+  - Commit + push (this is the announcement gate per D-08)
 
 </specifics>
 
