@@ -75,15 +75,33 @@ EXIT_OK = 0
 EXIT_OTHER = 1
 EXIT_MISSING_DATA = 3
 
-# Default LA bboxes for --build mode. Each is <= 0.01 deg2 per Pitfall 3.
-# Three zones sampled to balance geographic diversity per CONTEXT.md Claude
-# discretion: downtown, residential (west LA), and freeway-adjacent (Hollywood).
+# Default LA bboxes for --build mode. Each is 0.005 deg per side (~550m),
+# subdivided 2x2 from the original three 0.01-deg zones (downtown,
+# residential, freeway-adjacent). The original zone-sized bboxes (0.01 deg
+# per side, ~1.1km) trigger Mapillary API 500 "Please reduce the amount of
+# data" errors — Mapillary's bbox endpoint apparently overflows when the
+# underlying tile dataset is dense (LA street-level imagery is years deep
+# in these areas). Verified empirically 2026-04-28: 0.005-deg bboxes return
+# 200 OK; 0.01-deg bboxes return 500. Total geographic coverage and image
+# target unchanged — just split into smaller queries.
 # Format: (min_lon, min_lat, max_lon, max_lat) -- longitude-first per
 # Mapillary API v4 convention.
 _DEFAULT_LA_BBOXES: dict[str, tuple[float, float, float, float]] = {
-    "downtown":    (-118.258, 34.043, -118.248, 34.053),  # DTLA
-    "residential": (-118.400, 34.050, -118.390, 34.060),  # West LA residential
-    "freeway":     (-118.340, 34.060, -118.330, 34.070),  # Hollywood / adj freeway
+    # Downtown LA (DTLA): 2x2 subdivision of (-118.258, 34.043, -118.248, 34.053)
+    "downtown_sw":    (-118.258, 34.043, -118.253, 34.048),
+    "downtown_se":    (-118.253, 34.043, -118.248, 34.048),
+    "downtown_nw":    (-118.258, 34.048, -118.253, 34.053),
+    "downtown_ne":    (-118.253, 34.048, -118.248, 34.053),
+    # West LA residential: 2x2 subdivision of (-118.400, 34.050, -118.390, 34.060)
+    "residential_sw": (-118.400, 34.050, -118.395, 34.055),
+    "residential_se": (-118.395, 34.050, -118.390, 34.055),
+    "residential_nw": (-118.400, 34.055, -118.395, 34.060),
+    "residential_ne": (-118.395, 34.055, -118.390, 34.060),
+    # Hollywood / adj freeway: 2x2 subdivision of (-118.340, 34.060, -118.330, 34.070)
+    "freeway_sw":     (-118.340, 34.060, -118.335, 34.065),
+    "freeway_se":     (-118.335, 34.060, -118.330, 34.065),
+    "freeway_nw":     (-118.340, 34.065, -118.335, 34.070),
+    "freeway_ne":     (-118.335, 34.065, -118.330, 34.070),
 }
 
 
@@ -342,8 +360,8 @@ def main() -> int:
     parser.add_argument(
         "--count",
         type=int,
-        default=100,
-        help="Images per bbox in --build mode (default 100 * 3 zones = 300 target)",
+        default=25,
+        help="Images per bbox in --build mode (default 25 * 12 sub-tiles = 300 target)",
     )
     parser.add_argument(
         "--split-train",

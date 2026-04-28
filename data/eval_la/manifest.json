@@ -1,6 +1,2219 @@
 {
   "version": "1.0",
-  "source_bucket": "placeholder -- populated by scripts/fetch_eval_data.py --build",
+  "source_bucket": "mapillary:bboxes=['downtown_sw', 'downtown_se', 'downtown_nw', 'downtown_ne', 'residential_sw', 'residential_se', 'residential_nw', 'residential_ne', 'freeway_sw', 'freeway_se', 'freeway_nw', 'freeway_ne']",
   "license": "CC-BY-SA 4.0 (Mapillary open imagery -- attribution via source_mapillary_id)",
-  "files": []
+  "files": [
+    {
+      "path": "images/train/157444749674719.jpg",
+      "source_mapillary_id": "157444749674719",
+      "sequence_id": "no_seq_157444749674719",
+      "split": "train",
+      "sha256": "9926ea4b785afcbd1c9fa02844c86e23559a09f32c6f4e4e74fc829d31fb2ba8"
+    },
+    {
+      "path": "labels/train/157444749674719.txt",
+      "source_mapillary_id": "157444749674719",
+      "sequence_id": "no_seq_157444749674719",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/1183472258762144.jpg",
+      "source_mapillary_id": "1183472258762144",
+      "sequence_id": "no_seq_1183472258762144",
+      "split": "val",
+      "sha256": "650454325ea7a8c25ff6e99b52cd8b206978cf1ca1fdac6eaa91f2dd57a3ebd6"
+    },
+    {
+      "path": "labels/val/1183472258762144.txt",
+      "source_mapillary_id": "1183472258762144",
+      "sequence_id": "no_seq_1183472258762144",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1130731287403675.jpg",
+      "source_mapillary_id": "1130731287403675",
+      "sequence_id": "no_seq_1130731287403675",
+      "split": "train",
+      "sha256": "4f0dbf09e7645814109500c529ebccf43f551b681d74573b20ea5be73532471e"
+    },
+    {
+      "path": "labels/train/1130731287403675.txt",
+      "source_mapillary_id": "1130731287403675",
+      "sequence_id": "no_seq_1130731287403675",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1362760457427495.jpg",
+      "source_mapillary_id": "1362760457427495",
+      "sequence_id": "no_seq_1362760457427495",
+      "split": "train",
+      "sha256": "ef98ef069c268ac6a21d5d02d428770f9c41a498da72b281f8a3e991d1ba990a"
+    },
+    {
+      "path": "labels/train/1362760457427495.txt",
+      "source_mapillary_id": "1362760457427495",
+      "sequence_id": "no_seq_1362760457427495",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/210997627500371.jpg",
+      "source_mapillary_id": "210997627500371",
+      "sequence_id": "no_seq_210997627500371",
+      "split": "train",
+      "sha256": "4d2eea8ae9478ce80c558e874fb0387236177dfc79999482c1dc2573237459f9"
+    },
+    {
+      "path": "labels/train/210997627500371.txt",
+      "source_mapillary_id": "210997627500371",
+      "sequence_id": "no_seq_210997627500371",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/540538700448927.jpg",
+      "source_mapillary_id": "540538700448927",
+      "sequence_id": "no_seq_540538700448927",
+      "split": "val",
+      "sha256": "fa532b980287db8d1c184a5eda30491bfbe073ed2f18ba084d9e6e3cf12b18d3"
+    },
+    {
+      "path": "labels/val/540538700448927.txt",
+      "source_mapillary_id": "540538700448927",
+      "sequence_id": "no_seq_540538700448927",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/test/250153283555486.jpg",
+      "source_mapillary_id": "250153283555486",
+      "sequence_id": "no_seq_250153283555486",
+      "split": "test",
+      "sha256": "5fc7cfaded25b5d94555c19351bbb18687c2c3ce8d8229c4d491cfe31dc819ed"
+    },
+    {
+      "path": "labels/test/250153283555486.txt",
+      "source_mapillary_id": "250153283555486",
+      "sequence_id": "no_seq_250153283555486",
+      "split": "test",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/test/740787856586539.jpg",
+      "source_mapillary_id": "740787856586539",
+      "sequence_id": "no_seq_740787856586539",
+      "split": "test",
+      "sha256": "cc5c278346e34cd3ad586d8ef2b57cf381ca53ddc15c638d9f14700df4c86c53"
+    },
+    {
+      "path": "labels/test/740787856586539.txt",
+      "source_mapillary_id": "740787856586539",
+      "sequence_id": "no_seq_740787856586539",
+      "split": "test",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/test/475186707132045.jpg",
+      "source_mapillary_id": "475186707132045",
+      "sequence_id": "no_seq_475186707132045",
+      "split": "test",
+      "sha256": "9c29fc0838642b265faa4b68c9b4ddeb7fb7252e49d818cff5c7373ee37e4b64"
+    },
+    {
+      "path": "labels/test/475186707132045.txt",
+      "source_mapillary_id": "475186707132045",
+      "sequence_id": "no_seq_475186707132045",
+      "split": "test",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1961654120652339.jpg",
+      "source_mapillary_id": "1961654120652339",
+      "sequence_id": "no_seq_1961654120652339",
+      "split": "train",
+      "sha256": "755a81d1c9b50aa3d580fdea2d5a814a8b639cedead6f32cf9a4c6554231c5db"
+    },
+    {
+      "path": "labels/train/1961654120652339.txt",
+      "source_mapillary_id": "1961654120652339",
+      "sequence_id": "no_seq_1961654120652339",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/199911655184211.jpg",
+      "source_mapillary_id": "199911655184211",
+      "sequence_id": "no_seq_199911655184211",
+      "split": "val",
+      "sha256": "0578b0353be522e7aceaa91a615242ad0b457b30bc197880b5386eba914c76a0"
+    },
+    {
+      "path": "labels/val/199911655184211.txt",
+      "source_mapillary_id": "199911655184211",
+      "sequence_id": "no_seq_199911655184211",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/338341954346417.jpg",
+      "source_mapillary_id": "338341954346417",
+      "sequence_id": "no_seq_338341954346417",
+      "split": "val",
+      "sha256": "e6762bb41bf63b67f56f3f0821c9f633d239c01a35a1b1fb75eec7c0ef9f6dca"
+    },
+    {
+      "path": "labels/val/338341954346417.txt",
+      "source_mapillary_id": "338341954346417",
+      "sequence_id": "no_seq_338341954346417",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/1503022710049224.jpg",
+      "source_mapillary_id": "1503022710049224",
+      "sequence_id": "no_seq_1503022710049224",
+      "split": "val",
+      "sha256": "16b69f4ad4eef43bc98473f0acbc40fc48f3fcbba12c56a37a44a568ff25d194"
+    },
+    {
+      "path": "labels/val/1503022710049224.txt",
+      "source_mapillary_id": "1503022710049224",
+      "sequence_id": "no_seq_1503022710049224",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/822429002003778.jpg",
+      "source_mapillary_id": "822429002003778",
+      "sequence_id": "no_seq_822429002003778",
+      "split": "val",
+      "sha256": "fee807b9b587885accd170bf9f8fb3751e4675f34c746aa2984a6a15db64d28d"
+    },
+    {
+      "path": "labels/val/822429002003778.txt",
+      "source_mapillary_id": "822429002003778",
+      "sequence_id": "no_seq_822429002003778",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/802599063980771.jpg",
+      "source_mapillary_id": "802599063980771",
+      "sequence_id": "no_seq_802599063980771",
+      "split": "train",
+      "sha256": "808fff69b48c6d876158fd3b860388c24616df61b8ed27c20cd38da20d447ea2"
+    },
+    {
+      "path": "labels/train/802599063980771.txt",
+      "source_mapillary_id": "802599063980771",
+      "sequence_id": "no_seq_802599063980771",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/4705868642761636.jpg",
+      "source_mapillary_id": "4705868642761636",
+      "sequence_id": "no_seq_4705868642761636",
+      "split": "val",
+      "sha256": "e02f90644196a47c3734ac39f94b557e930ec99fe2ae8a4ad4cd2a4fbc0478ab"
+    },
+    {
+      "path": "labels/val/4705868642761636.txt",
+      "source_mapillary_id": "4705868642761636",
+      "sequence_id": "no_seq_4705868642761636",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1975331455950425.jpg",
+      "source_mapillary_id": "1975331455950425",
+      "sequence_id": "no_seq_1975331455950425",
+      "split": "train",
+      "sha256": "ff8da0e3e8494ae7fce6a2f131b24bac3b586b7659d8005ef78a8f9a10111de8"
+    },
+    {
+      "path": "labels/train/1975331455950425.txt",
+      "source_mapillary_id": "1975331455950425",
+      "sequence_id": "no_seq_1975331455950425",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1393985804313887.jpg",
+      "source_mapillary_id": "1393985804313887",
+      "sequence_id": "no_seq_1393985804313887",
+      "split": "train",
+      "sha256": "a7cc1d16cd8357dcd396c7720ec28d33a18cc11fd79b22d18a1744b67f23fdc8"
+    },
+    {
+      "path": "labels/train/1393985804313887.txt",
+      "source_mapillary_id": "1393985804313887",
+      "sequence_id": "no_seq_1393985804313887",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1328674367530315.jpg",
+      "source_mapillary_id": "1328674367530315",
+      "sequence_id": "no_seq_1328674367530315",
+      "split": "train",
+      "sha256": "b98dc519be6d436a1896abed3a7dcb525895f5e28f5184c8c89dbaaad8a0fcf5"
+    },
+    {
+      "path": "labels/train/1328674367530315.txt",
+      "source_mapillary_id": "1328674367530315",
+      "sequence_id": "no_seq_1328674367530315",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/559735611684773.jpg",
+      "source_mapillary_id": "559735611684773",
+      "sequence_id": "no_seq_559735611684773",
+      "split": "train",
+      "sha256": "0dba3a810baed311f737c8a6eeae1feb9edaf68c8d44658853d3114241cd0f60"
+    },
+    {
+      "path": "labels/train/559735611684773.txt",
+      "source_mapillary_id": "559735611684773",
+      "sequence_id": "no_seq_559735611684773",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/786566515206777.jpg",
+      "source_mapillary_id": "786566515206777",
+      "sequence_id": "no_seq_786566515206777",
+      "split": "train",
+      "sha256": "34ee0a660033cf5bf47c29b85fd497ce082099a3644ba21e8aa56e2fe4c2fcfa"
+    },
+    {
+      "path": "labels/train/786566515206777.txt",
+      "source_mapillary_id": "786566515206777",
+      "sequence_id": "no_seq_786566515206777",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/3845803322185399.jpg",
+      "source_mapillary_id": "3845803322185399",
+      "sequence_id": "no_seq_3845803322185399",
+      "split": "train",
+      "sha256": "749cf899faae84bc3c0d5edfc868459c54b8ec0e7bd0f7d754d0463e7c58fc1f"
+    },
+    {
+      "path": "labels/train/3845803322185399.txt",
+      "source_mapillary_id": "3845803322185399",
+      "sequence_id": "no_seq_3845803322185399",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/test/467881390946800.jpg",
+      "source_mapillary_id": "467881390946800",
+      "sequence_id": "no_seq_467881390946800",
+      "split": "test",
+      "sha256": "cb769de3d8164ecd2beed6fc62ab757389cfcca18867b76f405d24a161a4b492"
+    },
+    {
+      "path": "labels/test/467881390946800.txt",
+      "source_mapillary_id": "467881390946800",
+      "sequence_id": "no_seq_467881390946800",
+      "split": "test",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/test/180245140551216.jpg",
+      "source_mapillary_id": "180245140551216",
+      "sequence_id": "no_seq_180245140551216",
+      "split": "test",
+      "sha256": "6f6084f2b238e1c3004b8a1a43d886059bf4f699be8669134de3030b9530948f"
+    },
+    {
+      "path": "labels/test/180245140551216.txt",
+      "source_mapillary_id": "180245140551216",
+      "sequence_id": "no_seq_180245140551216",
+      "split": "test",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1321803781550613.jpg",
+      "source_mapillary_id": "1321803781550613",
+      "sequence_id": "no_seq_1321803781550613",
+      "split": "train",
+      "sha256": "4a6ad05e1460fceaf36cac61dd90ec02b51a00ef86950174cbb7add37135f462"
+    },
+    {
+      "path": "labels/train/1321803781550613.txt",
+      "source_mapillary_id": "1321803781550613",
+      "sequence_id": "no_seq_1321803781550613",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/2969667396625159.jpg",
+      "source_mapillary_id": "2969667396625159",
+      "sequence_id": "no_seq_2969667396625159",
+      "split": "train",
+      "sha256": "eeb3d733d5aa69a5d61d1182d281992de08215d3d5dc322994e2d77dca72b113"
+    },
+    {
+      "path": "labels/train/2969667396625159.txt",
+      "source_mapillary_id": "2969667396625159",
+      "sequence_id": "no_seq_2969667396625159",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/test/1685761434958845.jpg",
+      "source_mapillary_id": "1685761434958845",
+      "sequence_id": "no_seq_1685761434958845",
+      "split": "test",
+      "sha256": "3e796102d986fbf61a78385b7361b926043d360a28a6aedf2f8136e414c873fa"
+    },
+    {
+      "path": "labels/test/1685761434958845.txt",
+      "source_mapillary_id": "1685761434958845",
+      "sequence_id": "no_seq_1685761434958845",
+      "split": "test",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/302817358024328.jpg",
+      "source_mapillary_id": "302817358024328",
+      "sequence_id": "no_seq_302817358024328",
+      "split": "train",
+      "sha256": "f54402b19983cf52e627a116ee54ecc5dd192da3e1d9306f87292b7849174fa6"
+    },
+    {
+      "path": "labels/train/302817358024328.txt",
+      "source_mapillary_id": "302817358024328",
+      "sequence_id": "no_seq_302817358024328",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/test/132797155507543.jpg",
+      "source_mapillary_id": "132797155507543",
+      "sequence_id": "no_seq_132797155507543",
+      "split": "test",
+      "sha256": "a4abb92c434545d9ad0ecdc3a823a2f3cc1991a05bb21f0856a9983733823c8b"
+    },
+    {
+      "path": "labels/test/132797155507543.txt",
+      "source_mapillary_id": "132797155507543",
+      "sequence_id": "no_seq_132797155507543",
+      "split": "test",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/805459847044376.jpg",
+      "source_mapillary_id": "805459847044376",
+      "sequence_id": "no_seq_805459847044376",
+      "split": "train",
+      "sha256": "a94649ac1327015e3432456bc06d22e5703bf2060dc47a7aecee3e0d7892f222"
+    },
+    {
+      "path": "labels/train/805459847044376.txt",
+      "source_mapillary_id": "805459847044376",
+      "sequence_id": "no_seq_805459847044376",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/462080331544296.jpg",
+      "source_mapillary_id": "462080331544296",
+      "sequence_id": "no_seq_462080331544296",
+      "split": "train",
+      "sha256": "ba0c6c2bf7e700ce71aaa32cb9b76e56e6ee4ccc85d92ed970ec78dc31940728"
+    },
+    {
+      "path": "labels/train/462080331544296.txt",
+      "source_mapillary_id": "462080331544296",
+      "sequence_id": "no_seq_462080331544296",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/487112329396769.jpg",
+      "source_mapillary_id": "487112329396769",
+      "sequence_id": "no_seq_487112329396769",
+      "split": "train",
+      "sha256": "e7394511f8c53e52bfb2063a3940aeeb01e325ca30f7f1756e2f646f97539095"
+    },
+    {
+      "path": "labels/train/487112329396769.txt",
+      "source_mapillary_id": "487112329396769",
+      "sequence_id": "no_seq_487112329396769",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1145683069252732.jpg",
+      "source_mapillary_id": "1145683069252732",
+      "sequence_id": "no_seq_1145683069252732",
+      "split": "train",
+      "sha256": "ccd73739b22063fc561113620f96dcd0f99e01156a8c05d8f4dc1a9b08eef907"
+    },
+    {
+      "path": "labels/train/1145683069252732.txt",
+      "source_mapillary_id": "1145683069252732",
+      "sequence_id": "no_seq_1145683069252732",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/1078197206331503.jpg",
+      "source_mapillary_id": "1078197206331503",
+      "sequence_id": "no_seq_1078197206331503",
+      "split": "val",
+      "sha256": "8e775132254e44dcc453cb9d3b9f481f49971bd0ca9e36e953d298e8a9ba5a50"
+    },
+    {
+      "path": "labels/val/1078197206331503.txt",
+      "source_mapillary_id": "1078197206331503",
+      "sequence_id": "no_seq_1078197206331503",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1170671183451908.jpg",
+      "source_mapillary_id": "1170671183451908",
+      "sequence_id": "no_seq_1170671183451908",
+      "split": "train",
+      "sha256": "5fe1ee37adebe76cd65a6479ffc1dd935e6bf9568daf3da7106daeca6ab2d430"
+    },
+    {
+      "path": "labels/train/1170671183451908.txt",
+      "source_mapillary_id": "1170671183451908",
+      "sequence_id": "no_seq_1170671183451908",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/test/1120054535172250.jpg",
+      "source_mapillary_id": "1120054535172250",
+      "sequence_id": "no_seq_1120054535172250",
+      "split": "test",
+      "sha256": "3735fa9c449af8452ff16e3cee6f032e9952223e08c65c32737156a1c6935761"
+    },
+    {
+      "path": "labels/test/1120054535172250.txt",
+      "source_mapillary_id": "1120054535172250",
+      "sequence_id": "no_seq_1120054535172250",
+      "split": "test",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1075367276320041.jpg",
+      "source_mapillary_id": "1075367276320041",
+      "sequence_id": "no_seq_1075367276320041",
+      "split": "train",
+      "sha256": "ce37cf281002f233e9e854e9f53e59a1ef613d3ef96667ae7fd71aec99818653"
+    },
+    {
+      "path": "labels/train/1075367276320041.txt",
+      "source_mapillary_id": "1075367276320041",
+      "sequence_id": "no_seq_1075367276320041",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1095895544269202.jpg",
+      "source_mapillary_id": "1095895544269202",
+      "sequence_id": "no_seq_1095895544269202",
+      "split": "train",
+      "sha256": "e944d550be2f4761ed770c5b4accefe0f1e5b8ee2f7f00287dd28b4b98a61f5b"
+    },
+    {
+      "path": "labels/train/1095895544269202.txt",
+      "source_mapillary_id": "1095895544269202",
+      "sequence_id": "no_seq_1095895544269202",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1010138226192392.jpg",
+      "source_mapillary_id": "1010138226192392",
+      "sequence_id": "no_seq_1010138226192392",
+      "split": "train",
+      "sha256": "1679df733a94c71d8456a1f1d9aee92728c518980f88a4a7b1907bce0bd7ac34"
+    },
+    {
+      "path": "labels/train/1010138226192392.txt",
+      "source_mapillary_id": "1010138226192392",
+      "sequence_id": "no_seq_1010138226192392",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/1149729178840345.jpg",
+      "source_mapillary_id": "1149729178840345",
+      "sequence_id": "no_seq_1149729178840345",
+      "split": "val",
+      "sha256": "b1ae5bea083efa6ac4326221565b50ea2c803019b567cb53d1cfec4a7a1821aa"
+    },
+    {
+      "path": "labels/val/1149729178840345.txt",
+      "source_mapillary_id": "1149729178840345",
+      "sequence_id": "no_seq_1149729178840345",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/1057094115050071.jpg",
+      "source_mapillary_id": "1057094115050071",
+      "sequence_id": "no_seq_1057094115050071",
+      "split": "val",
+      "sha256": "647204140d1e2720bc3428126fd4ada77680dcbc887e3a805335b7d81009c4f5"
+    },
+    {
+      "path": "labels/val/1057094115050071.txt",
+      "source_mapillary_id": "1057094115050071",
+      "sequence_id": "no_seq_1057094115050071",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1145532239206325.jpg",
+      "source_mapillary_id": "1145532239206325",
+      "sequence_id": "no_seq_1145532239206325",
+      "split": "train",
+      "sha256": "17a7a86031dcc6b6763b577e9d974a2eb76f15cde9bc01c1fb371f44517e8ea3"
+    },
+    {
+      "path": "labels/train/1145532239206325.txt",
+      "source_mapillary_id": "1145532239206325",
+      "sequence_id": "no_seq_1145532239206325",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1139475326532587.jpg",
+      "source_mapillary_id": "1139475326532587",
+      "sequence_id": "no_seq_1139475326532587",
+      "split": "train",
+      "sha256": "d762bd34f0d637a75793455849c468ab5ceca78ef19da678829b77ca97d2804d"
+    },
+    {
+      "path": "labels/train/1139475326532587.txt",
+      "source_mapillary_id": "1139475326532587",
+      "sequence_id": "no_seq_1139475326532587",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1139185769925957.jpg",
+      "source_mapillary_id": "1139185769925957",
+      "sequence_id": "no_seq_1139185769925957",
+      "split": "train",
+      "sha256": "2d8e088360dcee3d86244901194bd353f776bb8e905aa735b3a91115a88e57bb"
+    },
+    {
+      "path": "labels/train/1139185769925957.txt",
+      "source_mapillary_id": "1139185769925957",
+      "sequence_id": "no_seq_1139185769925957",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/1106029586557606.jpg",
+      "source_mapillary_id": "1106029586557606",
+      "sequence_id": "no_seq_1106029586557606",
+      "split": "val",
+      "sha256": "8a32b16b2f98ec50450f3bca6ce5f5e489477311228e491806ddae053269c6b2"
+    },
+    {
+      "path": "labels/val/1106029586557606.txt",
+      "source_mapillary_id": "1106029586557606",
+      "sequence_id": "no_seq_1106029586557606",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/1186776085121122.jpg",
+      "source_mapillary_id": "1186776085121122",
+      "sequence_id": "no_seq_1186776085121122",
+      "split": "val",
+      "sha256": "a305754ee52ef26bdf1d686dd5936cd3fb1369b1cdaff459a7c8b5ad5f6b9116"
+    },
+    {
+      "path": "labels/val/1186776085121122.txt",
+      "source_mapillary_id": "1186776085121122",
+      "sequence_id": "no_seq_1186776085121122",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1168013110313236.jpg",
+      "source_mapillary_id": "1168013110313236",
+      "sequence_id": "no_seq_1168013110313236",
+      "split": "train",
+      "sha256": "f26ea678e7ecaedcfc352d32f0e954f71e95ff7f07e9796baa030033775a4fb2"
+    },
+    {
+      "path": "labels/train/1168013110313236.txt",
+      "source_mapillary_id": "1168013110313236",
+      "sequence_id": "no_seq_1168013110313236",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1056365795167474.jpg",
+      "source_mapillary_id": "1056365795167474",
+      "sequence_id": "no_seq_1056365795167474",
+      "split": "train",
+      "sha256": "5a04606b6717ca670ee16ee94df3a1a7748c278b1c60e9a5376bd96b930c574a"
+    },
+    {
+      "path": "labels/train/1056365795167474.txt",
+      "source_mapillary_id": "1056365795167474",
+      "sequence_id": "no_seq_1056365795167474",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/1140515926453960.jpg",
+      "source_mapillary_id": "1140515926453960",
+      "sequence_id": "no_seq_1140515926453960",
+      "split": "val",
+      "sha256": "b887d23c6cf69a6a8917cd59a8869c4f5f8ecdf887144bd7f9a9a27a7ec3e02b"
+    },
+    {
+      "path": "labels/val/1140515926453960.txt",
+      "source_mapillary_id": "1140515926453960",
+      "sequence_id": "no_seq_1140515926453960",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1019500702191871.jpg",
+      "source_mapillary_id": "1019500702191871",
+      "sequence_id": "no_seq_1019500702191871",
+      "split": "train",
+      "sha256": "23043c30cc593aac9ecfe0a0d567451d62e8404a73d7fa600ebe32e6c9d85cdc"
+    },
+    {
+      "path": "labels/train/1019500702191871.txt",
+      "source_mapillary_id": "1019500702191871",
+      "sequence_id": "no_seq_1019500702191871",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/1374332956286673.jpg",
+      "source_mapillary_id": "1374332956286673",
+      "sequence_id": "no_seq_1374332956286673",
+      "split": "val",
+      "sha256": "8238fc3a872b553b4ba71b1ed34b5b1892280434d9958bec042c98f282c7d931"
+    },
+    {
+      "path": "labels/val/1374332956286673.txt",
+      "source_mapillary_id": "1374332956286673",
+      "sequence_id": "no_seq_1374332956286673",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1126497931200336.jpg",
+      "source_mapillary_id": "1126497931200336",
+      "sequence_id": "no_seq_1126497931200336",
+      "split": "train",
+      "sha256": "ef0e814ed338b46424ddae5ab6463b937a1661efd154880b9dc8846c1b57a26f"
+    },
+    {
+      "path": "labels/train/1126497931200336.txt",
+      "source_mapillary_id": "1126497931200336",
+      "sequence_id": "no_seq_1126497931200336",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1175409439573205.jpg",
+      "source_mapillary_id": "1175409439573205",
+      "sequence_id": "no_seq_1175409439573205",
+      "split": "train",
+      "sha256": "7e54f51a5a9516e8b99780b32fa8de508d939f78cdc2f89fb8f6571338c32e54"
+    },
+    {
+      "path": "labels/train/1175409439573205.txt",
+      "source_mapillary_id": "1175409439573205",
+      "sequence_id": "no_seq_1175409439573205",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1222272728190871.jpg",
+      "source_mapillary_id": "1222272728190871",
+      "sequence_id": "no_seq_1222272728190871",
+      "split": "train",
+      "sha256": "d10309f98f912ebf84003132f7876f497d2f742c24fa4fcdf16f4fb0ad67c0fd"
+    },
+    {
+      "path": "labels/train/1222272728190871.txt",
+      "source_mapillary_id": "1222272728190871",
+      "sequence_id": "no_seq_1222272728190871",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1169478923474441.jpg",
+      "source_mapillary_id": "1169478923474441",
+      "sequence_id": "no_seq_1169478923474441",
+      "split": "train",
+      "sha256": "1514170401bdc1653b1b0e63207a63e9a65ed789cff7d0fcf98935119f38edb4"
+    },
+    {
+      "path": "labels/train/1169478923474441.txt",
+      "source_mapillary_id": "1169478923474441",
+      "sequence_id": "no_seq_1169478923474441",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/test/117584207067968.jpg",
+      "source_mapillary_id": "117584207067968",
+      "sequence_id": "no_seq_117584207067968",
+      "split": "test",
+      "sha256": "0f016be051cda97e52dc8eb1415ee12c721cf152afff363c98c632264e129003"
+    },
+    {
+      "path": "labels/test/117584207067968.txt",
+      "source_mapillary_id": "117584207067968",
+      "sequence_id": "no_seq_117584207067968",
+      "split": "test",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/146438964136281.jpg",
+      "source_mapillary_id": "146438964136281",
+      "sequence_id": "no_seq_146438964136281",
+      "split": "val",
+      "sha256": "2a2ae9d9ba95572f6e26ccdf572efeb95a7b4da5f0ec889279c10d17abcdd684"
+    },
+    {
+      "path": "labels/val/146438964136281.txt",
+      "source_mapillary_id": "146438964136281",
+      "sequence_id": "no_seq_146438964136281",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/test/1628562970671616.jpg",
+      "source_mapillary_id": "1628562970671616",
+      "sequence_id": "no_seq_1628562970671616",
+      "split": "test",
+      "sha256": "d64613efd8c16a6df28aebdeb70a63a320473a24c7027949c4859fc4aac48e82"
+    },
+    {
+      "path": "labels/test/1628562970671616.txt",
+      "source_mapillary_id": "1628562970671616",
+      "sequence_id": "no_seq_1628562970671616",
+      "split": "test",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/1176600496187147.jpg",
+      "source_mapillary_id": "1176600496187147",
+      "sequence_id": "no_seq_1176600496187147",
+      "split": "val",
+      "sha256": "fd867ab6fb5b427170283f1cf06ee819cb70ddbbb3d29dc524e5590b2c91248e"
+    },
+    {
+      "path": "labels/val/1176600496187147.txt",
+      "source_mapillary_id": "1176600496187147",
+      "sequence_id": "no_seq_1176600496187147",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/test/1641643292702877.jpg",
+      "source_mapillary_id": "1641643292702877",
+      "sequence_id": "no_seq_1641643292702877",
+      "split": "test",
+      "sha256": "d69de43c746164e3cd6133441a8f2497556e98f9d4f00daff22974d814fcd738"
+    },
+    {
+      "path": "labels/test/1641643292702877.txt",
+      "source_mapillary_id": "1641643292702877",
+      "sequence_id": "no_seq_1641643292702877",
+      "split": "test",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/162191645906638.jpg",
+      "source_mapillary_id": "162191645906638",
+      "sequence_id": "no_seq_162191645906638",
+      "split": "train",
+      "sha256": "c3b2496949968f98218283363eafd30d0c3c28e9de2c11adcedc7bba1ab296e3"
+    },
+    {
+      "path": "labels/train/162191645906638.txt",
+      "source_mapillary_id": "162191645906638",
+      "sequence_id": "no_seq_162191645906638",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1886024774878306.jpg",
+      "source_mapillary_id": "1886024774878306",
+      "sequence_id": "no_seq_1886024774878306",
+      "split": "train",
+      "sha256": "074d32fa05bd8ed16dd4968785ee09fdaa3a026a612faaa14b0b74a5c5355712"
+    },
+    {
+      "path": "labels/train/1886024774878306.txt",
+      "source_mapillary_id": "1886024774878306",
+      "sequence_id": "no_seq_1886024774878306",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/test/1139599136536822.jpg",
+      "source_mapillary_id": "1139599136536822",
+      "sequence_id": "no_seq_1139599136536822",
+      "split": "test",
+      "sha256": "3057ccac6fc761c419c6c95647b33238a79c1245a91b509aa3386c688a8d01b5"
+    },
+    {
+      "path": "labels/test/1139599136536822.txt",
+      "source_mapillary_id": "1139599136536822",
+      "sequence_id": "no_seq_1139599136536822",
+      "split": "test",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1813159995505581.jpg",
+      "source_mapillary_id": "1813159995505581",
+      "sequence_id": "no_seq_1813159995505581",
+      "split": "train",
+      "sha256": "be89083a27e828af2ebc742da426c3e85f972ebee5d20991c5f1d12c757827c5"
+    },
+    {
+      "path": "labels/train/1813159995505581.txt",
+      "source_mapillary_id": "1813159995505581",
+      "sequence_id": "no_seq_1813159995505581",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/156373609791102.jpg",
+      "source_mapillary_id": "156373609791102",
+      "sequence_id": "no_seq_156373609791102",
+      "split": "train",
+      "sha256": "deca091f2a9ace34f7b4b60be9b1e45f9a3a1950136c0de20fd26b1515b1fe7c"
+    },
+    {
+      "path": "labels/train/156373609791102.txt",
+      "source_mapillary_id": "156373609791102",
+      "sequence_id": "no_seq_156373609791102",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1238013339950294.jpg",
+      "source_mapillary_id": "1238013339950294",
+      "sequence_id": "no_seq_1238013339950294",
+      "split": "train",
+      "sha256": "9bfcb3f9a123901ddb491101a8491f13a67b1550c944c0ddbfc312fc98d77a82"
+    },
+    {
+      "path": "labels/train/1238013339950294.txt",
+      "source_mapillary_id": "1238013339950294",
+      "sequence_id": "no_seq_1238013339950294",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1220007975179044.jpg",
+      "source_mapillary_id": "1220007975179044",
+      "sequence_id": "no_seq_1220007975179044",
+      "split": "train",
+      "sha256": "7ae2bb21188aa4d9c66b46d1729a510a3da4bb4c8140100911c09b819d2e5506"
+    },
+    {
+      "path": "labels/train/1220007975179044.txt",
+      "source_mapillary_id": "1220007975179044",
+      "sequence_id": "no_seq_1220007975179044",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/159935029383579.jpg",
+      "source_mapillary_id": "159935029383579",
+      "sequence_id": "no_seq_159935029383579",
+      "split": "train",
+      "sha256": "106c17fcf147d8c78b8fb5b23542d825255d1bde7f0ab1f614d930e9bf3dd8d6"
+    },
+    {
+      "path": "labels/train/159935029383579.txt",
+      "source_mapillary_id": "159935029383579",
+      "sequence_id": "no_seq_159935029383579",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/222334329349574.jpg",
+      "source_mapillary_id": "222334329349574",
+      "sequence_id": "no_seq_222334329349574",
+      "split": "val",
+      "sha256": "679a8ec95ca369808fcdc46e9447efd8a46c5aeac04023ccb64cba2a3a16c4bb"
+    },
+    {
+      "path": "labels/val/222334329349574.txt",
+      "source_mapillary_id": "222334329349574",
+      "sequence_id": "no_seq_222334329349574",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1399132017089960.jpg",
+      "source_mapillary_id": "1399132017089960",
+      "sequence_id": "no_seq_1399132017089960",
+      "split": "train",
+      "sha256": "a8562e3df73d1123245e22e91a107f5faffd4e932b3b7652c062f5b353b4b95e"
+    },
+    {
+      "path": "labels/train/1399132017089960.txt",
+      "source_mapillary_id": "1399132017089960",
+      "sequence_id": "no_seq_1399132017089960",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/test/1161111044407847.jpg",
+      "source_mapillary_id": "1161111044407847",
+      "sequence_id": "no_seq_1161111044407847",
+      "split": "test",
+      "sha256": "1e8f14227fe49d71396c8d00bd726343ef7ac7aef53ec5cbbf060c77e1ce3670"
+    },
+    {
+      "path": "labels/test/1161111044407847.txt",
+      "source_mapillary_id": "1161111044407847",
+      "sequence_id": "no_seq_1161111044407847",
+      "split": "test",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/142864291164619.jpg",
+      "source_mapillary_id": "142864291164619",
+      "sequence_id": "no_seq_142864291164619",
+      "split": "val",
+      "sha256": "8121b025d0e81172396d201eafc4dc4c86cd03ea4bd07205339c99da152979fe"
+    },
+    {
+      "path": "labels/val/142864291164619.txt",
+      "source_mapillary_id": "142864291164619",
+      "sequence_id": "no_seq_142864291164619",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1909276045914536.jpg",
+      "source_mapillary_id": "1909276045914536",
+      "sequence_id": "no_seq_1909276045914536",
+      "split": "train",
+      "sha256": "179bf3f4b84fd190d2553aa9c64d2833c3ac483e4db9dedde19effd744023496"
+    },
+    {
+      "path": "labels/train/1909276045914536.txt",
+      "source_mapillary_id": "1909276045914536",
+      "sequence_id": "no_seq_1909276045914536",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/212814163627500.jpg",
+      "source_mapillary_id": "212814163627500",
+      "sequence_id": "no_seq_212814163627500",
+      "split": "train",
+      "sha256": "5e9007206c0002df562cb8c7ef96d060c6eea5c97e3551d8c6df4f5636ee0e7e"
+    },
+    {
+      "path": "labels/train/212814163627500.txt",
+      "source_mapillary_id": "212814163627500",
+      "sequence_id": "no_seq_212814163627500",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/232043488689948.jpg",
+      "source_mapillary_id": "232043488689948",
+      "sequence_id": "no_seq_232043488689948",
+      "split": "train",
+      "sha256": "d6a4b100e883e7b4b83363b5dc8b5e63ab8ff6d1524d721634803ccbd49d42e9"
+    },
+    {
+      "path": "labels/train/232043488689948.txt",
+      "source_mapillary_id": "232043488689948",
+      "sequence_id": "no_seq_232043488689948",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1529771867367597.jpg",
+      "source_mapillary_id": "1529771867367597",
+      "sequence_id": "no_seq_1529771867367597",
+      "split": "train",
+      "sha256": "201a7d2ec62dfb7c71c376b540b55a53279b8227ece5abbb810025d37308c80a"
+    },
+    {
+      "path": "labels/train/1529771867367597.txt",
+      "source_mapillary_id": "1529771867367597",
+      "sequence_id": "no_seq_1529771867367597",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/144390174344282.jpg",
+      "source_mapillary_id": "144390174344282",
+      "sequence_id": "no_seq_144390174344282",
+      "split": "train",
+      "sha256": "710e3ed3438750be8dc450038baa6651a7e1de50a75dbcfceffe39cba2cde3cd"
+    },
+    {
+      "path": "labels/train/144390174344282.txt",
+      "source_mapillary_id": "144390174344282",
+      "sequence_id": "no_seq_144390174344282",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/146392164122847.jpg",
+      "source_mapillary_id": "146392164122847",
+      "sequence_id": "no_seq_146392164122847",
+      "split": "val",
+      "sha256": "5d6364b722b3d80c79f02288b0002d2cb84a43125fddbbcb0f57bbe9dceb82c8"
+    },
+    {
+      "path": "labels/val/146392164122847.txt",
+      "source_mapillary_id": "146392164122847",
+      "sequence_id": "no_seq_146392164122847",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1484950701872163.jpg",
+      "source_mapillary_id": "1484950701872163",
+      "sequence_id": "no_seq_1484950701872163",
+      "split": "train",
+      "sha256": "a385b63ff9deaf42cf358d247ab6b5d80bd8caa6158a21a76c9495d6ca2e09cd"
+    },
+    {
+      "path": "labels/train/1484950701872163.txt",
+      "source_mapillary_id": "1484950701872163",
+      "sequence_id": "no_seq_1484950701872163",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1386301148409259.jpg",
+      "source_mapillary_id": "1386301148409259",
+      "sequence_id": "no_seq_1386301148409259",
+      "split": "train",
+      "sha256": "66b6b92372b9bb01824869b5602b60d33f0beb2ea3cd54183f454b83fca379d4"
+    },
+    {
+      "path": "labels/train/1386301148409259.txt",
+      "source_mapillary_id": "1386301148409259",
+      "sequence_id": "no_seq_1386301148409259",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1145558932588206.jpg",
+      "source_mapillary_id": "1145558932588206",
+      "sequence_id": "no_seq_1145558932588206",
+      "split": "train",
+      "sha256": "d756406c212336713ac3944d0289a3d4a635f7a468613ed67db8a28fbb982e7a"
+    },
+    {
+      "path": "labels/train/1145558932588206.txt",
+      "source_mapillary_id": "1145558932588206",
+      "sequence_id": "no_seq_1145558932588206",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/931468064361567.jpg",
+      "source_mapillary_id": "931468064361567",
+      "sequence_id": "no_seq_931468064361567",
+      "split": "train",
+      "sha256": "23866efe653670076ee98b3046d4b1394eba0c0bf8552c4943caf7fe231682eb"
+    },
+    {
+      "path": "labels/train/931468064361567.txt",
+      "source_mapillary_id": "931468064361567",
+      "sequence_id": "no_seq_931468064361567",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1120045351806514.jpg",
+      "source_mapillary_id": "1120045351806514",
+      "sequence_id": "no_seq_1120045351806514",
+      "split": "train",
+      "sha256": "aedbe7165c90d8ba3f4bdd33b7ce6ccd8ed7b362fb96a750746e862c5a8d8481"
+    },
+    {
+      "path": "labels/train/1120045351806514.txt",
+      "source_mapillary_id": "1120045351806514",
+      "sequence_id": "no_seq_1120045351806514",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/305723601059033.jpg",
+      "source_mapillary_id": "305723601059033",
+      "sequence_id": "no_seq_305723601059033",
+      "split": "train",
+      "sha256": "4089ad684921f293aa337d7360469d75f778ad752ccae187abd49746204bf9dc"
+    },
+    {
+      "path": "labels/train/305723601059033.txt",
+      "source_mapillary_id": "305723601059033",
+      "sequence_id": "no_seq_305723601059033",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/301285018324507.jpg",
+      "source_mapillary_id": "301285018324507",
+      "sequence_id": "no_seq_301285018324507",
+      "split": "train",
+      "sha256": "2dfd6ea3efad2b282f74f0a78e5d92d8a99fa8588b1538382c2172c1605d66cc"
+    },
+    {
+      "path": "labels/train/301285018324507.txt",
+      "source_mapillary_id": "301285018324507",
+      "sequence_id": "no_seq_301285018324507",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/297263592028883.jpg",
+      "source_mapillary_id": "297263592028883",
+      "sequence_id": "no_seq_297263592028883",
+      "split": "train",
+      "sha256": "997a706aed5b01fc391123c89d092a9f698fd9f22d74f5f720380419bd265151"
+    },
+    {
+      "path": "labels/train/297263592028883.txt",
+      "source_mapillary_id": "297263592028883",
+      "sequence_id": "no_seq_297263592028883",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/4164303456925343.jpg",
+      "source_mapillary_id": "4164303456925343",
+      "sequence_id": "no_seq_4164303456925343",
+      "split": "val",
+      "sha256": "5c2a59e60139e5ebbb5658177d31d0f690ac206a7acf309e8b1c91a7401e5831"
+    },
+    {
+      "path": "labels/val/4164303456925343.txt",
+      "source_mapillary_id": "4164303456925343",
+      "sequence_id": "no_seq_4164303456925343",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/140106258104944.jpg",
+      "source_mapillary_id": "140106258104944",
+      "sequence_id": "no_seq_140106258104944",
+      "split": "val",
+      "sha256": "1dd427aad7c3dbd85e4f57940bdf4d00df8319f3fed4f94cffb58e2810aa6e6a"
+    },
+    {
+      "path": "labels/val/140106258104944.txt",
+      "source_mapillary_id": "140106258104944",
+      "sequence_id": "no_seq_140106258104944",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1052326319195246.jpg",
+      "source_mapillary_id": "1052326319195246",
+      "sequence_id": "no_seq_1052326319195246",
+      "split": "train",
+      "sha256": "1cda150b54bcf4e05b0182317e0ef30347384eec7013feab0b0b9a90ba517614"
+    },
+    {
+      "path": "labels/train/1052326319195246.txt",
+      "source_mapillary_id": "1052326319195246",
+      "sequence_id": "no_seq_1052326319195246",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1435766417060310.jpg",
+      "source_mapillary_id": "1435766417060310",
+      "sequence_id": "no_seq_1435766417060310",
+      "split": "train",
+      "sha256": "0409a3a5bef9a3d63ece12d9ebdb94f88b23aefe8545c512eba79ff9928164ca"
+    },
+    {
+      "path": "labels/train/1435766417060310.txt",
+      "source_mapillary_id": "1435766417060310",
+      "sequence_id": "no_seq_1435766417060310",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/416830374263514.jpg",
+      "source_mapillary_id": "416830374263514",
+      "sequence_id": "no_seq_416830374263514",
+      "split": "train",
+      "sha256": "bd400536174387ea771eefac2d158fe7db6f47f64f124293a0fb473508ae2269"
+    },
+    {
+      "path": "labels/train/416830374263514.txt",
+      "source_mapillary_id": "416830374263514",
+      "sequence_id": "no_seq_416830374263514",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1911723422575694.jpg",
+      "source_mapillary_id": "1911723422575694",
+      "sequence_id": "no_seq_1911723422575694",
+      "split": "train",
+      "sha256": "deb548f8fc4138e8af7064b23e9ce6377c973aca8a069a6111e9dee0e300c85f"
+    },
+    {
+      "path": "labels/train/1911723422575694.txt",
+      "source_mapillary_id": "1911723422575694",
+      "sequence_id": "no_seq_1911723422575694",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1134264723739576.jpg",
+      "source_mapillary_id": "1134264723739576",
+      "sequence_id": "no_seq_1134264723739576",
+      "split": "train",
+      "sha256": "92abc00c7c6d9ef7833ebd74c1c4c3bb541203b9d2269411a14fa629b6496954"
+    },
+    {
+      "path": "labels/train/1134264723739576.txt",
+      "source_mapillary_id": "1134264723739576",
+      "sequence_id": "no_seq_1134264723739576",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/1072711700483626.jpg",
+      "source_mapillary_id": "1072711700483626",
+      "sequence_id": "no_seq_1072711700483626",
+      "split": "val",
+      "sha256": "a338ba59464628c10880cac381acd5bc43e103ee2c7297da09d451bdaea4bff3"
+    },
+    {
+      "path": "labels/val/1072711700483626.txt",
+      "source_mapillary_id": "1072711700483626",
+      "sequence_id": "no_seq_1072711700483626",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1161403961925817.jpg",
+      "source_mapillary_id": "1161403961925817",
+      "sequence_id": "no_seq_1161403961925817",
+      "split": "train",
+      "sha256": "6ac96e540cfd80bdb81e0b6b51f186915d2848ae33508510e32b37311af815ca"
+    },
+    {
+      "path": "labels/train/1161403961925817.txt",
+      "source_mapillary_id": "1161403961925817",
+      "sequence_id": "no_seq_1161403961925817",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/147699597435090.jpg",
+      "source_mapillary_id": "147699597435090",
+      "sequence_id": "no_seq_147699597435090",
+      "split": "train",
+      "sha256": "1d4d8e4d8f2bb32798ffab2f57328f56e479c34539ae4dd0edef065445e0e651"
+    },
+    {
+      "path": "labels/train/147699597435090.txt",
+      "source_mapillary_id": "147699597435090",
+      "sequence_id": "no_seq_147699597435090",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/585388102629503.jpg",
+      "source_mapillary_id": "585388102629503",
+      "sequence_id": "no_seq_585388102629503",
+      "split": "train",
+      "sha256": "c8ad58053c91fa5581319b33bb080737802fa6a62799c4dff9c6383c5f1dfe94"
+    },
+    {
+      "path": "labels/train/585388102629503.txt",
+      "source_mapillary_id": "585388102629503",
+      "sequence_id": "no_seq_585388102629503",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/4285790238106821.jpg",
+      "source_mapillary_id": "4285790238106821",
+      "sequence_id": "no_seq_4285790238106821",
+      "split": "train",
+      "sha256": "819bb14b9243299feb8d11802bdee63c980d56c4c5812d0b7182e65d7e296805"
+    },
+    {
+      "path": "labels/train/4285790238106821.txt",
+      "source_mapillary_id": "4285790238106821",
+      "sequence_id": "no_seq_4285790238106821",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1939555426196104.jpg",
+      "source_mapillary_id": "1939555426196104",
+      "sequence_id": "no_seq_1939555426196104",
+      "split": "train",
+      "sha256": "ccb51e9702edc7cf1272a2e44266c2c1c96d19e13633ad5fdfa89dd664239742"
+    },
+    {
+      "path": "labels/train/1939555426196104.txt",
+      "source_mapillary_id": "1939555426196104",
+      "sequence_id": "no_seq_1939555426196104",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/160569929232727.jpg",
+      "source_mapillary_id": "160569929232727",
+      "sequence_id": "no_seq_160569929232727",
+      "split": "train",
+      "sha256": "de68db304e54f39e521141600ee67130eee9287eb56843ef31187252d5586920"
+    },
+    {
+      "path": "labels/train/160569929232727.txt",
+      "source_mapillary_id": "160569929232727",
+      "sequence_id": "no_seq_160569929232727",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/224995656301061.jpg",
+      "source_mapillary_id": "224995656301061",
+      "sequence_id": "no_seq_224995656301061",
+      "split": "train",
+      "sha256": "3105fabf2615ee270cb608341f32f7a7a2876bec897a48308e15b78b75e8cd75"
+    },
+    {
+      "path": "labels/train/224995656301061.txt",
+      "source_mapillary_id": "224995656301061",
+      "sequence_id": "no_seq_224995656301061",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/2052371968246806.jpg",
+      "source_mapillary_id": "2052371968246806",
+      "sequence_id": "no_seq_2052371968246806",
+      "split": "train",
+      "sha256": "c45826cff40e3a39507e084b31642d78bf64e8c864baca70e3bc6e802d00d5b4"
+    },
+    {
+      "path": "labels/train/2052371968246806.txt",
+      "source_mapillary_id": "2052371968246806",
+      "sequence_id": "no_seq_2052371968246806",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/2607904882850451.jpg",
+      "source_mapillary_id": "2607904882850451",
+      "sequence_id": "no_seq_2607904882850451",
+      "split": "train",
+      "sha256": "8500423939fb339d556ef635afba7d273c467c66961bd57c895fea2456015c25"
+    },
+    {
+      "path": "labels/train/2607904882850451.txt",
+      "source_mapillary_id": "2607904882850451",
+      "sequence_id": "no_seq_2607904882850451",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/374173384169254.jpg",
+      "source_mapillary_id": "374173384169254",
+      "sequence_id": "no_seq_374173384169254",
+      "split": "val",
+      "sha256": "374f54090dd65c39ac7e61a95f159702bd38f92d9cf50f06f312c6685b059b70"
+    },
+    {
+      "path": "labels/val/374173384169254.txt",
+      "source_mapillary_id": "374173384169254",
+      "sequence_id": "no_seq_374173384169254",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/222941535838682.jpg",
+      "source_mapillary_id": "222941535838682",
+      "sequence_id": "no_seq_222941535838682",
+      "split": "train",
+      "sha256": "635e53d3c9d9cf000261fdf4597833383411a57c86802c126530ebf402420e29"
+    },
+    {
+      "path": "labels/train/222941535838682.txt",
+      "source_mapillary_id": "222941535838682",
+      "sequence_id": "no_seq_222941535838682",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/166183432106451.jpg",
+      "source_mapillary_id": "166183432106451",
+      "sequence_id": "no_seq_166183432106451",
+      "split": "train",
+      "sha256": "640add792c1b54c94152f17b3a0dab0f5f8a938ba5967082c0094a9065474fac"
+    },
+    {
+      "path": "labels/train/166183432106451.txt",
+      "source_mapillary_id": "166183432106451",
+      "sequence_id": "no_seq_166183432106451",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/221680959767298.jpg",
+      "source_mapillary_id": "221680959767298",
+      "sequence_id": "no_seq_221680959767298",
+      "split": "train",
+      "sha256": "041fc8d670c9e79692ffed613ad9362ff4d22d239d37e7df4460ba299e3c7ba4"
+    },
+    {
+      "path": "labels/train/221680959767298.txt",
+      "source_mapillary_id": "221680959767298",
+      "sequence_id": "no_seq_221680959767298",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/162861735757255.jpg",
+      "source_mapillary_id": "162861735757255",
+      "sequence_id": "no_seq_162861735757255",
+      "split": "val",
+      "sha256": "1f1ce07295f03518844c6467525a22d1e8aebb1f8bfc6efdc409c459224eb667"
+    },
+    {
+      "path": "labels/val/162861735757255.txt",
+      "source_mapillary_id": "162861735757255",
+      "sequence_id": "no_seq_162861735757255",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/test/2105646529584566.jpg",
+      "source_mapillary_id": "2105646529584566",
+      "sequence_id": "no_seq_2105646529584566",
+      "split": "test",
+      "sha256": "e8a15239ed31ff3d6d2d6574f7be942c84611ea32698d1f4693b8a0a18c77cbd"
+    },
+    {
+      "path": "labels/test/2105646529584566.txt",
+      "source_mapillary_id": "2105646529584566",
+      "sequence_id": "no_seq_2105646529584566",
+      "split": "test",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/802218550414875.jpg",
+      "source_mapillary_id": "802218550414875",
+      "sequence_id": "no_seq_802218550414875",
+      "split": "train",
+      "sha256": "73b9b49d46c3e043ef867a5da5d6850acfd54e1bdddaa262d1cdd35d6475fbd4"
+    },
+    {
+      "path": "labels/train/802218550414875.txt",
+      "source_mapillary_id": "802218550414875",
+      "sequence_id": "no_seq_802218550414875",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1128899655221980.jpg",
+      "source_mapillary_id": "1128899655221980",
+      "sequence_id": "no_seq_1128899655221980",
+      "split": "train",
+      "sha256": "93e7525e26f3acefc73177a8376cdf4cb46437a22ed7b2c632c19e445e0d9715"
+    },
+    {
+      "path": "labels/train/1128899655221980.txt",
+      "source_mapillary_id": "1128899655221980",
+      "sequence_id": "no_seq_1128899655221980",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1168199474539746.jpg",
+      "source_mapillary_id": "1168199474539746",
+      "sequence_id": "no_seq_1168199474539746",
+      "split": "train",
+      "sha256": "879482285fa41dfcb3c4329325eb788886d92ddeb74e916a389372298c06dc6a"
+    },
+    {
+      "path": "labels/train/1168199474539746.txt",
+      "source_mapillary_id": "1168199474539746",
+      "sequence_id": "no_seq_1168199474539746",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1174634436350566.jpg",
+      "source_mapillary_id": "1174634436350566",
+      "sequence_id": "no_seq_1174634436350566",
+      "split": "train",
+      "sha256": "300e251c118f449965513015eed6f7992138dc3eb5127652888a8d0ad589b682"
+    },
+    {
+      "path": "labels/train/1174634436350566.txt",
+      "source_mapillary_id": "1174634436350566",
+      "sequence_id": "no_seq_1174634436350566",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/519269236028728.jpg",
+      "source_mapillary_id": "519269236028728",
+      "sequence_id": "no_seq_519269236028728",
+      "split": "train",
+      "sha256": "fc28ec30f3204a28dafee9873e1484b07631373990c03cd03eb4c7309d79a5f5"
+    },
+    {
+      "path": "labels/train/519269236028728.txt",
+      "source_mapillary_id": "519269236028728",
+      "sequence_id": "no_seq_519269236028728",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/4107071229411157.jpg",
+      "source_mapillary_id": "4107071229411157",
+      "sequence_id": "no_seq_4107071229411157",
+      "split": "val",
+      "sha256": "6e56b87870646a74e531c0d6b3d60868f843abcaac43f064a88135cf36d72fba"
+    },
+    {
+      "path": "labels/val/4107071229411157.txt",
+      "source_mapillary_id": "4107071229411157",
+      "sequence_id": "no_seq_4107071229411157",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/3741194932670274.jpg",
+      "source_mapillary_id": "3741194932670274",
+      "sequence_id": "no_seq_3741194932670274",
+      "split": "train",
+      "sha256": "5b2a751379b369be1f01c2084984d8297313cf46b3b2cf9ad93b5b100ea53b03"
+    },
+    {
+      "path": "labels/train/3741194932670274.txt",
+      "source_mapillary_id": "3741194932670274",
+      "sequence_id": "no_seq_3741194932670274",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/231195215556939.jpg",
+      "source_mapillary_id": "231195215556939",
+      "sequence_id": "no_seq_231195215556939",
+      "split": "train",
+      "sha256": "f76faf9878dc4fc50aa45580077e02992b204a2eeafeae73e09a807f012d1979"
+    },
+    {
+      "path": "labels/train/231195215556939.txt",
+      "source_mapillary_id": "231195215556939",
+      "sequence_id": "no_seq_231195215556939",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1265811637235712.jpg",
+      "source_mapillary_id": "1265811637235712",
+      "sequence_id": "no_seq_1265811637235712",
+      "split": "train",
+      "sha256": "d18a488c8561cc8e8c2351cd9026b4eb5ea853675439914f08ac8460c6d10936"
+    },
+    {
+      "path": "labels/train/1265811637235712.txt",
+      "source_mapillary_id": "1265811637235712",
+      "sequence_id": "no_seq_1265811637235712",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/518243009201191.jpg",
+      "source_mapillary_id": "518243009201191",
+      "sequence_id": "no_seq_518243009201191",
+      "split": "train",
+      "sha256": "0283a4e214665f6c060d8c527a49a9b560dfa842af03b1989ff815b9c2fd4d5c"
+    },
+    {
+      "path": "labels/train/518243009201191.txt",
+      "source_mapillary_id": "518243009201191",
+      "sequence_id": "no_seq_518243009201191",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/301757074933327.jpg",
+      "source_mapillary_id": "301757074933327",
+      "sequence_id": "no_seq_301757074933327",
+      "split": "train",
+      "sha256": "896ab4d12df6ef7c3e2a2bffe16530bc65c93772cb2e6dfd3adfb88a7b96f557"
+    },
+    {
+      "path": "labels/train/301757074933327.txt",
+      "source_mapillary_id": "301757074933327",
+      "sequence_id": "no_seq_301757074933327",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/2161011000700629.jpg",
+      "source_mapillary_id": "2161011000700629",
+      "sequence_id": "no_seq_2161011000700629",
+      "split": "train",
+      "sha256": "1e9c9b580408c564ace8eba859fd768db929b65686272fb717d443f62d7c28bb"
+    },
+    {
+      "path": "labels/train/2161011000700629.txt",
+      "source_mapillary_id": "2161011000700629",
+      "sequence_id": "no_seq_2161011000700629",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/218721026373749.jpg",
+      "source_mapillary_id": "218721026373749",
+      "sequence_id": "no_seq_218721026373749",
+      "split": "train",
+      "sha256": "6d6f48713a7bf2f91aad39de0c59f920957fdba533ebc4d7ddf9a7ab76feb79e"
+    },
+    {
+      "path": "labels/train/218721026373749.txt",
+      "source_mapillary_id": "218721026373749",
+      "sequence_id": "no_seq_218721026373749",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1003722500368427.jpg",
+      "source_mapillary_id": "1003722500368427",
+      "sequence_id": "no_seq_1003722500368427",
+      "split": "train",
+      "sha256": "45dc03103b8f47784c9610ee5b512fc7586deb45969425e76648a2547ffff51d"
+    },
+    {
+      "path": "labels/train/1003722500368427.txt",
+      "source_mapillary_id": "1003722500368427",
+      "sequence_id": "no_seq_1003722500368427",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/2590332707928615.jpg",
+      "source_mapillary_id": "2590332707928615",
+      "sequence_id": "no_seq_2590332707928615",
+      "split": "train",
+      "sha256": "f7e78418de7a5a6094951016ecfac3d8ad1b1c5207f794ddf6a8bb1b902dcaad"
+    },
+    {
+      "path": "labels/train/2590332707928615.txt",
+      "source_mapillary_id": "2590332707928615",
+      "sequence_id": "no_seq_2590332707928615",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/132744142212385.jpg",
+      "source_mapillary_id": "132744142212385",
+      "sequence_id": "no_seq_132744142212385",
+      "split": "val",
+      "sha256": "db986289f5b3f43f52c820f388c8f4b71048e633ba2f49736cd091dadcbe7cb4"
+    },
+    {
+      "path": "labels/val/132744142212385.txt",
+      "source_mapillary_id": "132744142212385",
+      "sequence_id": "no_seq_132744142212385",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/434126461294218.jpg",
+      "source_mapillary_id": "434126461294218",
+      "sequence_id": "no_seq_434126461294218",
+      "split": "train",
+      "sha256": "45fa247930260f1ae39ee86c42bd1ea748a22815a3bed402563d65004ff382b1"
+    },
+    {
+      "path": "labels/train/434126461294218.txt",
+      "source_mapillary_id": "434126461294218",
+      "sequence_id": "no_seq_434126461294218",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/228565862364077.jpg",
+      "source_mapillary_id": "228565862364077",
+      "sequence_id": "no_seq_228565862364077",
+      "split": "train",
+      "sha256": "495179264b757ebc86514749584598c2cba372fff9c64e07544f49f69b373b4f"
+    },
+    {
+      "path": "labels/train/228565862364077.txt",
+      "source_mapillary_id": "228565862364077",
+      "sequence_id": "no_seq_228565862364077",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/2940226822969603.jpg",
+      "source_mapillary_id": "2940226822969603",
+      "sequence_id": "no_seq_2940226822969603",
+      "split": "train",
+      "sha256": "f7906a67177a19652a86d56b1427dd124d81cd18e0853e3239438ea364662d7f"
+    },
+    {
+      "path": "labels/train/2940226822969603.txt",
+      "source_mapillary_id": "2940226822969603",
+      "sequence_id": "no_seq_2940226822969603",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/481385496505994.jpg",
+      "source_mapillary_id": "481385496505994",
+      "sequence_id": "no_seq_481385496505994",
+      "split": "train",
+      "sha256": "caed33297fe1fc7c62657116b003cb2589e390406c99890229f647772959d41e"
+    },
+    {
+      "path": "labels/train/481385496505994.txt",
+      "source_mapillary_id": "481385496505994",
+      "sequence_id": "no_seq_481385496505994",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/test/309738023987161.jpg",
+      "source_mapillary_id": "309738023987161",
+      "sequence_id": "no_seq_309738023987161",
+      "split": "test",
+      "sha256": "1f995c8f9c5861d1ead7068528b56da9c4eaaa0f428c940221059e9a6a4b9204"
+    },
+    {
+      "path": "labels/test/309738023987161.txt",
+      "source_mapillary_id": "309738023987161",
+      "sequence_id": "no_seq_309738023987161",
+      "split": "test",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/466923381033677.jpg",
+      "source_mapillary_id": "466923381033677",
+      "sequence_id": "no_seq_466923381033677",
+      "split": "train",
+      "sha256": "d255481264bb352578610ce9788cf3743252c5f6ceada8009ba5c65586bad5d4"
+    },
+    {
+      "path": "labels/train/466923381033677.txt",
+      "source_mapillary_id": "466923381033677",
+      "sequence_id": "no_seq_466923381033677",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/809820776631719.jpg",
+      "source_mapillary_id": "809820776631719",
+      "sequence_id": "no_seq_809820776631719",
+      "split": "train",
+      "sha256": "39231ec3303679bcb501bf47b6964780052132cd4ad1049847f54873b2ea9f06"
+    },
+    {
+      "path": "labels/train/809820776631719.txt",
+      "source_mapillary_id": "809820776631719",
+      "sequence_id": "no_seq_809820776631719",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/213516096893442.jpg",
+      "source_mapillary_id": "213516096893442",
+      "sequence_id": "no_seq_213516096893442",
+      "split": "val",
+      "sha256": "a55148b32b3591ca91f4dc8a8ef76a6e1d5b170aa62e58d027a2f4a70a7e7998"
+    },
+    {
+      "path": "labels/val/213516096893442.txt",
+      "source_mapillary_id": "213516096893442",
+      "sequence_id": "no_seq_213516096893442",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/459235971812945.jpg",
+      "source_mapillary_id": "459235971812945",
+      "sequence_id": "no_seq_459235971812945",
+      "split": "train",
+      "sha256": "4d4d3a4e7e27021c5240dd992945880fb4445c9b0d8cc4575f192450a2f95eb8"
+    },
+    {
+      "path": "labels/train/459235971812945.txt",
+      "source_mapillary_id": "459235971812945",
+      "sequence_id": "no_seq_459235971812945",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/370469410969527.jpg",
+      "source_mapillary_id": "370469410969527",
+      "sequence_id": "no_seq_370469410969527",
+      "split": "train",
+      "sha256": "8c3def7e8afc35c87a4f970f0300575f2b186218a30be3ff4a3b70d01595e729"
+    },
+    {
+      "path": "labels/train/370469410969527.txt",
+      "source_mapillary_id": "370469410969527",
+      "sequence_id": "no_seq_370469410969527",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/164404558945736.jpg",
+      "source_mapillary_id": "164404558945736",
+      "sequence_id": "no_seq_164404558945736",
+      "split": "val",
+      "sha256": "497e0f6db6738751bb3adfd08351a962758e37e3389992538c25cdec69e382e3"
+    },
+    {
+      "path": "labels/val/164404558945736.txt",
+      "source_mapillary_id": "164404558945736",
+      "sequence_id": "no_seq_164404558945736",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/807241756870535.jpg",
+      "source_mapillary_id": "807241756870535",
+      "sequence_id": "no_seq_807241756870535",
+      "split": "train",
+      "sha256": "33b8a36858c807b8f9c61951bb75c175430067bc847208ca233e486d39c46210"
+    },
+    {
+      "path": "labels/train/807241756870535.txt",
+      "source_mapillary_id": "807241756870535",
+      "sequence_id": "no_seq_807241756870535",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1053358871855990.jpg",
+      "source_mapillary_id": "1053358871855990",
+      "sequence_id": "no_seq_1053358871855990",
+      "split": "train",
+      "sha256": "156ec6c9b4fd38381461b8921f0992c0eeab6bdd37e3d59f36d4dcded834941f"
+    },
+    {
+      "path": "labels/train/1053358871855990.txt",
+      "source_mapillary_id": "1053358871855990",
+      "sequence_id": "no_seq_1053358871855990",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/366368864804511.jpg",
+      "source_mapillary_id": "366368864804511",
+      "sequence_id": "no_seq_366368864804511",
+      "split": "train",
+      "sha256": "364f41f9cc9dc5acbdde2ab239662b242ec7ad7a37e542041b9a5e68572a3cbe"
+    },
+    {
+      "path": "labels/train/366368864804511.txt",
+      "source_mapillary_id": "366368864804511",
+      "sequence_id": "no_seq_366368864804511",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/test/3748324695272091.jpg",
+      "source_mapillary_id": "3748324695272091",
+      "sequence_id": "no_seq_3748324695272091",
+      "split": "test",
+      "sha256": "b844a25aeba851f3857a0678cc0ea6d3d25cffb46318abc8c3af39fbbb3c611d"
+    },
+    {
+      "path": "labels/test/3748324695272091.txt",
+      "source_mapillary_id": "3748324695272091",
+      "sequence_id": "no_seq_3748324695272091",
+      "split": "test",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/279902210495590.jpg",
+      "source_mapillary_id": "279902210495590",
+      "sequence_id": "no_seq_279902210495590",
+      "split": "train",
+      "sha256": "74e4f4bb67c7f1475b114a7e0678a32772cb8bed98a356f4c56fe70bf1f3c64c"
+    },
+    {
+      "path": "labels/train/279902210495590.txt",
+      "source_mapillary_id": "279902210495590",
+      "sequence_id": "no_seq_279902210495590",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1571462496385215.jpg",
+      "source_mapillary_id": "1571462496385215",
+      "sequence_id": "no_seq_1571462496385215",
+      "split": "train",
+      "sha256": "84a2d9bfa6d9d01fbebaf2241088087704bafe3afa8d8a5b539c135e63fdbfbc"
+    },
+    {
+      "path": "labels/train/1571462496385215.txt",
+      "source_mapillary_id": "1571462496385215",
+      "sequence_id": "no_seq_1571462496385215",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/4027066607384446.jpg",
+      "source_mapillary_id": "4027066607384446",
+      "sequence_id": "no_seq_4027066607384446",
+      "split": "train",
+      "sha256": "7d577e110fa056c4fb50983e2de68360884b3ad4a30aa21b0e7dd1fd4ea2e1f1"
+    },
+    {
+      "path": "labels/train/4027066607384446.txt",
+      "source_mapillary_id": "4027066607384446",
+      "sequence_id": "no_seq_4027066607384446",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/394879584869126.jpg",
+      "source_mapillary_id": "394879584869126",
+      "sequence_id": "no_seq_394879584869126",
+      "split": "train",
+      "sha256": "b6f4c6e44ee9c3d48ce6307d6b5384d902b6a8e318c6e748241bdc5e291edc64"
+    },
+    {
+      "path": "labels/train/394879584869126.txt",
+      "source_mapillary_id": "394879584869126",
+      "sequence_id": "no_seq_394879584869126",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/1652931728236090.jpg",
+      "source_mapillary_id": "1652931728236090",
+      "sequence_id": "no_seq_1652931728236090",
+      "split": "val",
+      "sha256": "ecf066da0a8869ad5ac4c3c96205374cbf27c8d0b5220e37ffddc820a63c547b"
+    },
+    {
+      "path": "labels/val/1652931728236090.txt",
+      "source_mapillary_id": "1652931728236090",
+      "sequence_id": "no_seq_1652931728236090",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/488697992331644.jpg",
+      "source_mapillary_id": "488697992331644",
+      "sequence_id": "no_seq_488697992331644",
+      "split": "train",
+      "sha256": "46dcc29817dcb555c60dade46c381a27dd6f41e194bef63f930febcea126c66a"
+    },
+    {
+      "path": "labels/train/488697992331644.txt",
+      "source_mapillary_id": "488697992331644",
+      "sequence_id": "no_seq_488697992331644",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1703805163163963.jpg",
+      "source_mapillary_id": "1703805163163963",
+      "sequence_id": "no_seq_1703805163163963",
+      "split": "train",
+      "sha256": "c4760aef87958a25fe7913b71a22681f97f23c6e944da08913cacb1d9182abb6"
+    },
+    {
+      "path": "labels/train/1703805163163963.txt",
+      "source_mapillary_id": "1703805163163963",
+      "sequence_id": "no_seq_1703805163163963",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/159340802803477.jpg",
+      "source_mapillary_id": "159340802803477",
+      "sequence_id": "no_seq_159340802803477",
+      "split": "train",
+      "sha256": "0f33e645dc1fd3bbc381dc22eb0337f6ba457d977216e08c0d30c3675c47797d"
+    },
+    {
+      "path": "labels/train/159340802803477.txt",
+      "source_mapillary_id": "159340802803477",
+      "sequence_id": "no_seq_159340802803477",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/179440950627650.jpg",
+      "source_mapillary_id": "179440950627650",
+      "sequence_id": "no_seq_179440950627650",
+      "split": "val",
+      "sha256": "b1989b48b9f1298814ff16c3d1a5df78306115fe25c5b1530d16433c9ec44bf4"
+    },
+    {
+      "path": "labels/val/179440950627650.txt",
+      "source_mapillary_id": "179440950627650",
+      "sequence_id": "no_seq_179440950627650",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1551971051671820.jpg",
+      "source_mapillary_id": "1551971051671820",
+      "sequence_id": "no_seq_1551971051671820",
+      "split": "train",
+      "sha256": "021e7f813c37843dc0ef39f4e0b4fd4a501ab028b577bdb462828051135ac3b3"
+    },
+    {
+      "path": "labels/train/1551971051671820.txt",
+      "source_mapillary_id": "1551971051671820",
+      "sequence_id": "no_seq_1551971051671820",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/val/1166058347191334.jpg",
+      "source_mapillary_id": "1166058347191334",
+      "sequence_id": "no_seq_1166058347191334",
+      "split": "val",
+      "sha256": "5c63a948b60007ea8235e9018adb7f2a765af719934334d385890bfebf62fedd"
+    },
+    {
+      "path": "labels/val/1166058347191334.txt",
+      "source_mapillary_id": "1166058347191334",
+      "sequence_id": "no_seq_1166058347191334",
+      "split": "val",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/217968329790964.jpg",
+      "source_mapillary_id": "217968329790964",
+      "sequence_id": "no_seq_217968329790964",
+      "split": "train",
+      "sha256": "b35ac144bad5be824e0ca4ef2f7ac4503e750100dbd1ca4742b02dfc5a0f9ba5"
+    },
+    {
+      "path": "labels/train/217968329790964.txt",
+      "source_mapillary_id": "217968329790964",
+      "sequence_id": "no_seq_217968329790964",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/257842322752897.jpg",
+      "source_mapillary_id": "257842322752897",
+      "sequence_id": "no_seq_257842322752897",
+      "split": "train",
+      "sha256": "02f638e3f2717480f921f116f58b576071dedbfd9dcf6b58bdd327f3a6829a29"
+    },
+    {
+      "path": "labels/train/257842322752897.txt",
+      "source_mapillary_id": "257842322752897",
+      "sequence_id": "no_seq_257842322752897",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/158503529444264.jpg",
+      "source_mapillary_id": "158503529444264",
+      "sequence_id": "no_seq_158503529444264",
+      "split": "train",
+      "sha256": "fce18c6567df4d7dfa49cc47e036adfbda6d7d762cf38ff0d7bb2744d53214b0"
+    },
+    {
+      "path": "labels/train/158503529444264.txt",
+      "source_mapillary_id": "158503529444264",
+      "sequence_id": "no_seq_158503529444264",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/214628853442913.jpg",
+      "source_mapillary_id": "214628853442913",
+      "sequence_id": "no_seq_214628853442913",
+      "split": "train",
+      "sha256": "2c5da2628eef3b711ddd50999ce1819c1211eafa9a7265d71624e268ef4adbf5"
+    },
+    {
+      "path": "labels/train/214628853442913.txt",
+      "source_mapillary_id": "214628853442913",
+      "sequence_id": "no_seq_214628853442913",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/1573479779718533.jpg",
+      "source_mapillary_id": "1573479779718533",
+      "sequence_id": "no_seq_1573479779718533",
+      "split": "train",
+      "sha256": "8aec1754f238a0456b8bd533ba372a8ae7e27896e8dff3c0fca4fbd030a787a2"
+    },
+    {
+      "path": "labels/train/1573479779718533.txt",
+      "source_mapillary_id": "1573479779718533",
+      "sequence_id": "no_seq_1573479779718533",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/test/1321391958348698.jpg",
+      "source_mapillary_id": "1321391958348698",
+      "sequence_id": "no_seq_1321391958348698",
+      "split": "test",
+      "sha256": "26cbe7bc1ed3e18a8419e464ea941c671274c58d63a72a2a75094b75bc606d68"
+    },
+    {
+      "path": "labels/test/1321391958348698.txt",
+      "source_mapillary_id": "1321391958348698",
+      "sequence_id": "no_seq_1321391958348698",
+      "split": "test",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "images/train/5375000382571315.jpg",
+      "source_mapillary_id": "5375000382571315",
+      "sequence_id": "no_seq_5375000382571315",
+      "split": "train",
+      "sha256": "21b54587f4c59c8337719c1ba0ef39671600a2f23a9cf48695163df6cf49b34f"
+    },
+    {
+      "path": "labels/train/5375000382571315.txt",
+      "source_mapillary_id": "5375000382571315",
+      "sequence_id": "no_seq_5375000382571315",
+      "split": "train",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
 }
