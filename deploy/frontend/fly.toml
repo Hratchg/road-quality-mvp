@@ -18,7 +18,12 @@ app = "road-quality-frontend"
 primary_region = "lax"
 
 [build]
-  dockerfile = "deploy/frontend/Dockerfile"
+  # Path is relative to THIS fly.toml's directory (deploy/frontend/), not
+  # the build context. "Dockerfile" resolves to deploy/frontend/Dockerfile.
+  # Build context is the repo root (passed as positional arg to flyctl deploy)
+  # so the Dockerfile's `COPY frontend/...` and `COPY deploy/frontend/nginx.conf`
+  # resolve correctly. Same convention as deploy/db/fly.toml.
+  dockerfile = "Dockerfile"
   [build.args]
     # Locked to the deployed backend URL. Future custom domain (Phase 6+)
     # would update this string and trigger a redeploy.

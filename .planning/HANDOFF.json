@@ -1,0 +1,134 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-04-28T01:12:33.715Z",
+  "phase": "5",
+  "phase_name": "cloud-deployment",
+  "phase_dir": ".planning/phases/05-cloud-deployment",
+  "plan": null,
+  "task": 2,
+  "total_tasks": 5,
+  "status": "paused",
+  "context_kind": "human-uat-walkthrough",
+  "completed_tasks": [
+    {
+      "id": "session-1",
+      "name": "Fix deploy/frontend/fly.toml dockerfile path",
+      "status": "done",
+      "commit": null,
+      "note": "Edited but NOT yet committed. dockerfile = \"deploy/frontend/Dockerfile\" → \"Dockerfile\" (resolved relative to toml dir). Same bug class as commits bca06a6 (db) and fdd8fd4 (backend)."
+    },
+    {
+      "id": "session-2",
+      "name": "Deploy road-quality-frontend to Fly.io",
+      "status": "done",
+      "commit": null,
+      "note": "flyctl deploy --remote-only --config deploy/frontend/fly.toml --app road-quality-frontend . from repo root. 2 machines (6e826612fdd168, 91854460a3d978) in lax, both started. https://road-quality-frontend.fly.dev/ serves index.html (200, 405 bytes)."
+    },
+    {
+      "id": "uat-2",
+      "name": "Bootstrap topology (seed data)",
+      "status": "in_progress",
+      "progress": "seed_data.py inserted 209,856 road_segments + 125,632 segment_defects + 209,856 segment_scores via flyctl proxy on 15432. Then crashed during pgr_createTopology call. pgr_createTopology has NOT been run successfully — road_segments_vertices_pgr table does not exist."
+    }
+  ],
+  "remaining_tasks": [
+    {
+      "id": "uat-2-finish",
+      "name": "Run pgr_createTopology directly on db machine",
+      "status": "not_started",
+      "command": "flyctl ssh console -a road-quality-db -C \"psql -U rq -d roadquality -c \\\"SELECT pgr_createTopology('road_segments', 0.0001, 'geom', 'id', clean := true);\\\"\"",
+      "expected_duration": "3-5 min",
+      "expected_outcome": "creates road_segments_vertices_pgr with ~50k-75k rows; populates source/target columns on road_segments"
+    },
+    {
+      "id": "uat-1",
+      "name": "UAT #1: First production deploy from main via GH Actions",
+      "status": "not_started",
+      "blocker": "needs master→main branch rename, push to GitHub, gh secrets FLY_API_TOKEN + PG_PASSWORD"
+    },
+    {
+      "id": "uat-3",
+      "name": "UAT #3: Live CORS preflight from deployed frontend",
+      "status": "not_started",
+      "blocker": "needs browser DevTools at https://road-quality-frontend.fly.dev/ — click Find Best Route → sign in → observe OPTIONS /route"
+    },
+    {
+      "id": "uat-4",
+      "name": "UAT #4: /health probe (200 + db reachable + 503 path)",
+      "status": "not_started",
+      "command": "curl https://road-quality-backend.fly.dev/health  # expect 200 + {db: reachable}"
+    },
+    {
+      "id": "uat-5",
+      "name": "UAT #5: VITE_API_URL bundle inspection (no localhost)",
+      "status": "not_started",
+      "command": "flyctl ssh console -a road-quality-frontend -C 'grep -r road-quality-backend.fly.dev /usr/share/nginx/html/assets/ | head -3'"
+    }
+  ],
+  "blockers": [
+    {
+      "description": "pgr_createTopology was canceled at pause (was running via flyctl ssh, not yet complete)",
+      "type": "technical",
+      "workaround": "Re-run cleanly via flyctl ssh; clean := true makes it idempotent. DB is now sized correctly (2GB RAM, 5GB volume) so it should complete this time."
+    }
+  ],
+  "human_actions_pending": [
+    {
+      "action": "Browser-based UAT #3 (CORS preflight)",
+      "context": "Requires opening https://road-quality-frontend.fly.dev/ in a browser with DevTools",
+      "blocking": false
+    },
+    {
+      "action": "GitHub setup for UAT #1",
+      "context": "Rename master→main, set gh secrets FLY_API_TOKEN + PG_PASSWORD, push to trigger deploy.yml",
+      "blocking": false
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Scale db memory 512MB → 2GB",
+      "rationale": "Recovery from OOM-killed pgr_createTopology was crash-looping",
+      "phase": "5"
+    },
+    {
+      "decision": "Extend rq_db volume 1GB → 5GB",
+      "rationale": "Disk-full was the actual root cause of recovery crash loop ('No space left on device' writing pg_wal/xlogtemp). 1GB volume was too small to hold seeded data + WAL.",
+      "phase": "5"
+    },
+    {
+      "decision": "Cancel in-flight pgr_createTopology cleanly at pause",
+      "rationale": "clean := true makes the function idempotent; safer to re-run from a fresh session than to leave an SSH-session-tied query that may die when terminal closes",
+      "phase": "5"
+    }
+  ],
+  "uncommitted_files": [
+    "deploy/frontend/fly.toml"
+  ],
+  "untracked_files_to_ignore": [
+    ".claude/",
+    ".planning/phases/03-mapillary-ingestion-pipeline/.Rhistory"
+  ],
+  "infrastructure_state": {
+    "road-quality-db": {
+      "machine": "918544e6c9e568",
+      "size": "shared-cpu-1x:2048MB",
+      "volume": "rq_db (5GB)",
+      "state": "started, healthy",
+      "data": "209,856 road_segments + 125,632 segment_defects + 209,856 segment_scores. Missing: road_segments_vertices_pgr (pgr_createTopology never completed)."
+    },
+    "road-quality-backend": {
+      "machine": "91854462ad05d8",
+      "state": "stopped (auto_stop_machines kicked in; /health auto-warms)",
+      "url": "https://road-quality-backend.fly.dev"
+    },
+    "road-quality-frontend": {
+      "machines": ["6e826612fdd168", "91854460a3d978"],
+      "state": "started (2 machines for HA)",
+      "url": "https://road-quality-frontend.fly.dev",
+      "image": "road-quality-frontend:deployment-01KQ8RWFEY27GATKP9J7ZE79NE",
+      "verified": "GET / returns 200 with index.html (405 bytes); references hashed assets and Vite-built bundle"
+    }
+  },
+  "next_action": "1) Commit deploy/frontend/fly.toml dockerfile path fix. 2) Run pgr_createTopology DIRECTLY via flyctl ssh (NOT through proxy — the proxy was the original failure trigger). 3) Verify vertex count > 0. 4) Walk through UAT #4 + #5 (curl-based, can be done end-to-end). 5) Offer UAT #1 + #3 to user (need their hands).",
+  "context_notes": "Phase 5 was already 'shipped' at artifact level (PROJECT.md treats it as ✓ with 9/9 SCs verified at code level), but the live-deploy operator runbook (05-HUMAN-UAT.md) was paused mid-walkthrough on 2026-04-27 at 78% context. This session resumed it. Frontend deploy succeeded on first try after the toml path fix. Topology bootstrap hit two undocumented infra capacity issues (memory + volume) that should be folded into Phase 5 RESEARCH/CONTEXT or a Phase 5.1 polish plan. CRITICAL: pgr_createTopology MUST run via flyctl ssh, NOT through flyctl proxy — the proxy timed out on the long query, postgres rolled back, and that triggered the OOM/disk-full crash loop that ate ~30 min."
+}
