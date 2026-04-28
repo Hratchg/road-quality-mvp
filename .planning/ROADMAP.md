@@ -211,7 +211,15 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. Production DB re-ingested via `scripts/ingest_mapillary.py` with `--wipe-synthetic` to swap public-model detections (from Phase 6 Plan 06-03) for trained-detector detections; segment_scores recomputed
   6. `docs/DETECTOR_EVAL.md` updated with the new measured numbers; old baseline numbers preserved in a "previous baseline" section for traceability
   7. README updated to reflect the new detector status (no longer "public baseline; LA-trained is M2 work")
-**Plans**: TBD (likely 5–7 plans: data sourcing, large-scale labeling, training, eval, publish, prod re-ingest, README/docs refresh)
+**Plans**: 8 plans
+- [ ] 07-01-PLAN.md — Wave 0 RED tests: bootstrap_ci_map50 + wipe_mapillary_rows + _DEFAULT_HF_REPO pin
+- [ ] 07-02-PLAN.md — bootstrap_ci_map50 impl + start_captured_at filter + _DEFAULT_LA_BBOXES expansion to 20 zones
+- [ ] 07-03-PLAN.md — scripts/ingest_mapillary.py --wipe-mapillary flag + safety latch (D-15)
+- [ ] 07-04-PLAN.md — Fetch/prelabel + GATE A (operator hand-labels in CVAT to >=150 positives, >=30 in test)
+- [ ] 07-05-PLAN.md — FINETUNE.md Recipe C update + GATE B (operator EC2 g5.xlarge run + HF SHA capture)
+- [ ] 07-06-PLAN.md — Re-eval baseline + trained eval + D-11 win-check
+- [ ] 07-07-PLAN.md — _DEFAULT_HF_REPO swap + prod re-ingestion via flyctl proxy + backend redeploy (SC #4 + SC #5)
+- [ ] 07-08-PLAN.md — DETECTOR_EVAL.md v0.3.0 + MAPILLARY_INGEST.md --wipe-mapillary doc + README LA-trained status (SC #6 + SC #7)
 **UI hint**: no — backend/data work only
 
 ### Phase 6: Public Demo Launch
