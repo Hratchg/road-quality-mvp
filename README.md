@@ -2,15 +2,33 @@
 
 A web application for road-quality-aware route optimization in Los Angeles. Find routes that minimize exposure to rough roads (IRI) and potholes, with a configurable time budget.
 
-## Current Status (2026-02-23)
+## Live Demo
 
-**MVP code is complete.** 19/19 backend tests passing, frontend builds clean. Docker Desktop has been installed but **PC restart is required** before the demo can run.
+**🌐 https://road-quality-frontend.fly.dev/**
 
-### Resume After Restart
+A public LA pothole-aware routing demo. Pick two points on the map; get a "fastest" route alongside a "best" route that detours around real Mapillary-detected potholes within a configurable time budget.
 
-1. Restart PC and **launch Docker Desktop** from Start menu
-2. Wait for Docker whale icon to turn solid in system tray (~30-60 seconds)
-3. Open a terminal in this project directory and follow Quick Start below
+**What you can do:**
+- **Map view** — Zoom around LA. Road segments are color-coded by their pothole + roughness scores. No sign-in required.
+- **Route Finder** (`/route`) — Click "Try as demo" in the sign-in modal to log in with one click, then click two LA points and compare the fastest vs. best route side-by-side.
+
+**Data + accuracy:**
+- Imagery: real Mapillary CC-BY-SA street-level captures from three LA zones (DTLA, West LA residential, Hollywood freeway-adjacent)
+- Detector: [`keremberke/yolov8s-pothole-segmentation`](https://huggingface.co/keremberke/yolov8s-pothole-segmentation) public baseline (revision pinned at `d6d5df4` in `data_pipeline/detector_factory.py` for pickle-ACE drift protection)
+- Measured baseline accuracy on the LA test split: **precision 0.143** (CI95% [0.000, 0.500]), **recall 0.333** (CI95% [0.000, 1.000]). 17 test images, 3 ground-truth positives — see [`docs/DETECTOR_EVAL.md`](docs/DETECTOR_EVAL.md) for the full methodology + caveats.
+- Routing: synthetic IRI data + real Mapillary detections on a subset of segments. Synthetic + real coexist; the trained-on-LA detector replacement is Phase 7 work.
+
+**Disclaimer — demo, not production:**
+- Detector accuracy is measured on a small (17-image / 3-positive) LA test split. Confidence intervals are wide enough to cover almost any value; **do not** treat the numbers above as production-grade pothole detection performance.
+- LA-specific fine-tuning is **Phase 7** work. This demo uses the public baseline; Phase 7 will source ~10× more imagery, hand-label more aggressively, train a model that beats the baseline, and replace these numbers.
+- Geographic scope: **LA only.** Bbox is hard-coded to ~20 km around `(34.0522, -118.2437)`. Generalization to other cities is M2 territory.
+- The demo password (`demo@road-quality-mvp.dev` / `demo1234`) is intentionally public — see [Public Demo Account](#public-demo-account).
+
+## Current Status
+
+**Phase 6 shipped (2026-04-28).** Public demo URL is live with real Mapillary detections + measured (small-sample) baseline numbers. **Phase 7 (LA-Trained Detector)** is the active follow-up: source ~10× more imagery, relabel, fine-tune to beat the baseline measured above.
+
+19/19 M0 backend tests + 200+ M1 backend tests passing. M0 + Phases 1–6 of M1 shipped. See `.planning/ROADMAP.md` for the full phase status.
 
 ## Quick Start
 
@@ -126,25 +144,35 @@ Returns GeoJSON FeatureCollection of road segments within the bounding box, with
 ## Detector Accuracy
 
 The YOLOv8 pothole detector is evaluated on a hand-labelled LA eval set
-(~300 Mapillary images, 70/20/10 sequence-grouped split) with precision,
-recall, mAP@0.5, and image-level bootstrap 95% CIs. Full methodology and
-numbers: [`docs/DETECTOR_EVAL.md`](docs/DETECTOR_EVAL.md).
+(158 Mapillary images, sequence-grouped 70/20/10 split — 110 train /
+31 val / 17 test) with precision, recall, mAP@0.5, and image-level
+bootstrap 95% CIs. Full methodology, measured numbers, sample-size
+caveats, and Phase 7 forward pointer:
+[`docs/DETECTOR_EVAL.md`](docs/DETECTOR_EVAL.md).
+
+**Phase 6 baseline numbers** (public model on LA test split): precision
+0.143 [0.000, 0.500], recall 0.333 [0.000, 1.000]. CIs are wide because
+the test split has only 3 ground-truth positives — Phase 7 will widen
+the dataset 10× to tighten these.
 
 Reproduce from a clean checkout — see
-[`docs/FINETUNE.md`](docs/FINETUNE.md) for laptop/Colab/EC2 fine-tuning
-recipes, then:
+[`docs/FINETUNE.md`](docs/FINETUNE.md) for laptop / Colab / EC2 training
+recipes (relevant once Phase 7's larger dataset lands), then:
 
 ```bash
 # verify dataset integrity
 python scripts/fetch_eval_data.py
 
-# run eval on the held-out test split
+# run eval on the held-out test split (Phase 6 baseline)
 python scripts/eval_detector.py --data data/eval_la/data.yaml --split test
 ```
 
 Configuration: set `YOLO_MODEL_PATH` in `.env` to either a HuggingFace repo
 id (e.g. `<user>/road-quality-la-yolov8@<revision>`) or a local `.pt`
-file path. Default falls back to `keremberke/yolov8s-pothole-segmentation`.
+file path. Default falls back to
+`keremberke/yolov8s-pothole-segmentation@d6d5df4ac1a9e40b0180635b03198ddec88c4875`
+(pinned for pickle-ACE drift protection, see `_DEFAULT_HF_REPO` comment
+block in `data_pipeline/detector_factory.py`).
 
 ## Real-Data Ingest
 
