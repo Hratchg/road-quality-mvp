@@ -3,6 +3,7 @@ uvicorn[standard]==0.34.0
 psycopg2-binary==2.9.11
 pydantic==2.10.4
 pytest==8.3.4
+pytest-timeout>=2.3
 httpx==0.28.1
 cachetools>=5.3
 # Phase 4 auth additions (REQ-user-auth, 04-CONTEXT.md D-02 + D-06; RESEARCH A7)
