@@ -171,6 +171,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
+        with:
+          # Pin to 0.4.40 — 0.4.41 changed [build].dockerfile path resolution
+          # for non-trivial cases. The deploy/backend/fly.toml +
+          # deploy/frontend/fly.toml + deploy/db/fly.toml dockerfile paths were
+          # verified end-to-end against 0.4.40 (commits bca06a6, fdd8fd4, and
+          # the 2026-04-28 frontend deploy). 0.4.41 resolves the same paths
+          # from a different anchor and ends up outside the repo. Re-evaluate
+          # the pin only after manually verifying all 3 tomls deploy cleanly
+          # on the new version.
+          version: 0.4.40
       - run: flyctl deploy --remote-only --config deploy/db/fly.toml --app road-quality-db .
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
@@ -187,6 +197,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
+        with:
+          # Pin to 0.4.40 — 0.4.41 changed [build].dockerfile path resolution
+          # for non-trivial cases. The deploy/backend/fly.toml +
+          # deploy/frontend/fly.toml + deploy/db/fly.toml dockerfile paths were
+          # verified end-to-end against 0.4.40 (commits bca06a6, fdd8fd4, and
+          # the 2026-04-28 frontend deploy). 0.4.41 resolves the same paths
+          # from a different anchor and ends up outside the repo. Re-evaluate
+          # the pin only after manually verifying all 3 tomls deploy cleanly
+          # on the new version.
+          version: 0.4.40
       # CR-01 fix: build context is `backend/` (last positional arg), not the
       # repo root. The existing backend/Dockerfile uses `COPY requirements.txt .`
       # / `COPY . .` which only resolves correctly when context = backend/
@@ -214,6 +234,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
+        with:
+          # Pin to 0.4.40 — 0.4.41 changed [build].dockerfile path resolution
+          # for non-trivial cases. The deploy/backend/fly.toml +
+          # deploy/frontend/fly.toml + deploy/db/fly.toml dockerfile paths were
+          # verified end-to-end against 0.4.40 (commits bca06a6, fdd8fd4, and
+          # the 2026-04-28 frontend deploy). 0.4.41 resolves the same paths
+          # from a different anchor and ends up outside the repo. Re-evaluate
+          # the pin only after manually verifying all 3 tomls deploy cleanly
+          # on the new version.
+          version: 0.4.40
       - run: flyctl deploy --remote-only --config deploy/frontend/fly.toml --app road-quality-frontend .
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
@@ -236,6 +266,16 @@ jobs:
         with:
           python-version: '3.12'
       - uses: superfly/flyctl-actions/setup-flyctl@master
+        with:
+          # Pin to 0.4.40 — 0.4.41 changed [build].dockerfile path resolution
+          # for non-trivial cases. The deploy/backend/fly.toml +
+          # deploy/frontend/fly.toml + deploy/db/fly.toml dockerfile paths were
+          # verified end-to-end against 0.4.40 (commits bca06a6, fdd8fd4, and
+          # the 2026-04-28 frontend deploy). 0.4.41 resolves the same paths
+          # from a different anchor and ends up outside the repo. Re-evaluate
+          # the pin only after manually verifying all 3 tomls deploy cleanly
+          # on the new version.
+          version: 0.4.40
       # CR-01 fix: run seed_data.py from the GitHub runner's host venv against
       # the deployed Fly DB through `flyctl proxy` (TCP tunnel to localhost).
       # Previously this ran via `flyctl ssh console -C "python scripts/seed_data.py"`
