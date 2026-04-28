@@ -105,6 +105,8 @@ Post-MVP features shipped + detector accuracy demonstrated on real LA imagery + 
 - **Migrations**: Single SQL files under `db/migrations/`, no Alembic for M1.
 - **CORS**: Dev uses `*`; production CORS must be restricted to the deployed frontend origin(s) before `REQ-prod-deploy` ships.
 - **Secrets**: Production deploy must not use the dev defaults (`rq`/`rqpass`/`roadquality`). All secrets via environment, never committed.
+- **Cloud infra sizing (post-Phase 5 UAT)**: A fully-seeded LA dataset (~209k segments + ~125k defects + ~74k vertices + WAL) needs ≥ 2 GB DB machine memory and ≥ 3 GB volume capacity. Phase 5 currently runs at `shared-cpu-1x:2048MB` + `5 GB` volume (comfortable). Re-size if segment count exceeds 500k. Empty-schema sizing produced an OOM crash loop during `pgr_createTopology` — see `.planning/phases/05-cloud-deployment/05-LESSONS-LEARNED.md`.
+- **Long DDL operations on Fly DB**: Run `pgr_createTopology` and any other long-running DDL via `flyctl ssh console -C "psql ..."`, NOT through `flyctl proxy`. The wireguard tunnel times out on multi-minute queries and triggers a postgres recovery crash loop. BLOCKING anti-pattern documented in 05-LESSONS-LEARNED.md.
 
 ## Key Decisions
 

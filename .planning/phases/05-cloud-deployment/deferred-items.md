@@ -4,7 +4,19 @@ Items found during plan execution that are NOT caused by the current task's
 changes. Logged per the executor SCOPE BOUNDARY rule. These belong to other
 plans or other phases.
 
-## Pre-existing test failures (DB has no seed data)
+## ✅ RESOLVED 2026-04-28 — All items below were closed during the Phase 5 UAT walkthrough
+
+The 6 test failures listed below were closed by commit `ec0fa67`
+("close 19 CI test failures surfaced by UAT #1"), which added a
+`db_has_topology` session fixture in `backend/tests/conftest.py` that
+auto-skips dependent tests with a clear message when the DB doesn't
+have a built routing topology. Local dev with seeded DB still exercises
+the tests; CI's lightweight postgres service container cleanly skips.
+
+This file is preserved for historical context (the "scope boundary" log
+of what 05-01 punted) but is no longer an open item.
+
+## Pre-existing test failures (DB has no seed data) — RESOLVED
 
 Discovered while running the full `backend/tests/` suite during 05-01 execution
 (2026-04-27). Reproduced both WITH and WITHOUT 05-01's changes (verified by
