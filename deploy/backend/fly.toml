@@ -27,14 +27,16 @@
 app = "road-quality-backend"
 primary_region = "lax"
 
-[build]
-  # Path is relative to THIS fly.toml's directory (deploy/backend/), not
-  # the build context. `../../backend/Dockerfile` resolves to
-  # <repo_root>/backend/Dockerfile — same path local `docker compose build`
-  # resolves against `build: ./backend`. Build context is still passed as
-  # the last positional arg to `flyctl deploy` (e.g. `backend/`) so the
-  # Dockerfile's `COPY requirements.txt .` resolves against backend/.
-  dockerfile = "../../backend/Dockerfile"
+# [build].dockerfile intentionally omitted — flyctl auto-discovers
+# `Dockerfile` from the build context (`backend/`, the positional arg
+# passed to `flyctl deploy ... backend/`). An explicit
+# `dockerfile = "../../backend/Dockerfile"` was tried and failed in CI
+# both at 0.4.40 and 0.4.41: flyctl logged
+#   WARN ignoring <checkout>/backend/Dockerfile, and using
+#        <above-checkout>/backend/Dockerfile (from --config path unset--)
+# i.e., it resolved the relative path from the wrong anchor and ended up
+# outside the GH-Actions checkout root. Auto-discovery sidesteps this:
+# flyctl finds backend/Dockerfile in the context and uses it directly.
 
 [env]
   # Non-secrets only here. Secrets via `fly secrets set --app
