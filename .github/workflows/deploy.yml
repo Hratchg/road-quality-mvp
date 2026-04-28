@@ -207,13 +207,25 @@ jobs:
           # the pin only after manually verifying all 3 tomls deploy cleanly
           # on the new version.
           version: 0.4.40
-      # CR-01 fix: build context is `backend/` (last positional arg), not the
-      # repo root. The existing backend/Dockerfile uses `COPY requirements.txt .`
-      # / `COPY . .` which only resolves correctly when context = backend/
-      # (matches docker-compose.yml's `build: ./backend`). Repo-root context
-      # would fail at the first COPY because <repo>/requirements.txt does not
-      # exist.
-      - run: flyctl deploy --remote-only --config deploy/backend/fly.toml --app road-quality-backend backend/
+      # CR-01 fix: build context is `backend/`. The existing backend/Dockerfile
+      # uses `COPY requirements.txt .` / `COPY . .` which only resolves
+      # correctly when context = backend/ (matches docker-compose.yml's
+      # `build: ./backend`). Repo-root context would fail at the first COPY
+      # because <repo>/requirements.txt does not exist.
+      #
+      # Phase 5 UAT #1 followup: invoke flyctl with CWD=backend/ rather than
+      # passing `backend/` as the positional context. flyctl in CI (both
+      # 0.4.40 and 0.4.41) computed [build].dockerfile from a wrong anchor
+      # and produced
+      #   Error: dockerfile '/home/runner/work/<repo>/backend/Dockerfile'
+      #          not found
+      # (one level above the GH-Actions checkout root). cd-then-deploy with
+      # context `.` lets flyctl auto-discover Dockerfile in the CWD without
+      # any cross-directory path resolution. The toml's [build] block was
+      # also dropped (commit 5f5eea2) so there's nothing for flyctl to
+      # mis-resolve.
+      - working-directory: backend
+        run: flyctl deploy --remote-only --config ../deploy/backend/fly.toml --app road-quality-backend .
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
