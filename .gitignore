@@ -30,13 +30,18 @@ cache/
 models/
 
 # ----- Phase 2: Eval dataset -----
-# The dataset content is large and Mapillary-derived (CC-BY-SA).
-# Only the manifest + data.yaml are committed so other developers can
-# rebuild/verify the same set via scripts/fetch_eval_data.py.
+# The IMAGES are large and Mapillary-derived (CC-BY-SA).
+# Only the manifest + data.yaml + LABELS are committed so other developers
+# can rebuild/verify the same set via scripts/fetch_eval_data.py and
+# inherit the project's hand-labels (or auto-labels from
+# scripts/prelabel.py — see Phase 6 Plan 06-02). Labels are a few KB
+# total, the operator's load-bearing work product, and worth tracking.
 data/eval_la/*
 !data/eval_la/manifest.json
 !data/eval_la/data.yaml
 !data/eval_la/.gitkeep
+!data/eval_la/labels
+!data/eval_la/labels/**
 
 # ----- Phase 3: Mapillary ingest cache -----
 # Per-segment image downloads + per-run manifests. Ephemeral by design;
