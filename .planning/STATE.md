@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
+milestone: v0.3.0
 milestone_name: milestone
 status: planning
 stopped_at: Phase 7 context gathered
-last_updated: "2026-04-28T18:27:28.444Z"
+last_updated: "2026-04-28T21:59:14.653Z"
 last_activity: 2026-04-27
 progress:
   total_phases: 7
   completed_phases: 6
-  total_plans: 28
+  total_plans: 36
   completed_plans: 28
-  percent: 100
+  percent: 78
 ---
 
 # Project State
@@ -107,6 +107,6 @@ Last session: --stopped-at
 Stopped at: Phase 7 context gathered
 Resume file: --resume-file
 
-**Planned Phase:** 3 (Mapillary Ingestion Pipeline) — 5 plans — 2026-04-25T20:14:20.871Z
+**Planned Phase:** 7 (LA-Trained Detector) — 8 plans — 2026-04-28T21:59:14.644Z
 **Completed Phase:** 1 (MVP Integrity Cleanup) — 4 plans — 2026-04-23
 **Phase 5 UAT walkthrough:** 2026-04-27 → 2026-04-28 — 16 defects surfaced + fixed inline (8 commits) — see .planning/phases/05-cloud-deployment/05-HUMAN-UAT.md
