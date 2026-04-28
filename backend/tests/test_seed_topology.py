@@ -52,7 +52,22 @@ def test_seed_data_builds_routable_topology(db_conn):
     pgr_ksp can't build a route on a non-existent or unlinked topology.
     This is the EXACT bug Phase 4's UAT exposed (the manual SQL step
     requirement) and Phase 5 SC #7 closes.
+
+    HEAVY: subprocess-launches scripts/seed_data.py which downloads OSM data
+    via osmnx and inserts ~10k segments. Auto-skips when osmnx is
+    unimportable so CI runs without scripts/requirements.txt installed
+    (e.g., the Phase 5 deploy.yml test job which keeps installs minimal to
+    avoid 5-minute OSMnx-downloads on every PR) skip cleanly. Run locally
+    with /tmp/rq-venv (which has osmnx) to exercise the full path.
     """
+    try:
+        import osmnx  # noqa: F401
+    except ImportError:
+        pytest.skip(
+            "osmnx not installed — pip install -r scripts/requirements.txt "
+            "to run the heavy SC #7 seed regression gate locally"
+        )
+
     if not SEED_SCRIPT.exists():
         pytest.fail(f"scripts/seed_data.py not found at {SEED_SCRIPT}")
 

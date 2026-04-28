@@ -31,7 +31,7 @@ LA_BBOX = "-118.28,34.02,-118.20,34.08"
 EMPTY_BBOX = "0,0,0.001,0.001"
 
 
-def test_segments_returns_geojson(client):
+def test_segments_returns_geojson(client, db_has_topology):
     resp = client.get(f"/segments?bbox={LA_BBOX}")
     assert resp.status_code == 200
 
@@ -77,7 +77,7 @@ def _post_route(client, *, origin=ORIGIN_DOWNTOWN, destination=DEST_NEARBY, **ov
 
 
 @pytest.mark.timeout(30)
-def test_route_real_points(client):
+def test_route_real_points(client, db_has_topology):
     resp = _post_route(client)
     assert resp.status_code == 200
 
@@ -96,7 +96,7 @@ def test_route_real_points(client):
 
 
 @pytest.mark.timeout(30)
-def test_route_respects_time_budget(client):
+def test_route_respects_time_budget(client, db_has_topology):
     resp = _post_route(client, max_extra_minutes=0)
     assert resp.status_code == 200
 
@@ -113,7 +113,7 @@ def test_route_respects_time_budget(client):
 
 
 @pytest.mark.timeout(60)
-def test_route_with_weights(client):
+def test_route_with_weights(client, db_has_topology):
     resp_iri = _post_route(
         client, include_iri=True, include_potholes=False, weight_iri=100, weight_potholes=0,
     )
@@ -133,7 +133,7 @@ def test_route_with_weights(client):
 
 
 @pytest.mark.timeout(30)
-def test_route_distant_points(client):
+def test_route_distant_points(client, db_has_topology):
     # Slightly farther apart (~500m) but still fast enough for pgr_ksp
     far_origin = {"lat": 34.0522, "lon": -118.2437}
     far_dest = {"lat": 34.0560, "lon": -118.2480}

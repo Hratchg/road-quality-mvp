@@ -128,12 +128,14 @@ jobs:
           pip install -r backend/requirements.txt
           # Tests in backend/tests/ collect-time-import from scripts/ and
           # data_pipeline/ (e.g. test_mapillary.py → data_pipeline.mapillary →
-          # `import requests`; test_iri_ingestion.py → `import numpy`). Install
-          # only the collection-time deps to keep CI fast — the heavier ML deps
-          # from data_pipeline/requirements.txt (ultralytics+torch ~3GB, opencv,
-          # scipy) are runtime-only and tests that exercise them
-          # skip/mock instead of running detector inference in CI.
-          pip install requests numpy
+          # `import requests`; test_iri_ingestion.py → `import numpy`;
+          # test_detector_factory.py mocks via `patch("huggingface_hub.hf_hub_download")`
+          # which requires the module to be importable). Install only the
+          # collection-time deps to keep CI fast — the heavier ML deps from
+          # data_pipeline/requirements.txt (ultralytics+torch ~3GB, opencv,
+          # scipy) are runtime-only and tests that exercise them skip/mock
+          # instead of running detector inference in CI.
+          pip install requests numpy huggingface_hub
       - name: Run pytest from host (NOT in-container — Correction C)
         working-directory: backend
         env:

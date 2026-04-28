@@ -47,6 +47,34 @@ def db_conn(db_available):
     conn.close()
 
 
+@pytest.fixture(scope="session")
+def db_has_topology(db_conn):
+    """Skip tests that need a built routing topology (pgr_createTopology output).
+
+    CI's lightweight postgres service container has migrations only — no
+    road_segments rows and no road_segments_vertices_pgr table. Tests that
+    hit /route or expect non-empty /segments depend on a fully-seeded DB
+    (scripts/seed_data.py) and should auto-skip in those environments.
+    """
+    with db_conn.cursor() as cur:
+        cur.execute(
+            "SELECT EXISTS ("
+            "  SELECT 1 FROM information_schema.tables"
+            "  WHERE table_name = 'road_segments_vertices_pgr'"
+            ") AS has_table"
+        )
+        has_table = cur.fetchone()["has_table"]
+        if not has_table:
+            pytest.skip(
+                "road_segments_vertices_pgr missing — run scripts/seed_data.py "
+                "to build topology"
+            )
+        cur.execute("SELECT count(*) AS n FROM road_segments_vertices_pgr")
+        if cur.fetchone()["n"] == 0:
+            pytest.skip("road_segments_vertices_pgr empty — topology not built")
+    return True
+
+
 # --- Phase 4 auth fixtures (RESEARCH Pattern 1 override seam) ---
 
 

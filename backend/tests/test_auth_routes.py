@@ -192,7 +192,8 @@ def test_cache_clear_without_token_returns_401(client):
 def test_health_remains_public(client):
     resp = client.get("/health")
     assert resp.status_code == 200
-    assert resp.json() == {"status": "ok"}
+    # Phase 5 enhanced /health to include `db: reachable` for LB-probe parity.
+    assert resp.json() == {"status": "ok", "db": "reachable"}
 
 
 def test_segments_remains_public(client):
@@ -203,7 +204,7 @@ def test_segments_remains_public(client):
     assert resp.status_code != 403
 
 
-def test_route_with_dep_override_authorizes(authed_client):
+def test_route_with_dep_override_authorizes(authed_client, db_has_topology):
     """The auth gate is the only thing this test exercises. Whether /route
     actually returns 200 depends on whether the DB has a routable graph.
     Acceptable codes: 200 (graph present), 502/503 (DB unreachable), 500
