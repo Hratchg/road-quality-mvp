@@ -34,7 +34,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 3: Mapillary Ingestion Pipeline** — Automated pull-detect-write pipeline fed by real street imagery
 - [ ] **Phase 4: Authentication** — Sign up / sign in / session enforcement on expensive endpoints
 - [ ] **Phase 5: Cloud Deployment** — Deploy the stack to a cloud host with production-safe config
-- [ ] **Phase 6: Public Demo Launch** — Publish the URL, verify real-data flow, link from README
+- [ ] **Phase 6: Public Demo Launch** — Publish the URL, verify real-data flow, link from README (ships with public baseline detector per Phase 6 D-09)
+- [ ] **Phase 7: LA-Trained Detector** — Source ~10x imagery, hand-label, fine-tune to beat the public baseline measured in Phase 6 (added 2026-04-28 after Phase 6 D-09 deferred fine-tuning out of M1 demo scope)
 
 ## Phase Details
 
@@ -196,6 +197,22 @@ Decimal phases appear between their surrounding integers in numeric order.
   8. The repo's migration test suite collects and runs cleanly inside the deployed `backend` container — `test_migration_002.py` and `test_migration_003.py` resolve their migration-file paths via the project root, not absolute `/db/...` *(folded in from Phase 4, exposed during in-container test run; affects CI gating once the deploy pipeline runs the suite)*
   9. `backend/app/routes/routing.py` releases its psycopg2 connection on the exception path (wrap in `contextlib.closing` like Phase 3 plan 03's WR-04 fix and Phase 4 plan 03's WR-03 fix) — required so the SimpleConnectionPool in SC #6 doesn't leak slots under the route load it's meant to handle *(folded in from Phase 4 code review WR-03; pre-existing pattern from Phase 0)*
 **Plans**: TBD
+
+### Phase 7: LA-Trained Detector
+**Goal**: Beat the public-baseline detector numbers measured in Phase 6 with a YOLOv8 fine-tuned on a substantially larger LA dataset. Replaces the placeholder "we use the baseline" disclosure in DETECTOR_EVAL.md with measured improvement.
+**Depends on**: Phase 6
+**Requirements**: REQ-trained-la-detector (added with this phase; supersedes the original Phase 2 fine-tune scope that ended up insufficient at 17 bboxes / 158 images)
+**Why this phase exists**: Phase 6 D-09 deferred fine-tuning because Phase 4's hand-labeling pass yielded only 17 positive bboxes across 158 images — way below the floor for stable YOLO fine-tuning. Two reads: either the public model has ~80% FP rate on this Mapillary imagery (so 17 is honest ground truth), or LA Mapillary captures naturally show few potholes from oblique 2D angles. Either way, Phase 7's first plan is a data-strategy decision: source different/more imagery before any new labeling.
+**Success Criteria** (what must be TRUE):
+  1. Eval dataset has ≥150 positive pothole bboxes across train+val+test (vs 17 in Phase 6); test split has ≥30 positives so precision/recall CIs are usable
+  2. Fine-tuned detector beats the public baseline on the test split: precision OR recall improvement is statistically meaningful (non-overlapping 95% CIs)
+  3. Trained model published to HuggingFace at `Hratchg/road-quality-la-yolov8` with a pinned revision SHA (per Phase 2 D-13 / Pitfall 8)
+  4. `data_pipeline/detector_factory._DEFAULT_HF_REPO` updated to point at the trained model with `@<sha>` revision pin
+  5. Production DB re-ingested via `scripts/ingest_mapillary.py` with `--wipe-synthetic` to swap public-model detections (from Phase 6 Plan 06-03) for trained-detector detections; segment_scores recomputed
+  6. `docs/DETECTOR_EVAL.md` updated with the new measured numbers; old baseline numbers preserved in a "previous baseline" section for traceability
+  7. README updated to reflect the new detector status (no longer "public baseline; LA-trained is M2 work")
+**Plans**: TBD (likely 5–7 plans: data sourcing, large-scale labeling, training, eval, publish, prod re-ingest, README/docs refresh)
+**UI hint**: no — backend/data work only
 
 ### Phase 6: Public Demo Launch
 **Goal**: Anyone with the URL can open the app and see real LA pothole data informing routes — the user-visible payoff of the milestone.

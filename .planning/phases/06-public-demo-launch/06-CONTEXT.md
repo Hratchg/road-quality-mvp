@@ -94,7 +94,24 @@ The public URL `road-quality-frontend.fly.dev` is ALREADY accessible (Phase 5). 
 
 **Why:** Pragmatic — the URL leaking now (e.g., to Hratchg's social media) is fine; announcing "look at our LA pothole demo" before we have real numbers would mean retracting/updating later.
 
-**How to apply:** Plan 06-06 is the gate. README update + announcement happen as a single PR. Until that lands, anyone hitting the URL just sees a working demo with synthetic data.
+**How to apply:** Plan 06-06 (the announcement gate; renumbered from 06-07 after D-09 dropped 06-05/training). README update + announcement happen as a single PR.
+
+### D-09: Drop fine-tuning from Phase 6 — ship the public baseline (USER CHOICE 2026-04-28T17:40Z)
+After Plan 06-04 hand-labeling produced **17 total bboxes across 158 images** (8 train, 6 val, 3 test), the dataset is materially below the floor for stable YOLO fine-tuning (literature points to ~hundreds of positives per class; 8 train is below SGD's noise floor). Two reasonable interpretations of why: (a) the public model's 86 auto-suggestions had ~80% false-positive rate on this LA imagery, so 17 is honest ground truth; (b) Mapillary's 2D street-level shots just don't surface many potholes regardless of labeler effort. Either way, fine-tuning would either overfit or underperform the baseline.
+
+**Decision (Option II of three):** Drop the training step from Phase 6. Use the public `keremberke/yolov8s-pothole-segmentation` as the production detector. Eval that baseline on the LA test split for honest measured numbers (with caveats about the small sample). Defer LA-specific fine-tuning to **Phase 7**.
+
+**Why:** Optimizes for *speed of feedback* over *integrity of the technical claim*. The demo's user-visible value (smoother routes via real road-quality data) is fully delivered without fine-tuning — the detector is a knob that can be tuned later. M1 closes within days. Phase 7 owns the data-acquisition pivot needed to make fine-tuning meaningful.
+
+**How to apply:**
+- Plan 06-05 renamed: "Eval public baseline + pin revision" (no training)
+- Plan 06-06 (formerly 06-07): README + announcement
+- Plan 06-03's mapillary-source detections in prod DB stay (already from public baseline; consistent)
+- Phase 7 added to ROADMAP.md as the LA-trained-detector follow-up
+
+**Rejected alternatives:**
+- Option I (train anyway on 8 examples): produces unreliable numbers; honest reporting would say "the trained model performs worse than the baseline," which is a worse story than "we use the baseline."
+- Option III (more data + relabel): valid but multi-week effort. Carved out as Phase 7 instead so M1 ships first.
 
 </decisions>
 
@@ -160,22 +177,19 @@ The public URL `road-quality-frontend.fly.dev` is ALREADY accessible (Phase 5). 
   - Commits the labels
   - Phase 6 execution PAUSES until this is complete
 
-- **Plan 06-05: Train detector** (was 06-03; automatable; ~hours of compute)
-  - Operator picks recipe A/B/C from docs/FINETUNE.md
-  - `python scripts/finetune_detector.py --data data/eval_la/data.yaml --epochs 50`
-  - Verifies `runs/detect/train*/weights/best.pt` non-empty
-  - Optional: `--push-to-hub Hratchg/road-quality-la-yolov8`
-
-- **Plan 06-06: Eval + HF publish + revision pin + re-ingest** (was 06-04 + 06-05 epilogue; ~30 min)
+- **Plan 06-05: Eval public baseline + pin revision** (was "train detector"; renamed 2026-04-28 per D-09 Option II decision; automatable; ~15 min)
   - `python scripts/eval_detector.py --data data/eval_la/data.yaml --split test --json-out eval_results.json`
-  - Substitute 14 TBDs in docs/DETECTOR_EVAL.md from eval_results.json
-  - If not already pushed in 06-05, push to HF
-  - Capture HF commit SHA, update `_DEFAULT_HF_REPO` to `Hratchg/road-quality-la-yolov8@<sha>`
-  - Re-run `scripts/ingest_mapillary.py` against prod DB to swap public-model detections (from Plan 06-03) for trained-detector detections
+  - Substitute 14 TBDs in `docs/DETECTOR_EVAL.md` from eval_results.json — this is now the **public baseline's** measured performance on the LA test split, NOT a fine-tuned detector
+  - Capture the HF revision SHA of `keremberke/yolov8s-pothole-segmentation` and update `_DEFAULT_HF_REPO` in `data_pipeline/detector_factory.py` to include `@<sha>` (per D-05; this protects against pickle-ACE drift)
+  - Caveats added to DETECTOR_EVAL.md:
+    - "Numbers reflect the public baseline on a small (17-image, 3-positive) LA holdout. Confidence intervals are correspondingly wide."
+    - "Phase 7 will train an LA-specific detector; numbers above will be replaced when that ships."
+  - **Skipped from original plan:** training, HF publish of own model, re-ingestion against prod DB. All deferred to Phase 7.
 
-- **Plan 06-07: README + announcement** (was 06-06; ~30 min)
-  - Update README.md with public URL + data-source + accuracy paragraph
-  - Add disclaimer ("LA-only, ~150 image train, demo not production")
+- **Plan 06-06: README + announcement** (was 06-07; ~30 min)
+  - Update README.md with public URL + data-source paragraph (Mapillary CC-BY-SA imagery, public baseline detector, eval numbers from Plan 06-05)
+  - Add explicit "demo, not production" disclaimer including the small-test-set caveat
+  - Link forward to Phase 7 ("LA-specific detector training is the next milestone work")
   - Commit + push (this is the announcement gate per D-08)
 
 </specifics>
@@ -183,11 +197,12 @@ The public URL `road-quality-frontend.fly.dev` is ALREADY accessible (Phase 5). 
 <deferred>
 ## Deferred Ideas
 
-- **CVAT custom export plugin / automation:** out of scope. Manual export is fine for a 300-image one-shot.
-- **Detector accuracy improvements beyond first fine-tune:** M2 work. Phase 6 ships first measured numbers, not optimal numbers.
+- **LA-specific detector fine-tuning:** moved from Phase 6 to **Phase 7** per D-09. The 158-image / 17-bbox dataset is too sparse for meaningful fine-tuning. Phase 7 will source ~10x more imagery + relabel + train.
+- **Replace public-model detections in prod DB with trained-detector detections:** done in Phase 7's epilogue (re-run ingest_mapillary with the trained detector, optionally with `--wipe-synthetic`).
+- **Re-publish updated DETECTOR_EVAL.md numbers after fine-tune:** Phase 7 closure work.
+- **CVAT custom export plugin / automation:** out of scope. Manual export is fine for a one-shot.
 - **Multi-city support:** explicitly out of M1 scope per PROJECT.md.
-- **Synthetic-data parallel demo:** rejected (Option A excludes this).
-- **Auto-pseudo-labeling via existing pretrained detector:** rejected (Option A excludes this).
-- **A/B comparison between trained-on-LA detector and public-model baseline:** interesting but not in scope for first launch.
+- **Synthetic-data parallel demo:** rejected.
+- **Auto-pseudo-labeling beyond first-pass auto-suggest:** rejected.
 
 </deferred>
