@@ -91,6 +91,11 @@ def get_connection() -> Iterator[psycopg2.extensions.connection]:
     p = _get_pool()
     conn = p.getconn()
     try:
+        # Cap any single query at 12s so long-running pgr_ksp calls
+        # can't accumulate as stuck DB backend processes. Client sees
+        # a QueryCanceled error (mapped to HTTP 500) rather than a hang.
+        with conn.cursor() as _cur:
+            _cur.execute("SET LOCAL statement_timeout = '12s'")
         yield conn
     finally:
         p.putconn(conn)
