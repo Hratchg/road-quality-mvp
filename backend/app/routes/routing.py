@@ -24,26 +24,21 @@ def _ksp_sql(origin_lon: float, origin_lat: float,
              dest_lon: float, dest_lat: float) -> str:
     """Build the pgr_ksp inner SQL filtered to a corridor around the OD pair.
 
-    Dollar-quoted so psycopg2 does not interpret %s inside the string as
-    a bind parameter. Coordinates are validated floats from Pydantic.
+    Uses ST_MakeEnvelope with pre-computed literal bounds so the planner
+    can use the GiST index on road_segments.geom without evaluating a
+    compound function. Dollar-quoted so psycopg2 leaves the inner SQL alone.
     """
-    inner = (
-        f"SELECT id, source, target, travel_time_s AS cost "
+    lon_min = min(origin_lon, dest_lon) - _KSP_BBOX_PAD_DEG
+    lon_max = max(origin_lon, dest_lon) + _KSP_BBOX_PAD_DEG
+    lat_min = min(origin_lat, dest_lat) - _KSP_BBOX_PAD_DEG
+    lat_max = max(origin_lat, dest_lat) + _KSP_BBOX_PAD_DEG
+    return (
+        f"SELECT path_id, seq, edge, cost FROM pgr_ksp("
+        f"'SELECT id, source, target, travel_time_s AS cost "
         f"FROM road_segments "
-        f"WHERE geom && ST_Expand("
-        f"ST_Envelope(ST_Collect("
-        f"ST_SetSRID(ST_MakePoint({origin_lon}, {origin_lat}), 4326),"
-        f"ST_SetSRID(ST_MakePoint({dest_lon}, {dest_lat}), 4326)"
-        f")), {_KSP_BBOX_PAD_DEG})"
+        f"WHERE geom && ST_MakeEnvelope({lon_min},{lat_min},{lon_max},{lat_max},4326)',"
+        f" %s, %s, %s, directed := false) WHERE edge != -1"
     )
-    return f"""
-        SELECT path_id, seq, edge, cost
-        FROM pgr_ksp(
-            $ksp${inner}$ksp$,
-            %s, %s, %s, directed := false
-        )
-        WHERE edge != -1
-    """
 
 SEGMENTS_BY_IDS_SQL = """
     SELECT
