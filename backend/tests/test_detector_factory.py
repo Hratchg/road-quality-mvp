@@ -42,8 +42,37 @@ class TestResolveModelPath:
             assert resolved == "/tmp/sentinel/best.pt"
             mock_dl.assert_called_once()
             call_kwargs = mock_dl.call_args.kwargs
-            assert call_kwargs["repo_id"] == "keremberke/yolov8s-pothole-segmentation"
+            # Phase 7: _DEFAULT_HF_REPO points at Hratchg/road-quality-la-yolov8 (Plan 07-07 lands the constant swap; SHA pinned by Plan 07-07 after HF push completes).
+            assert call_kwargs["repo_id"] == "Hratchg/road-quality-la-yolov8"
             assert call_kwargs["filename"] == "best.pt"
+            assert "revision" in call_kwargs, (
+                "_DEFAULT_HF_REPO must include @<sha> (T-07-01 pickle-ACE mitigation)"
+            )
+            assert call_kwargs["revision"], "revision must be non-empty"
+
+    def test_default_hf_repo_pin_contains_sha(self, monkeypatch):
+        """SC #4 + Pitfall 8 (pickle-ACE mitigation): _DEFAULT_HF_REPO must
+        contain `@<sha>` so a compromised HF token cannot replace best.pt
+        and have it loaded by an unsuspecting `hf_hub_download` of HEAD.
+        Phase 7 swaps the constant from keremberke@d6d5df4 to
+        Hratchg/road-quality-la-yolov8@<sha-from-Plan-07-07>."""
+        monkeypatch.delenv("YOLO_MODEL_PATH", raising=False)
+        factory = _reload_factory()
+        repo = factory._DEFAULT_HF_REPO
+        assert isinstance(repo, str), f"_DEFAULT_HF_REPO not a str: {type(repo)}"
+        assert repo.startswith("Hratchg/road-quality-la-yolov8@"), (
+            f"_DEFAULT_HF_REPO must start with 'Hratchg/road-quality-la-yolov8@', "
+            f"got: {repo!r}"
+        )
+        # SHA must be non-empty (the part after @)
+        sha = repo.split("@", 1)[1] if "@" in repo else ""
+        assert sha, f"_DEFAULT_HF_REPO missing SHA after @: {repo!r}"
+        # Forbid the token literal '<sha>' (Plan 07-07 must replace it with a real SHA)
+        assert sha != "<sha>", (
+            "_DEFAULT_HF_REPO still has placeholder <sha>; Plan 07-07 must "
+            "substitute the real HF commit SHA captured via "
+            "HfApi().model_info('Hratchg/road-quality-la-yolov8').sha"
+        )
 
     def test_hf_repo_id_calls_hf_hub_download(self):
         factory = _reload_factory()
