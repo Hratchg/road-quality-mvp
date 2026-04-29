@@ -255,18 +255,21 @@ Phases execute in numeric order within M1: 1 → 2 → 3 → 4 → 5 → 6. Phas
 | 5. Cloud Deployment | M1 | 0/TBD | Not started | - |
 | 6. Public Demo Launch | M1 | 0/TBD | Not started | - |
 
-### Phase 999.1: Routing Performance (Backlog)
-**Goal**: Fix `pgr_ksp` latency for long cross-LA trips (currently 20-90s; acceptable for DTLA-local trips at 1-2s).
-**Why deferred**: pgRouting's `pgr_ksp` evaluates its inner SQL via PostgreSQL SPI, which does not use the GiST index on `road_segments.geom`. A spatial bbox WHERE clause inside the pgr_ksp SQL string is therefore a full sequential scan — discovered during 2026-04-29 demo prep after failing both ST_Expand/ST_Collect and ST_MakeEnvelope approaches. Reverted to original full-graph query.
-**Proposed fix**: Replace `pgr_ksp(inner_sql_string, ...)` with a two-step approach:
-  1. Use a regular psycopg2 parameterized query (with GiST index) to pre-filter `road_segments` into a temp table or CTE bounded to the OD corridor
-  2. Pass that temp table / CTE reference into `pgr_dijkstra` or `pgr_ksp`
-  Alternatively: pgr_dijkstraCost with a pre-materialized BBOX-indexed topology view.
-**Current workaround**: For the live demo, keep origin/destination pairs within ~5 km (DTLA-local, single-neighborhood). Those trips are 1-2s cold, 0.1s cached.
-**Relevant code**: `backend/app/routes/routing.py::KSP_SQL` (line 16), `backend/app/routes/routing.py::find_route` (line 79 — the `cur.execute(KSP_SQL, ...)` call).
+### Phase 8: Routing Performance
+**Goal**: Fix `pgr_ksp` latency for long cross-LA trips so the demo works anywhere in LA, not just within 5 km of a single neighborhood (currently 20-90s for long trips; 1-2s for short DTLA-local trips).
+**Depends on**: Phase 7
+**Why this phase exists**: pgRouting's `pgr_ksp` evaluates its inner SQL via PostgreSQL SPI, which does not use the GiST index on `road_segments.geom`. A spatial bbox WHERE clause inside the pgr_ksp SQL string is a full sequential scan — discovered during 2026-04-29 demo prep after failing both ST_Expand/ST_Collect and ST_MakeEnvelope approaches. Reverted to original full-graph query; root cause and fix approach documented here.
+**Proposed approach**: Two-step routing — pre-filter with a regular psycopg2 query (uses GiST index) into a temp table bounded to the OD corridor, then pass the temp table to `pgr_dijkstra` or `pgr_ksp`. Alternatively: a pre-materialized BBOX-indexed topology view.
+**Current workaround**: Keep origin/destination pairs within ~5 km (DTLA-local, single-neighborhood). Those trips are 1-2s cold, 0.1s cached.
+**Relevant code**: `backend/app/routes/routing.py::KSP_SQL` (line 16), call site at line ~79.
+**Success Criteria**:
+  1. Cross-LA route (e.g. West LA → Pasadena, ~20 km) returns in < 5s uncached
+  2. Short DTLA trips remain ≤ 2s uncached (no regression)
+  3. Existing route tests pass
+**Plans**: TBD
 
 ---
 *Roadmap initialized: 2026-04-23 after ingest synthesis + codebase map*
 *Phase 2 planned: 2026-04-23*
 *Phase 3 planned: 2026-04-25*
-*Phase 999.1 added: 2026-04-29 — routing perf backlog after failed bbox filter experiment*
+*Phase 8 added: 2026-04-29 — routing performance; root cause documented after failed bbox filter experiment*
