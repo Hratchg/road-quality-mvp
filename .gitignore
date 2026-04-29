@@ -14,6 +14,9 @@ dist/
 .vscode/
 .idea/
 
+# Claude Code agent runtime state (local only — worktrees, agent transcripts)
+.claude/
+
 # OS
 .DS_Store
 Thumbs.db
