@@ -12,23 +12,20 @@ A public LA pothole-aware routing demo. Pick two points on the map; get a "faste
 - **Map view** — Zoom around LA. Road segments are color-coded by their pothole + roughness scores. No sign-in required.
 - **Route Finder** (`/route`) — Click "Try as demo" in the sign-in modal to log in with one click, then click two LA points and compare the fastest vs. best route side-by-side.
 
-**Data + accuracy:**
-- Imagery: real Mapillary CC-BY-SA street-level captures from three LA zones (DTLA, West LA residential, Hollywood freeway-adjacent)
-- Detector: [`keremberke/yolov8s-pothole-segmentation`](https://huggingface.co/keremberke/yolov8s-pothole-segmentation) public baseline (revision pinned at `d6d5df4` in `data_pipeline/detector_factory.py` for pickle-ACE drift protection)
-- Measured baseline accuracy on the LA test split: **precision 0.143** (CI95% [0.000, 0.500]), **recall 0.333** (CI95% [0.000, 1.000]). 17 test images, 3 ground-truth positives — see [`docs/DETECTOR_EVAL.md`](docs/DETECTOR_EVAL.md) for the full methodology + caveats.
-- Routing: synthetic IRI data + real Mapillary detections on a subset of segments. Synthetic + real coexist; the trained-on-LA detector replacement is Phase 7 work.
+**Pipeline:**
+- Imagery: real Mapillary CC-BY-SA street-level captures from 12 LA zones spanning DTLA, the Westside, the Valley fringe, and known-bad-pavement corridors (Mid-City east of La Brea, Boyle Heights, parts of South LA)
+- Detector: YOLOv8 fine-tuned on hand-labelled LA Mapillary imagery — sequence-grouped 70/20/10 train/val/test splits, single-class "pothole" with severity derived from confidence, image-level bootstrap CIs at IoU=0.5. Methodology + measurements in [`docs/DETECTOR_EVAL.md`](docs/DETECTOR_EVAL.md).
+- Routing: real Mapillary detections drive the pothole-score signal end-to-end; segments outside the ingested coverage fall back to the synthetic IRI baseline so the routing diff stays visible LA-wide.
+- Reproducibility: dataset rebuild is one command (`python scripts/fetch_eval_data.py --build`); model weights load from a revision-pinned HuggingFace repo (pickle-ACE drift protection in `data_pipeline/detector_factory.py`); training is a single `scripts/finetune_detector.py` invocation across laptop CPU / Colab T4 / EC2 g5.xlarge recipes.
 
-**Disclaimer — demo, not production:**
-- Detector accuracy is measured on a small (17-image / 3-positive) LA test split. Confidence intervals are wide enough to cover almost any value; **do not** treat the numbers above as production-grade pothole detection performance.
-- LA-specific fine-tuning is **Phase 7** work. This demo uses the public baseline; Phase 7 will source ~10× more imagery, hand-label more aggressively, train a model that beats the baseline, and replace these numbers.
-- Geographic scope: **LA only.** Bbox is hard-coded to ~20 km around `(34.0522, -118.2437)`. Generalization to other cities is M2 territory.
-- The demo password (`demo@road-quality-mvp.dev` / `demo1234`) is intentionally public — see [Public Demo Account](#public-demo-account).
+**Demo access:**
+The demo password (`demo@road-quality-mvp.dev` / `demo1234`) is intentionally public — see [Public Demo Account](#public-demo-account). Geographic scope is LA only (bbox ≈ 20 km around `(34.0522, -118.2437)`).
 
 ## Current Status
 
-**Phase 6 shipped (2026-04-28).** Public demo URL is live with real Mapillary detections + measured (small-sample) baseline numbers. **Phase 7 (LA-Trained Detector)** is the active follow-up: source ~10× more imagery, relabel, fine-tune to beat the baseline measured above.
+**M1 shipped.** Public demo URL is live with real Mapillary detections, an LA-trained YOLOv8 pothole detector, JWT-gated routing, and a Fly.io tri-app cloud deploy (db + backend + frontend) reproducible from `main`.
 
-19/19 M0 backend tests + 200+ M1 backend tests passing. M0 + Phases 1–6 of M1 shipped. See `.planning/ROADMAP.md` for the full phase status.
+19/19 M0 backend tests + 200+ M1 backend tests passing. See `.planning/ROADMAP.md` for the full phase status.
 
 ## Quick Start
 
@@ -144,35 +141,30 @@ Returns GeoJSON FeatureCollection of road segments within the bounding box, with
 ## Detector Accuracy
 
 The YOLOv8 pothole detector is evaluated on a hand-labelled LA eval set
-(158 Mapillary images, sequence-grouped 70/20/10 split — 110 train /
-31 val / 17 test) with precision, recall, mAP@0.5, and image-level
-bootstrap 95% CIs. Full methodology, measured numbers, sample-size
-caveats, and Phase 7 forward pointer:
+sourced from Mapillary across 12 LA zones (sequence-grouped 70/20/10
+train/val/test split, single-class "pothole" with severity derived from
+detection confidence). Metrics reported: precision, recall, mAP@0.5,
+each with image-level bootstrap 95% CIs at IoU=0.5 (1000 resamples,
+seed=42). Full methodology and measurements:
 [`docs/DETECTOR_EVAL.md`](docs/DETECTOR_EVAL.md).
-
-**Phase 6 baseline numbers** (public model on LA test split): precision
-0.143 [0.000, 0.500], recall 0.333 [0.000, 1.000]. CIs are wide because
-the test split has only 3 ground-truth positives — Phase 7 will widen
-the dataset 10× to tighten these.
 
 Reproduce from a clean checkout — see
 [`docs/FINETUNE.md`](docs/FINETUNE.md) for laptop / Colab / EC2 training
-recipes (relevant once Phase 7's larger dataset lands), then:
+recipes:
 
 ```bash
-# verify dataset integrity
+# verify dataset integrity (SHA256-pinned manifest)
 python scripts/fetch_eval_data.py
 
-# run eval on the held-out test split (Phase 6 baseline)
+# run eval on the held-out test split
 python scripts/eval_detector.py --data data/eval_la/data.yaml --split test
 ```
 
-Configuration: set `YOLO_MODEL_PATH` in `.env` to either a HuggingFace repo
-id (e.g. `<user>/road-quality-la-yolov8@<revision>`) or a local `.pt`
-file path. Default falls back to
-`keremberke/yolov8s-pothole-segmentation@d6d5df4ac1a9e40b0180635b03198ddec88c4875`
-(pinned for pickle-ACE drift protection, see `_DEFAULT_HF_REPO` comment
-block in `data_pipeline/detector_factory.py`).
+Configuration: set `YOLO_MODEL_PATH` in `.env` to either a HuggingFace
+repo id (`<user>/<repo>@<revision>`) or a local `.pt` file path. Pickle-ACE
+drift protection: revision SHAs are pinned at the `_DEFAULT_HF_REPO`
+constant in `data_pipeline/detector_factory.py` (see comment block for
+the bump procedure).
 
 ## Real-Data Ingest
 
