@@ -166,6 +166,124 @@ def bootstrap_ci(
     return (low, point, high)
 
 
+def bootstrap_ci_map50(
+    per_image_pairs: list[dict],
+    n_resamples: int = 1000,
+    ci_level: float = 0.95,
+    seed: int = DEFAULT_SEED,
+    iou_threshold: float = 0.5,
+) -> tuple[float, float, float]:
+    """Image-level bootstrap CI on mAP@0.5 (Phase 7 D-11 win check).
+
+    Each entry in ``per_image_pairs`` MUST be a dict with keys:
+        "gt_boxes":   list[(cx, cy, w, h)]                       (normalized)
+        "pred_boxes": list[(cx, cy, w, h, confidence, class_name)]  (normalized)
+
+    Methodology (RESEARCH §2.4 Approach A):
+    1. Resample image indices with replacement (matches bootstrap_ci's
+       image-level pattern, Phase 2 D-08).
+    2. For each resample, build the global confidence-sorted prediction
+       list across the resampled images, greedy-match each prediction
+       against its image's GT at IoU >= iou_threshold (mirrors
+       match_predictions but tracks TP/FP per detection for the P-R
+       curve), accumulate TP/FP, then compute AUC of the P-R curve
+       via the trapezoid rule. That value is the mAP@0.5 for that
+       resample (single-class single-IoU AP = mAP@0.5).
+    3. Return (low, point, high) at the configured ci_level.
+
+    Returns (nan, 0.0, nan) on degenerate input (no GT positives in
+    any image, or empty input). Mirrors bootstrap_ci's contract for
+    downstream JSON serialization.
+
+    Performance: pre-resample, sort the per-image (idx -> conf-sorted
+    preds) once so the resample loop is pure index lookup + AUC
+    integration. Avoids 1000x model forward passes (Pitfall 6).
+    """
+    # ----- Degenerate guards (return early) -----
+    if not per_image_pairs:
+        return (float("nan"), 0.0, float("nan"))
+    total_gt = sum(len(p.get("gt_boxes", [])) for p in per_image_pairs)
+    if total_gt == 0:
+        return (float("nan"), 0.0, float("nan"))
+
+    n_images = len(per_image_pairs)
+    rng = np.random.default_rng(seed)
+
+    def _ap_for_resample(image_idxs: np.ndarray) -> float:
+        """Compute AP@iou_threshold over the resampled image set."""
+        # Greedy match per image first to identify TP vs FP for each pred.
+        # Single-class assumption: all preds compete for any GT in their image.
+        # Build a flat list of (confidence, is_tp) tuples, then sort by conf desc.
+        entries: list[tuple[float, int]] = []  # (confidence, is_tp 0/1)
+        n_pos = 0
+        for idx in image_idxs:
+            pair = per_image_pairs[int(idx)]
+            gts = pair.get("gt_boxes", [])
+            preds = pair.get("pred_boxes", [])
+            n_pos += len(gts)
+            if not preds:
+                continue
+            matched_gt: set[int] = set()
+            # Greedy highest-confidence-first matching (COCO-style),
+            # matching match_predictions in eval.py:104-118.
+            preds_sorted = sorted(
+                enumerate(preds), key=lambda e: -e[1][4]
+            )
+            for _, pred in preds_sorted:
+                best_iou, best_j = 0.0, -1
+                for j, gt in enumerate(gts):
+                    if j in matched_gt:
+                        continue
+                    i = iou_xywh(pred[:4], gt)
+                    if i > best_iou:
+                        best_iou, best_j = i, j
+                if best_iou >= iou_threshold and best_j >= 0:
+                    matched_gt.add(best_j)
+                    entries.append((float(pred[4]), 1))
+                else:
+                    entries.append((float(pred[4]), 0))
+        if n_pos == 0:
+            return 0.0
+        if not entries:
+            return 0.0
+        # P-R curve via global sort + cumulative TP/FP, AUC via trapezoid.
+        entries.sort(key=lambda e: -e[0])
+        tp_cum = 0
+        fp_cum = 0
+        recalls = [0.0]
+        precisions = [1.0]
+        for _, is_tp in entries:
+            if is_tp:
+                tp_cum += 1
+            else:
+                fp_cum += 1
+            rec = tp_cum / n_pos
+            prec = tp_cum / (tp_cum + fp_cum)
+            recalls.append(rec)
+            precisions.append(prec)
+        # Trapezoid AUC across recall axis.
+        auc = 0.0
+        for i in range(1, len(recalls)):
+            dr = recalls[i] - recalls[i - 1]
+            if dr <= 0:
+                continue
+            auc += dr * (precisions[i] + precisions[i - 1]) / 2.0
+        # Clamp to [0, 1] -- numerical noise can push slightly outside.
+        return max(0.0, min(1.0, auc))
+
+    idxs = np.arange(n_images)
+    samples = rng.choice(idxs, size=(n_resamples, n_images), replace=True)
+    vals = np.array([_ap_for_resample(s) for s in samples])
+    vals = vals[~np.isnan(vals)]
+    if len(vals) == 0:
+        return (float("nan"), 0.0, float("nan"))
+    alpha = (1 - ci_level) / 2
+    low = float(np.percentile(vals, alpha * 100))
+    high = float(np.percentile(vals, (1 - alpha) * 100))
+    point = _ap_for_resample(idxs)
+    return (low, point, high)
+
+
 def per_severity_breakdown(
     per_image_detections: list[list[tuple[float, str]]],
 ) -> dict[str, dict[str, float]]:
