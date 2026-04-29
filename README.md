@@ -8,9 +8,9 @@ A web application for road-quality-aware route optimization in Los Angeles. Find
 
 A public LA pothole-aware routing demo. Pick two points on the map; get a "fastest" route alongside a "best" route that detours around real Mapillary-detected potholes within a configurable time budget.
 
-**What you can do:**
-- **Map view** — Zoom around LA. Road segments are color-coded by their pothole + roughness scores. No sign-in required.
-- **Route Finder** (`/route`) — Click "Try as demo" in the sign-in modal to log in with one click, then click two LA points and compare the fastest vs. best route side-by-side.
+**What you can do (no sign-in needed):**
+- **Map view** — Zoom around LA. Road segments are color-coded by their pothole + roughness scores.
+- **Route Finder** (`/route`) — Click two LA points and compare the fastest vs. best route side-by-side.
 
 **Pipeline:**
 - Imagery: real Mapillary CC-BY-SA street-level captures from 12 LA zones spanning DTLA, the Westside, the Valley fringe, and known-bad-pavement corridors (Mid-City east of La Brea, Boyle Heights, parts of South LA)
@@ -18,12 +18,11 @@ A public LA pothole-aware routing demo. Pick two points on the map; get a "faste
 - Routing: real Mapillary detections drive the pothole-score signal end-to-end; segments outside the ingested coverage fall back to the synthetic IRI baseline so the routing diff stays visible LA-wide.
 - Reproducibility: dataset rebuild is one command (`python scripts/fetch_eval_data.py --build`); model weights load from a revision-pinned HuggingFace repo (pickle-ACE drift protection in `data_pipeline/detector_factory.py`); training is a single `scripts/finetune_detector.py` invocation across laptop CPU / Colab T4 / EC2 g5.xlarge recipes.
 
-**Demo access:**
-The demo password (`demo@road-quality-mvp.dev` / `demo1234`) is intentionally public — see [Public Demo Account](#public-demo-account). Geographic scope is LA only (bbox ≈ 20 km around `(34.0522, -118.2437)`).
+**Scope:** LA only (bbox ≈ 20 km around `(34.0522, -118.2437)`). No account required — Map View and Route Finder are both open.
 
 ## Current Status
 
-**M1 shipped.** Public demo URL is live with real Mapillary detections, an LA-trained YOLOv8 pothole detector, JWT-gated routing, and a Fly.io tri-app cloud deploy (db + backend + frontend) reproducible from `main`.
+**M1 shipped.** Public demo URL is live with real Mapillary detections, an LA-trained YOLOv8 pothole detector, and a Fly.io tri-app cloud deploy (db + backend + frontend) reproducible from `main`.
 
 19/19 M0 backend tests + 200+ M1 backend tests passing. See `.planning/ROADMAP.md` for the full phase status.
 
@@ -200,64 +199,6 @@ cd backend && python -m pytest -v
 ```
 
 19 tests covering scoring logic, models, health endpoint, segments endpoint, route endpoint, and ML detector stub.
-
-## Public Demo Account
-
-The deployed app exposes a demo account for drive-by visitors:
-
-- **Email:** `demo@road-quality-mvp.dev`
-- **Password:** `demo1234`
-
-On the `/route` page, click **Try as demo** in the sign-in modal to log in
-with one click. (The modal opens automatically the first time you click
-"Find Best Route" without being signed in — see `frontend/src/components/SignInModal.tsx`.)
-
-Public endpoints (`GET /health`, `GET /segments`, the Map View at `/map`)
-do NOT require authentication. Only `POST /route` and `/cache/*` are gated.
-
-### Local setup
-
-After `docker compose up --build` brings up the stack:
-
-```bash
-# 1. Generate an HS256 signing key (~43 chars URL-safe).
-python -c "import secrets; print('AUTH_SIGNING_KEY=' + secrets.token_urlsafe(32))" >> .env
-
-# 2. Restart the backend so it picks up AUTH_SIGNING_KEY from .env.
-docker compose restart backend
-
-# 3. Apply migration 003 (users table) — only needed if your DB existed before
-#    Phase 4 landed; fresh `docker compose up -v` does this automatically via
-#    /docker-entrypoint-initdb.d/04-users.sql.
-docker compose exec -T db psql -U rq -d roadquality < db/migrations/003_users.sql
-
-# 4. Seed the demo user. --password is required (no default lives in source;
-#    rotate by passing a fresh value here and updating this README).
-python scripts/seed_demo_user.py --password demo1234
-# → "Demo user seeded: id=1, email=demo@road-quality-mvp.dev"
-```
-
-### Rotation
-
-The demo password is documented and rotatable. To rotate locally:
-
-```bash
-python scripts/seed_demo_user.py --password $NEW_DEMO_PASSWORD
-```
-
-This UPSERTs the existing demo user with a fresh argon2id hash. Update this
-README with the new password and redeploy. To also invalidate ALL active
-sessions (emergency revocation), rotate `AUTH_SIGNING_KEY` in addition:
-
-```bash
-python -c "import secrets; print('AUTH_SIGNING_KEY=' + secrets.token_urlsafe(32))" > .env.new
-# (manually merge .env.new into .env, replacing the old AUTH_SIGNING_KEY)
-docker compose restart backend
-```
-
-Rotating `AUTH_SIGNING_KEY` invalidates every active session globally,
-including any abuser's. This is the M1 revocation lever (no denylist by
-design — see `.planning/phases/04-authentication/04-CONTEXT.md` D-01).
 
 ## Deploy
 

@@ -1,10 +1,9 @@
 import json
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from app.db import get_connection
 from app.models import RouteRequest, RouteResponse, RouteInfo, SegmentMetric
 from app.scoring import normalize_weights, compute_segment_cost
 from app.cache import get_route_cached, set_route_cached, make_route_cache_key
-from app.auth.dependencies import get_current_user_id
 
 router = APIRouter()
 
@@ -39,10 +38,7 @@ K = 5
 
 
 @router.post("/route", response_model=RouteResponse)
-def find_route(
-    req: RouteRequest,
-    user_id: int = Depends(get_current_user_id),
-):
+def find_route(req: RouteRequest):
     w_iri, w_pot = normalize_weights(
         req.include_iri, req.include_potholes,
         req.weight_iri, req.weight_potholes,

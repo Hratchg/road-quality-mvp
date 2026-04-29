@@ -5,8 +5,7 @@ import L from "leaflet";
 import ControlPanel, { ControlState } from "../components/ControlPanel";
 import RouteResults from "../components/RouteResults";
 import AddressInput from "../components/AddressInput";
-import SignInModal from "../components/SignInModal";
-import { fetchRoute, RouteRequestBody, UnauthorizedError } from "../api";
+import { fetchRoute, RouteRequestBody } from "../api";
 
 const LA_CENTER: [number, number] = [34.0522, -118.2437];
 
@@ -46,7 +45,6 @@ export default function RouteFinder() {
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
 
   const handleSwap = () => {
     setOrigin(destination);
@@ -82,10 +80,6 @@ export default function RouteFinder() {
         setDestination({ lat: endLat, lon: endLon });
       }
     } catch (err: any) {
-      if (err instanceof UnauthorizedError) {
-        setModalOpen(true);
-        return;
-      }
       setError(err.message || "Route request failed");
     } finally {
       setLoading(false);
@@ -93,7 +87,6 @@ export default function RouteFinder() {
   };
 
   return (
-    <>
     <div className="flex h-[calc(100vh-52px)]">
       <div className="w-80 p-4 space-y-3 overflow-y-auto bg-gray-50 border-r">
         <h2 className="font-bold text-lg">Route Finder</h2>
@@ -187,15 +180,5 @@ export default function RouteFinder() {
         )}
       </MapContainer>
     </div>
-    <SignInModal
-      open={modalOpen}
-      onClose={() => setModalOpen(false)}
-      onAuthSuccess={() => {
-        // Token is now in localStorage; user can re-click Find Best Route.
-        // We could auto-retry handleSearch() here, but explicit re-click is
-        // safer (prevents a perceived double-charge if the modal flickers).
-      }}
-    />
-    </>
   );
 }

@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from app.cache import segments_cache, route_cache, clear_all_caches
-from app.auth.dependencies import get_current_user_id
 
-router = APIRouter(dependencies=[Depends(get_current_user_id)])
+router = APIRouter()
 
 
 @router.get("/cache/stats")
