@@ -345,6 +345,28 @@ def wipe_synthetic_rows(conn) -> int:
     return deleted
 
 
+def wipe_mapillary_rows(conn) -> int:
+    """D-15 (Phase 7): DELETE FROM segment_defects WHERE source = 'mapillary'.
+
+    Returns the deleted row count. Hard-coded WHERE clause -- no
+    parameterization, no operator-controlled filter (T-03-18 + T-07-04
+    mitigation). The CHECK constraint in
+    db/migrations/002_mapillary_provenance.sql bounds `source` to two
+    literal values ('synthetic', 'mapillary'), so even a typo'd extension
+    cannot reach unrelated rows.
+
+    Mirrors wipe_synthetic_rows (lines 332-345) exactly with the literal
+    string substituted. Phase 7 D-14 prod cutover wipes BOTH (synthetic
+    AND mapillary) before re-ingesting with the LA-trained detector.
+    """
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM segment_defects WHERE source = 'mapillary'")
+        deleted = cur.rowcount
+    conn.commit()
+    logger.info("--wipe-mapillary: deleted %d rows", deleted)
+    return deleted
+
+
 def trigger_recompute(repo_root: Path, source: str = "all") -> int:
     """D-17: subprocess-run scripts/compute_scores.py --source <source>.
 
@@ -526,8 +548,16 @@ def main() -> int:
     )
     parser.add_argument(
         "--force-wipe", action="store_true",
-        help="Allow --wipe-synthetic even when zero detections will be written. "
-             "Use with caution: deletes synthetic data with nothing to replace it.",
+        help="Allow --wipe-synthetic and/or --wipe-mapillary even when zero "
+             "detections will be written. Use with caution: deletes data with "
+             "nothing to replace it.",
+    )
+    parser.add_argument(
+        "--wipe-mapillary", action="store_true",
+        help="DELETE FROM segment_defects WHERE source='mapillary' BEFORE writing "
+             "new data. Phase 7 D-15 production cutover (paired with --wipe-synthetic "
+             "for the D-14 real-data-only state). Aborts (exit 2) if zero detections "
+             "produced -- pass --force-wipe to override.",
     )
     parser.add_argument(
         "--no-recompute", action="store_true",
@@ -592,8 +622,10 @@ def main() -> int:
             # AFTER detections are queued (we need to know `len(all_rows)` for
             # the guard) but BEFORE the INSERT so the demo cutover ordering
             # holds (D-15: synthetic gone, mapillary written, scores rebuilt).
-            wipe_planned = bool(args.wipe_synthetic)
-            wipe_applied = False
+            wipe_synthetic_planned = bool(args.wipe_synthetic)
+            wipe_synthetic_applied = False
+            wipe_mapillary_planned = bool(args.wipe_mapillary)
+            wipe_mapillary_applied = False
 
             for seg_id in segment_ids:
                 logger.info("--- segment %s ---", seg_id)
@@ -625,18 +657,35 @@ def main() -> int:
             # OR the operator explicitly passed --force-wipe. The wipe
             # MUST run before the INSERT so /segments never sees the
             # synthetic+mapillary union for this segment-set.
-            if wipe_planned:
-                if not all_rows and not args.force_wipe:
-                    print(
-                        "ERROR: --wipe-synthetic with 0 detections to write would "
-                        "delete synthetic data with nothing to replace it. "
-                        "Pass --force-wipe to override.",
-                        file=sys.stderr,
-                    )
-                    return EXIT_VALIDATION
-                deleted = wipe_synthetic_rows(conn)
-                counters["synthetic_rows_wiped"] = deleted
-                wipe_applied = True
+            # Plan 03-04 (D-14) + Plan 07-03 (D-15):
+            # Wipe rows ONLY if we have something to write OR --force-wipe.
+            # Both wipe flags share the --force-wipe latch + zero-rows check.
+            # Order: synthetic first, then mapillary, then INSERT (same
+            # transaction connection; T-07-03 mitigation for race window).
+            if wipe_synthetic_planned and not all_rows and not args.force_wipe:
+                print(
+                    "ERROR: --wipe-synthetic with 0 detections to write would "
+                    "delete synthetic data with nothing to replace it. "
+                    "Pass --force-wipe to override.",
+                    file=sys.stderr,
+                )
+                return EXIT_VALIDATION
+            if wipe_mapillary_planned and not all_rows and not args.force_wipe:
+                print(
+                    "ERROR: --wipe-mapillary with 0 detections to write would "
+                    "delete mapillary data with nothing to replace it. "
+                    "Pass --force-wipe to override.",
+                    file=sys.stderr,
+                )
+                return EXIT_VALIDATION
+            if wipe_synthetic_planned:
+                deleted_syn = wipe_synthetic_rows(conn)
+                counters["synthetic_rows_wiped"] = deleted_syn
+                wipe_synthetic_applied = True
+            if wipe_mapillary_planned:
+                deleted_map = wipe_mapillary_rows(conn)
+                counters["mapillary_rows_wiped"] = deleted_map
+                wipe_mapillary_applied = True
 
             # Idempotent batch INSERT (Pattern 4).
             rows_attempted = len(all_rows)
@@ -710,7 +759,8 @@ def main() -> int:
             summary = {
                 "counters": counters,
                 "segments": segment_ids[:50],
-                "wipe_synthetic_applied": wipe_applied,
+                "wipe_synthetic_applied": wipe_synthetic_applied,
+                "wipe_mapillary_applied": wipe_mapillary_applied,
                 "recompute_invoked": recompute_invoked,
             }
             if args.json_out:
