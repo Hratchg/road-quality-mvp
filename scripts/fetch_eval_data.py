@@ -204,19 +204,41 @@ def _build_fresh(
                 shutil.rmtree(d)
                 logger.info("--clean: removed %s", d)
 
+    import requests as _requests  # local import to avoid module-level clash
+
     all_fetched: list[dict] = []
+    skipped_zones: list[str] = []
     for zone, bbox in _DEFAULT_LA_BBOXES.items():
         logger.info("Searching Mapillary in zone=%s bbox=%s", zone, bbox)
         # D-05 (Phase 7): recency filter to >= 2023 imagery. quality_score
         # is NOT available via Mapillary v4 search API (RESEARCH §2.1) so
         # operator judgment during CVAT labeling handles per-image quality.
-        results = search_images(
-            bbox,
-            limit=count_per_bbox,
-            start_captured_at="2023-01-01T00:00:00Z",
-        )
+        # Rule 1 (Bug): Mapillary v4 intermittently returns HTTP 500 on specific
+        # sub-tile bboxes (Pitfall 4). Catch per-bbox so a single zone failure
+        # does not abort the entire build (remaining zones may succeed fine).
+        try:
+            results = search_images(
+                bbox,
+                limit=count_per_bbox,
+                start_captured_at="2023-01-01T00:00:00Z",
+            )
+        except _requests.HTTPError as exc:
+            logger.warning(
+                "  zone=%s: Mapillary returned %s -- skipping zone "
+                "(Pitfall 4: transient 500 on dense-imagery bbox)",
+                zone,
+                exc.response.status_code if exc.response is not None else "?",
+            )
+            skipped_zones.append(zone)
+            continue
         logger.info("  got %d results", len(results))
         all_fetched.extend([{**r, "_zone": zone} for r in results])
+    if skipped_zones:
+        logger.warning(
+            "Skipped %d zone(s) due to Mapillary API errors: %s",
+            len(skipped_zones),
+            skipped_zones,
+        )
 
     if not all_fetched:
         print(
