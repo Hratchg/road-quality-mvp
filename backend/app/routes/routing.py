@@ -13,32 +13,14 @@ SNAP_NODE_SQL = """
     LIMIT 1
 """
 
-# Degrees of padding added to the origin→destination bounding box before
-# passing to pgr_ksp. 0.05° ≈ 5.5 km at LA latitude — enough to capture
-# realistic detours without scanning the whole 209k-edge network.
-# Increase if routes near the LA boundary come back "no path found".
-_KSP_BBOX_PAD_DEG = 0.05
-
-
-def _ksp_sql(origin_lon: float, origin_lat: float,
-             dest_lon: float, dest_lat: float) -> str:
-    """Build the pgr_ksp inner SQL filtered to a corridor around the OD pair.
-
-    Uses ST_MakeEnvelope with pre-computed literal bounds so the planner
-    can use the GiST index on road_segments.geom without evaluating a
-    compound function. Dollar-quoted so psycopg2 leaves the inner SQL alone.
-    """
-    lon_min = min(origin_lon, dest_lon) - _KSP_BBOX_PAD_DEG
-    lon_max = max(origin_lon, dest_lon) + _KSP_BBOX_PAD_DEG
-    lat_min = min(origin_lat, dest_lat) - _KSP_BBOX_PAD_DEG
-    lat_max = max(origin_lat, dest_lat) + _KSP_BBOX_PAD_DEG
-    return (
-        f"SELECT path_id, seq, edge, cost FROM pgr_ksp("
-        f"'SELECT id, source, target, travel_time_s AS cost "
-        f"FROM road_segments "
-        f"WHERE geom && ST_MakeEnvelope({lon_min},{lat_min},{lon_max},{lat_max},4326)',"
-        f" %s, %s, %s, directed := false) WHERE edge != -1"
+KSP_SQL = """
+    SELECT path_id, seq, edge, cost
+    FROM pgr_ksp(
+        'SELECT id, source, target, travel_time_s AS cost FROM road_segments',
+        %s, %s, %s, directed := false
     )
+    WHERE edge != -1
+"""
 
 SEGMENTS_BY_IDS_SQL = """
     SELECT
@@ -93,12 +75,8 @@ def find_route(req: RouteRequest):
             cur.execute(SNAP_NODE_SQL, (req.destination.lon, req.destination.lat))
             dest_node = cur.fetchone()["id"]
 
-            # K-shortest paths — spatially filtered to OD bounding box
-            cur.execute(
-                _ksp_sql(req.origin.lon, req.origin.lat,
-                         req.destination.lon, req.destination.lat),
-                (origin_node, dest_node, K),
-            )
+            # K-shortest paths
+            cur.execute(KSP_SQL, (origin_node, dest_node, K))
             ksp_rows = cur.fetchall()
 
             # Group by path_id
