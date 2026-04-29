@@ -13,14 +13,37 @@ SNAP_NODE_SQL = """
     LIMIT 1
 """
 
-KSP_SQL = """
-    SELECT path_id, seq, edge, cost
-    FROM pgr_ksp(
-        'SELECT id, source, target, travel_time_s AS cost FROM road_segments',
-        %s, %s, %s, directed := false
+# Degrees of padding added to the origin→destination bounding box before
+# passing to pgr_ksp. 0.05° ≈ 5.5 km at LA latitude — enough to capture
+# realistic detours without scanning the whole 209k-edge network.
+# Increase if routes near the LA boundary come back "no path found".
+_KSP_BBOX_PAD_DEG = 0.05
+
+
+def _ksp_sql(origin_lon: float, origin_lat: float,
+             dest_lon: float, dest_lat: float) -> str:
+    """Build the pgr_ksp inner SQL filtered to a corridor around the OD pair.
+
+    Dollar-quoted so psycopg2 does not interpret %s inside the string as
+    a bind parameter. Coordinates are validated floats from Pydantic.
+    """
+    inner = (
+        f"SELECT id, source, target, travel_time_s AS cost "
+        f"FROM road_segments "
+        f"WHERE geom && ST_Expand("
+        f"ST_Envelope(ST_Collect("
+        f"ST_SetSRID(ST_MakePoint({origin_lon}, {origin_lat}), 4326),"
+        f"ST_SetSRID(ST_MakePoint({dest_lon}, {dest_lat}), 4326)"
+        f")), {_KSP_BBOX_PAD_DEG})"
     )
-    WHERE edge != -1
-"""
+    return f"""
+        SELECT path_id, seq, edge, cost
+        FROM pgr_ksp(
+            $ksp${inner}$ksp$,
+            %s, %s, %s, directed := false
+        )
+        WHERE edge != -1
+    """
 
 SEGMENTS_BY_IDS_SQL = """
     SELECT
@@ -75,8 +98,12 @@ def find_route(req: RouteRequest):
             cur.execute(SNAP_NODE_SQL, (req.destination.lon, req.destination.lat))
             dest_node = cur.fetchone()["id"]
 
-            # K-shortest paths
-            cur.execute(KSP_SQL, (origin_node, dest_node, K))
+            # K-shortest paths — spatially filtered to OD bounding box
+            cur.execute(
+                _ksp_sql(req.origin.lon, req.origin.lat,
+                         req.destination.lon, req.destination.lat),
+                (origin_node, dest_node, K),
+            )
             ksp_rows = cur.fetchall()
 
             # Group by path_id
