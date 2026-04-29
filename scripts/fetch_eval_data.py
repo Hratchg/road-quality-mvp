@@ -75,18 +75,25 @@ EXIT_OK = 0
 EXIT_OTHER = 1
 EXIT_MISSING_DATA = 3
 
-# Default LA bboxes for --build mode. Each is 0.005 deg per side (~550m),
-# subdivided 2x2 from the original three 0.01-deg zones (downtown,
-# residential, freeway-adjacent). The original zone-sized bboxes (0.01 deg
-# per side, ~1.1km) trigger Mapillary API 500 "Please reduce the amount of
-# data" errors — Mapillary's bbox endpoint apparently overflows when the
-# underlying tile dataset is dense (LA street-level imagery is years deep
-# in these areas). Verified empirically 2026-04-28: 0.005-deg bboxes return
-# 200 OK; 0.01-deg bboxes return 500. Total geographic coverage and image
-# target unchanged — just split into smaller queries.
+# Default LA bboxes for --build mode. Phase 7 D-02 / D-04 expansion to
+# 12 zones × 4 sub-tiles = 48 entries (~960 images at --count 20,
+# ~1500 at --count 32).
+# Each is 0.005 deg per side (~550m), subdivided 2x2 from a 0.01-deg
+# parent zone (Phase 6 D-03 fix: Mapillary 500 errors above 0.01 deg^2
+# for dense imagery — RESEARCH §2.1 Pitfall 4).
+#
 # Format: (min_lon, min_lat, max_lon, max_lat) -- longitude-first per
 # Mapillary API v4 convention.
+#
+# Zone groups:
+# - Phase 6 carry-forward (D-06): downtown, residential (West LA), freeway (Hollywood)
+#   --> existing 17 hand-labels in data/eval_la/labels/ are preserved across --build
+#       runs IF --clean is not passed
+# - Phase 7 spread (D-02): echopark, koreatown, inglewood, eaglerock, venice, culvercity
+# - Phase 7 known-bad-pavement (D-04): midcity (east of La Brea),
+#   boyleheights, southla (Vermont Square)
 _DEFAULT_LA_BBOXES: dict[str, tuple[float, float, float, float]] = {
+    # ----- Phase 6 carry-forward zones (D-06: keep so existing 17 hand-labels merge in via --build without --clean) -----
     # Downtown LA (DTLA): 2x2 subdivision of (-118.258, 34.043, -118.248, 34.053)
     "downtown_sw":    (-118.258, 34.043, -118.253, 34.048),
     "downtown_se":    (-118.253, 34.043, -118.248, 34.048),
@@ -102,6 +109,53 @@ _DEFAULT_LA_BBOXES: dict[str, tuple[float, float, float, float]] = {
     "freeway_se":     (-118.335, 34.060, -118.330, 34.065),
     "freeway_nw":     (-118.340, 34.065, -118.335, 34.070),
     "freeway_ne":     (-118.335, 34.065, -118.330, 34.070),
+    # ----- Phase 7 D-02: spread zones (north / south / east / west LA coverage) -----
+    # Echo Park / Silver Lake (north central): subdivision of (-118.265, 34.075, -118.255, 34.085)
+    "echopark_sw":    (-118.265, 34.075, -118.260, 34.080),
+    "echopark_se":    (-118.260, 34.075, -118.255, 34.080),
+    "echopark_nw":    (-118.265, 34.080, -118.260, 34.085),
+    "echopark_ne":    (-118.260, 34.080, -118.255, 34.085),
+    # Koreatown (central): subdivision of (-118.305, 34.058, -118.295, 34.068)
+    "koreatown_sw":   (-118.305, 34.058, -118.300, 34.063),
+    "koreatown_se":   (-118.300, 34.058, -118.295, 34.063),
+    "koreatown_nw":   (-118.305, 34.063, -118.300, 34.068),
+    "koreatown_ne":   (-118.300, 34.063, -118.295, 34.068),
+    # Inglewood / Westchester (south west): subdivision of (-118.380, 33.960, -118.370, 33.970)
+    "inglewood_sw":   (-118.380, 33.960, -118.375, 33.965),
+    "inglewood_se":   (-118.375, 33.960, -118.370, 33.965),
+    "inglewood_nw":   (-118.380, 33.965, -118.375, 33.970),
+    "inglewood_ne":   (-118.375, 33.965, -118.370, 33.970),
+    # Eagle Rock (north east): subdivision of (-118.215, 34.135, -118.205, 34.145)
+    "eaglerock_sw":   (-118.215, 34.135, -118.210, 34.140),
+    "eaglerock_se":   (-118.210, 34.135, -118.205, 34.140),
+    "eaglerock_nw":   (-118.215, 34.140, -118.210, 34.145),
+    "eaglerock_ne":   (-118.210, 34.140, -118.205, 34.145),
+    # Venice (west): subdivision of (-118.475, 33.985, -118.465, 33.995)
+    "venice_sw":      (-118.475, 33.985, -118.470, 33.990),
+    "venice_se":      (-118.470, 33.985, -118.465, 33.990),
+    "venice_nw":      (-118.475, 33.990, -118.470, 33.995),
+    "venice_ne":      (-118.470, 33.990, -118.465, 33.995),
+    # Culver City (south central, adjacent West LA): subdivision of (-118.405, 34.015, -118.395, 34.025)
+    "culvercity_sw":  (-118.405, 34.015, -118.400, 34.020),
+    "culvercity_se":  (-118.400, 34.015, -118.395, 34.020),
+    "culvercity_nw":  (-118.405, 34.020, -118.400, 34.025),
+    "culvercity_ne":  (-118.400, 34.020, -118.395, 34.025),
+    # ----- Phase 7 D-04: known-bad-pavement zones (operator-supplied) -----
+    # Mid-City east of La Brea: subdivision of (-118.345, 34.045, -118.335, 34.055)
+    "midcity_sw":     (-118.345, 34.045, -118.340, 34.050),
+    "midcity_se":     (-118.340, 34.045, -118.335, 34.050),
+    "midcity_nw":     (-118.345, 34.050, -118.340, 34.055),
+    "midcity_ne":     (-118.340, 34.050, -118.335, 34.055),
+    # Boyle Heights (east of DTLA): subdivision of (-118.215, 34.030, -118.205, 34.040)
+    "boyleheights_sw":(-118.215, 34.030, -118.210, 34.035),
+    "boyleheights_se":(-118.210, 34.030, -118.205, 34.035),
+    "boyleheights_nw":(-118.215, 34.035, -118.210, 34.040),
+    "boyleheights_ne":(-118.210, 34.035, -118.205, 34.040),
+    # South LA (Vermont Square area): subdivision of (-118.295, 34.000, -118.285, 34.010)
+    "southla_sw":     (-118.295, 34.000, -118.290, 34.005),
+    "southla_se":     (-118.290, 34.000, -118.285, 34.005),
+    "southla_nw":     (-118.295, 34.005, -118.290, 34.010),
+    "southla_ne":     (-118.290, 34.005, -118.285, 34.010),
 }
 
 
@@ -153,7 +207,14 @@ def _build_fresh(
     all_fetched: list[dict] = []
     for zone, bbox in _DEFAULT_LA_BBOXES.items():
         logger.info("Searching Mapillary in zone=%s bbox=%s", zone, bbox)
-        results = search_images(bbox, limit=count_per_bbox)
+        # D-05 (Phase 7): recency filter to >= 2023 imagery. quality_score
+        # is NOT available via Mapillary v4 search API (RESEARCH §2.1) so
+        # operator judgment during CVAT labeling handles per-image quality.
+        results = search_images(
+            bbox,
+            limit=count_per_bbox,
+            start_captured_at="2023-01-01T00:00:00Z",
+        )
         logger.info("  got %d results", len(results))
         all_fetched.extend([{**r, "_zone": zone} for r in results])
 

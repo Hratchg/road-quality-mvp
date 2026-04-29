@@ -102,6 +102,7 @@ def search_images(
     limit: int = 100,
     token: str | None = None,
     timeout_s: float = 30.0,
+    start_captured_at: str | None = None,
 ) -> list[dict[str, Any]]:
     """Search Mapillary for images inside a bbox.
 
@@ -110,6 +111,10 @@ def search_images(
         limit: max images per request (Mapillary default 2000).
         token: Mapillary access token (falls back to MAPILLARY_ACCESS_TOKEN env).
         timeout_s: HTTP timeout.
+        start_captured_at: Optional Mapillary v4 API recency filter, ISO 8601
+            format e.g. "2023-01-01T00:00:00Z". Phase 7 D-05: recency window;
+            quality_score filtering is NOT exposed in v4 search API
+            (RESEARCH §2.1).
 
     Returns:
         List of image metadata dicts (keys: id, thumb_2048_url,
@@ -127,11 +132,15 @@ def search_images(
             "MAPILLARY_ACCESS_TOKEN not set. Get one at "
             "https://www.mapillary.com/dashboard/developers"
         )
-    params = {
+    params: dict[str, Any] = {
         "bbox": ",".join(str(c) for c in bbox),
         "fields": "id,thumb_2048_url,computed_geometry,captured_at,sequence_id",
         "limit": limit,
     }
+    if start_captured_at is not None:
+        # D-05 (Phase 7): recency filter, ISO 8601. Verified field name +
+        # format against Mapillary v4 docs (RESEARCH §2.1).
+        params["start_captured_at"] = start_captured_at
     headers = {"Authorization": f"OAuth {tok}"}
     r = requests.get(
         f"{_API_BASE}/images", params=params, headers=headers, timeout=timeout_s
