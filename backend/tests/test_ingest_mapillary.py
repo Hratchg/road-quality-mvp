@@ -352,3 +352,39 @@ class TestPlan04Flags:
                         assert kw.value.value is False or kw.value.value is None, (
                             "subprocess invocation uses shell=True (T-03-20 regression)"
                         )
+
+    # ---------- Phase 7 Wave 0 RED tests: wipe_mapillary_rows + --wipe-mapillary ----------
+
+    def test_wipe_mapillary_rows_helper_exists(self):
+        """The helper must be importable as a public function on the module."""
+        assert hasattr(ing, "wipe_mapillary_rows")
+        assert callable(ing.wipe_mapillary_rows)
+
+    def test_wipe_mapillary_rows_uses_hardcoded_where(self):
+        """T-03-18 / T-07-04 mitigation: WHERE clause must be a hard-coded
+        literal -- no parameterization, no operator-controllable extension.
+        Mirror of test_wipe_synthetic_rows_uses_hardcoded_where (line 327)."""
+        src = SCRIPT.read_text()
+        assert "DELETE FROM segment_defects WHERE source = 'mapillary'" in src
+
+    def test_wipe_mapillary_rows_returns_rowcount_and_commits(self):
+        """Phase 7 D-15: the helper returns the deleted row count and commits."""
+        mock_conn = MagicMock()
+        mock_cur = MagicMock()
+        mock_cur.__enter__ = lambda s: mock_cur
+        mock_cur.__exit__ = MagicMock(return_value=False)
+        mock_conn.cursor.return_value = mock_cur
+        mock_cur.rowcount = 42
+        result = ing.wipe_mapillary_rows(mock_conn)
+        assert result == 42
+        mock_conn.commit.assert_called_once()
+
+    def test_help_lists_wipe_mapillary_flag(self):
+        """SC #5: --wipe-mapillary must surface in --help so operators
+        can discover it from the CLI alone."""
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "--help"],
+            capture_output=True, text=True, cwd=REPO_ROOT,
+        )
+        assert result.returncode == 0, result.stderr
+        assert "--wipe-mapillary" in result.stdout
