@@ -1,7 +1,11 @@
 # Fine-Tuning the LA Pothole Detector
 
-**Version:** 0.1.0
-**Last Updated:** 2026-04-23
+**Version:** 0.2.0
+**Last Updated:** 2026-05-05
+
+**Changelog:**
+- 0.2.0 (2026-05-05, Phase 7): Recipe C tuned for 1500-image LA-trained run on EC2 g5.xlarge with `yolov8s.pt` detection base. SHA-capture step added for Plan 07-07 constant swap.
+- 0.1.0 (2026-04-23, Phase 2): Initial three-recipe (laptop / Colab / EC2) fine-tune doc.
 
 ---
 
@@ -97,43 +101,139 @@ os.environ["HUGGINGFACE_TOKEN"] = "hf_..."  # Write-scope token
 
 ---
 
-## Recipe C: EC2 / SageMaker (CUDA, paid)
+## Recipe C: EC2 g5.xlarge (CUDA, paid) — Phase 7 chosen path
 
-For when you need a reproducible long-lived GPU box.
+Fast (~30-90 minutes for 1500 images × 50 epochs on a single A10G GPU)
+and cheap (~$1-2 for the full Phase 7 phase including 2-3 iteration
+runs). **This is the validated path for Phase 7's LA-trained detector**
+(per `.planning/phases/07-la-trained-detector/07-CONTEXT.md` D-07).
 
-**EC2 g5.xlarge (NVIDIA A10G)** — ~$1/hr, 50 epochs in ~10 minutes:
+### Instance setup
+
+| Parameter | Value | Notes |
+|-----------|-------|-------|
+| Instance type | `g5.xlarge` | 4 vCPU, 1× NVIDIA A10G (24 GB VRAM), 16 GiB RAM (~$1.006/hr per AWS pricing) |
+| AMI | AWS Deep Learning OSS AMI GPU PyTorch 2.5+ (Ubuntu 22.04) | Pre-installed PyTorch + CUDA 12.x; G5's proprietary driver loads dynamically (DLAMI handles it) |
+| EBS storage | 50 GB gp3 | Image cache + ultralytics + dataset + weights |
+| Region | Operator's preference | us-west-2 / us-east-1 most common; SHA capture is region-agnostic |
+| Security group | Allow SSH from operator IP | Egress to HF Hub (huggingface.co) needed for model download + push |
+
+Keep the instance running ONLY for the duration of training + HF push.
+Terminate immediately after to avoid runaway cost.
+
+### Setup commands (one-time per instance)
 
 ```bash
-# On your laptop:
-aws ec2 run-instances \
-    --image-id ami-0c... \                    # Deep Learning AMI (Ubuntu) 22.04
-    --instance-type g5.xlarge \
-    --key-name <your-keypair> \
-    --block-device-mappings 'DeviceName=/dev/sda1,Ebs={VolumeSize=100}' \
-    --count 1
+# SSH into the instance (assumes key pair + sg already configured)
+ssh -i ~/.ssh/<your-key>.pem ubuntu@<ec2-host>
 
-# SSH in, then:
+# Verify CUDA available (DLAMI ships PyTorch + CUDA pre-installed)
+python3 -c "import torch; print(torch.__version__, torch.cuda.is_available())"
+# expected: 2.5.x or 2.8.x  True
+
+# Clone the repo
 git clone https://github.com/<your-fork>/road-quality-mvp.git
 cd road-quality-mvp
+
+# Install training-only deps (data_pipeline/requirements.txt + torch + torchvision are already there)
 pip install -r requirements-train.txt
-aws s3 sync s3://<your-bucket>/eval_la data/eval_la/   # or scp from laptop
-
-export HUGGINGFACE_TOKEN=hf_...
-python scripts/finetune_detector.py \
-    --data data/eval_la/data.yaml \
-    --epochs 100 \
-    --batch 64 \
-    --device 0 \
-    --patience 20 \
-    --push-to-hub <user>/road-quality-la-yolov8
-
-# Tear down
-aws ec2 terminate-instances --instance-ids <id>
 ```
 
-**SageMaker** — not recommended for a one-off 300-image fine-tune; cost and
-setup complexity not justified (Context `deferred_ideas` rejects this).
-If the project later moves to continuous retraining, revisit.
+### Transfer the dataset
+
+Phase 7's `data/eval_la/` is ~300-450 MB total (1500 × ~200KB JPEGs +
+~150 small label .txt files). `scp` is fast enough; S3 adds setup
+complexity for no material benefit at this size.
+
+From operator workstation:
+```bash
+cd /Users/<you>/road-quality-mvp
+scp -i ~/.ssh/<your-key>.pem -r data/eval_la \
+    ubuntu@<ec2-host>:~/road-quality-mvp/data/
+```
+
+### Set HF token via environment (NEVER UserData — visible in AWS logs)
+
+Once SSH'd into the instance:
+```bash
+export HUGGINGFACE_TOKEN="hf_..."   # write-scope token, single-repo limited
+```
+
+### Phase 7 training invocation
+
+Per `.planning/phases/07-la-trained-detector/07-CONTEXT.md` D-09 (NOT MPS) +
+Claude's discretion in D-10 (detection-only base `yolov8s.pt`) +
+RESEARCH §2.3 hyperparams (50 epochs, batch 32, patience 15):
+
+```bash
+cd ~/road-quality-mvp
+python scripts/finetune_detector.py \
+    --data data/eval_la/data.yaml \
+    --base yolov8s.pt \
+    --device 0 \
+    --epochs 50 \
+    --batch 32 \
+    --patience 15 \
+    --push-to-hub Hratchg/road-quality-la-yolov8 \
+    --verbose 2>&1 | tee /tmp/finetune-phase7-run1.log
+```
+
+Notes:
+- `--base yolov8s.pt` is auto-downloaded by ultralytics from GitHub
+  releases on first reference (~21 MB). This is the **detection-only**
+  base (NOT segmentation) so Phase 7's `eval_detector.py val()` path
+  works cleanly (RESEARCH §2.2 + Pitfall 2).
+- `--device 0` selects the A10G. NEVER `--device mps` (Pitfall 1: closed
+  not-planned).
+- `--push-to-hub Hratchg/road-quality-la-yolov8` requires
+  `HUGGINGFACE_TOKEN` set in env. The script uploads `best.pt` + a
+  generated model card.
+- `--verbose` enables debug logging — useful when iterating because
+  ultralytics' default level is INFO and obscures dataloader warnings.
+
+Expected runtime: ~30-50 minutes on the first run. Output:
+`runs/detect/la_pothole/weights/best.pt`.
+
+### Capture the HF revision SHA (REQUIRED for Plan 07-07)
+
+Immediately after `--push-to-hub` completes, run on the EC2 instance:
+
+```bash
+python3 -c "
+import os
+from huggingface_hub import HfApi
+api = HfApi(token=os.environ['HUGGINGFACE_TOKEN'])
+info = api.model_info('Hratchg/road-quality-la-yolov8')
+print(info.sha)
+"
+```
+
+Copy the SHA to a note. Plan 07-07 substitutes it into
+`data_pipeline/detector_factory.py::_DEFAULT_HF_REPO` as
+`"Hratchg/road-quality-la-yolov8@<sha>"`.
+
+### Iteration (D-13 contingency)
+
+If the first trained run UNDERPERFORMS the re-eval'd baseline at the
+Plan 07-06 win check, do ONE targeted iteration. Likely fixes:
+- Precision floor not met: bump `--patience 20`, retrain longer
+- Recall under baseline: try `--epochs 100` + `--batch 16` (smaller
+  batch, more updates per epoch)
+- Dataset-shape issue (wide bboxes): try `--imgsz 800` + `--batch 16`
+
+Cap at 2 trained runs total per D-13. If second run also underperforms,
+close the phase as a documented negative result; D-17 still says
+re-ingest with the trained model regardless.
+
+### Terminate the instance
+
+```bash
+# On operator workstation:
+aws ec2 stop-instances --instance-ids i-xxxxxxxx
+aws ec2 terminate-instances --instance-ids i-xxxxxxxx  # if no need to retain EBS
+```
+
+Total cost estimate: $1-2 for 60-90 minutes A10G time + iteration buffer.
 
 ---
 
