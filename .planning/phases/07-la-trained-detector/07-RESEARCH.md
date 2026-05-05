@@ -323,7 +323,7 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
                                      v
                          [scripts/finetune_detector.py]
                          --base yolov8s.pt --device 0 (EC2 A10G)
-                         --push-to-hub Hratchg/road-quality-la-yolov8
+                         --push-to-hub hratcho/road-quality-la-yolov8
                                      |
                          [HuggingFace Hub: best.pt + model card]
                                      |
@@ -342,7 +342,7 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
                          YES: "win"; NO: iterate or close (D-13)
                                      |
                     [detector_factory.py _DEFAULT_HF_REPO update]
-                    "Hratchg/road-quality-la-yolov8@<sha>"
+                    "hratcho/road-quality-la-yolov8@<sha>"
                                      |
               [scripts/ingest_mapillary.py --wipe-synthetic --wipe-mapillary]
               (via flyctl proxy 15432:5432; training-zone + adjacent bboxes)
@@ -417,13 +417,13 @@ Note: This adds a filter to `search_images()` — either as a new optional param
 # Source: data_pipeline/detector_factory.py comment block
 from huggingface_hub import HfApi
 api = HfApi(token=HUGGINGFACE_TOKEN)
-info = api.model_info("Hratchg/road-quality-la-yolov8")
+info = api.model_info("hratcho/road-quality-la-yolov8")
 sha = info.sha  # Pin this in _DEFAULT_HF_REPO
 ```
 
 Then update `detector_factory.py`:
 ```python
-_DEFAULT_HF_REPO = "Hratchg/road-quality-la-yolov8@<sha>"
+_DEFAULT_HF_REPO = "hratcho/road-quality-la-yolov8@<sha>"
 ```
 
 ### Anti-Patterns to Avoid
@@ -548,8 +548,8 @@ Phase 7 has a clear dependency graph with one user-gated bottleneck (the hand-la
 
 **Plan 07-04: Training on EC2 g5.xlarge**
 - Launch g5.xlarge, select DLAMI, scp dataset
-- Run `finetune_detector.py --base yolov8s.pt --device 0 --epochs 50 --push-to-hub Hratchg/road-quality-la-yolov8`
-- Capture SHA: `HfApi().model_info("Hratchg/road-quality-la-yolov8").sha`
+- Run `finetune_detector.py --base yolov8s.pt --device 0 --epochs 50 --push-to-hub hratcho/road-quality-la-yolov8`
+- Capture SHA: `HfApi().model_info("hratcho/road-quality-la-yolov8").sha`
 - Terminate EC2 instance
 - **SC covered:** SC #3 (HF publish)
 - **Depends on:** Plan 07-02 (labels complete)
@@ -619,8 +619,8 @@ The operator hand-labeling gate (1500 images, ~400 per CVAT session) is the phas
 |--------|----------|-----------|-------------------|-------------|
 | REQ-trained-la-detector (SC #1) | Dataset has ≥150 positive bboxes; test split has ≥30 | unit | `pytest data_pipeline/tests/test_fetch_eval_data.py -x` — test that `_build_fresh` produces label files and sequence-grouped splits | ✅ existing test file; no new test for positive-count (manual SC gate) |
 | REQ-trained-la-detector (SC #2) | Non-overlapping 95% CI on P/R/mAP@0.5 | unit | `pytest data_pipeline/tests/test_eval.py::test_bootstrap_ci_map50 -x` | ❌ Wave 0 gap — `map50` metric not yet in bootstrap_ci |
-| REQ-trained-la-detector (SC #3) | Model published to HF at `Hratchg/road-quality-la-yolov8@<sha>` | manual smoke | `python -c "from huggingface_hub import HfApi; info = HfApi().model_info('Hratchg/road-quality-la-yolov8'); print(info.sha)"` | N/A (HF network; not in CI) |
-| REQ-trained-la-detector (SC #4) | `_DEFAULT_HF_REPO` updated with trained model + SHA | unit | `pytest backend/tests/test_detector_factory.py::test_default_hf_repo_pin -x` — assert `@` in constant and repo matches `Hratchg/road-quality-la-yolov8` | ❌ Wave 0 gap — test currently checks for keremberke; needs update to trained model check |
+| REQ-trained-la-detector (SC #3) | Model published to HF at `hratcho/road-quality-la-yolov8@<sha>` | manual smoke | `python -c "from huggingface_hub import HfApi; info = HfApi().model_info('hratcho/road-quality-la-yolov8'); print(info.sha)"` | N/A (HF network; not in CI) |
+| REQ-trained-la-detector (SC #4) | `_DEFAULT_HF_REPO` updated with trained model + SHA | unit | `pytest backend/tests/test_detector_factory.py::test_default_hf_repo_pin -x` — assert `@` in constant and repo matches `hratcho/road-quality-la-yolov8` | ❌ Wave 0 gap — test currently checks for keremberke; needs update to trained model check |
 | REQ-trained-la-detector (SC #5) | wipe_mapillary_rows() correct SQL; --wipe-mapillary safety latch | unit | `pytest backend/tests/test_ingest_mapillary.py::test_wipe_mapillary_rows -x` | ❌ Wave 0 gap — function does not exist yet |
 | REQ-trained-la-detector (SC #6) | DETECTOR_EVAL.md v0.3.0 with numbers | manual gate | `grep "Previous baseline" docs/DETECTOR_EVAL.md && grep "0.3.0" docs/DETECTOR_EVAL.md` | N/A (doc check) |
 | REQ-trained-la-detector (SC #7) | README no longer says "public baseline" | manual gate | `grep -v "public baseline" README.md` | N/A (doc check) |
@@ -635,7 +635,7 @@ The operator hand-labeling gate (1500 images, ~400 per CVAT session) is the phas
 
 - [ ] `data_pipeline/tests/test_eval.py` — add `test_bootstrap_ci_map50`: verify the `metric="map50"` path in bootstrap_ci returns a (low, point, high) tuple with `0 ≤ low ≤ point ≤ high ≤ 1` for known-good input (covers Plan 07-03)
 - [ ] `backend/tests/test_ingest_mapillary.py` — add `test_wipe_mapillary_rows`: mock psycopg2 cursor, verify DELETE SQL uses hard-coded `WHERE source = 'mapillary'`, verify return is rowcount, verify conn.commit() called (covers Plan 07-06)
-- [ ] `backend/tests/test_detector_factory.py` — update `test_default_hf_repo_pin` to verify `_DEFAULT_HF_REPO` starts with `Hratchg/road-quality-la-yolov8@` after Phase 7 constant update (covers SC #4)
+- [ ] `backend/tests/test_detector_factory.py` — update `test_default_hf_repo_pin` to verify `_DEFAULT_HF_REPO` starts with `hratcho/road-quality-la-yolov8@` after Phase 7 constant update (covers SC #4)
 
 ---
 
@@ -647,7 +647,7 @@ The operator hand-labeling gate (1500 images, ~400 per CVAT session) is the phas
 | Phase 6 baseline on 3-positive test set (CIs = [0,1]) | Re-eval baseline on ≥30-positive test set | Phase 7 D-10 | Tighter CIs enable D-11 non-overlapping check |
 | No quality filter on Mapillary images (Phase 6) | captured_at >= 2023 filter (quality_score not available via API) | Phase 7 D-05 update | Recency filter only; quality screening deferred to CVAT labeling |
 | CVAT-XML export + conversion script (Phase 6) | Native Ultralytics YOLO export from CVAT 2.x | Phase 7 | Eliminates conversion script step |
-| keremberke (segmentation, AGPL-3.0, 2023-trained) | Hratchg/road-quality-la-yolov8 (detection, AGPL-3.0, trained on LA) | Phase 7 | "LA-trained" narrative; honest production claim |
+| keremberke (segmentation, AGPL-3.0, 2023-trained) | hratcho/road-quality-la-yolov8 (detection, AGPL-3.0, trained on LA) | Phase 7 | "LA-trained" narrative; honest production claim |
 
 **Deprecated/outdated:**
 - CVAT-XML → YOLO conversion script from Phase 6 Plan 06-04: Replace with native CVAT Ultralytics YOLO export. Keep the old script in git for reference but do not use for Phase 7 labeling.

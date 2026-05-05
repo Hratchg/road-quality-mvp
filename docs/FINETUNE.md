@@ -174,7 +174,7 @@ python scripts/finetune_detector.py \
     --epochs 50 \
     --batch 32 \
     --patience 15 \
-    --push-to-hub Hratchg/road-quality-la-yolov8 \
+    --push-to-hub hratcho/road-quality-la-yolov8 \
     --verbose 2>&1 | tee /tmp/finetune-phase7-run1.log
 ```
 
@@ -185,7 +185,7 @@ Notes:
   works cleanly (RESEARCH §2.2 + Pitfall 2).
 - `--device 0` selects the A10G. NEVER `--device mps` (Pitfall 1: closed
   not-planned).
-- `--push-to-hub Hratchg/road-quality-la-yolov8` requires
+- `--push-to-hub hratcho/road-quality-la-yolov8` requires
   `HUGGINGFACE_TOKEN` set in env. The script uploads `best.pt` + a
   generated model card.
 - `--verbose` enables debug logging — useful when iterating because
@@ -203,14 +203,14 @@ python3 -c "
 import os
 from huggingface_hub import HfApi
 api = HfApi(token=os.environ['HUGGINGFACE_TOKEN'])
-info = api.model_info('Hratchg/road-quality-la-yolov8')
+info = api.model_info('hratcho/road-quality-la-yolov8')
 print(info.sha)
 "
 ```
 
 Copy the SHA to a note. Plan 07-07 substitutes it into
 `data_pipeline/detector_factory.py::_DEFAULT_HF_REPO` as
-`"Hratchg/road-quality-la-yolov8@<sha>"`.
+`"hratcho/road-quality-la-yolov8@<sha>"`.
 
 ### Iteration (D-13 contingency)
 

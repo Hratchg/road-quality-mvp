@@ -206,7 +206,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Success Criteria** (what must be TRUE):
   1. Eval dataset has ≥150 positive pothole bboxes across train+val+test (vs 17 in Phase 6); test split has ≥30 positives so precision/recall CIs are usable
   2. Fine-tuned detector beats the public baseline on the test split: precision OR recall improvement is statistically meaningful (non-overlapping 95% CIs)
-  3. Trained model published to HuggingFace at `Hratchg/road-quality-la-yolov8` with a pinned revision SHA (per Phase 2 D-13 / Pitfall 8)
+  3. Trained model published to HuggingFace at `hratcho/road-quality-la-yolov8` with a pinned revision SHA (per Phase 2 D-13 / Pitfall 8)
   4. `data_pipeline/detector_factory._DEFAULT_HF_REPO` updated to point at the trained model with `@<sha>` revision pin
   5. Production DB re-ingested via `scripts/ingest_mapillary.py` with `--wipe-synthetic` to swap public-model detections (from Phase 6 Plan 06-03) for trained-detector detections; segment_scores recomputed
   6. `docs/DETECTOR_EVAL.md` updated with the new measured numbers; old baseline numbers preserved in a "previous baseline" section for traceability

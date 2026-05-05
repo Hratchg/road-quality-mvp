@@ -192,14 +192,14 @@ _DEFAULT_HF_REPO = "keremberke/yolov8s-pothole-segmentation@d6d5df4ac1a9e40b0180
 # To bump: capture the new SHA via `huggingface_hub.HfApi().model_info(repo).sha`
 # AFTER verifying the new revision against the LA test set, and replace the
 # segment after `@`. Phase 7 will swap this entirely to
-# `Hratchg/road-quality-la-yolov8@<sha>` when the trained model ships.
+# `hratcho/road-quality-la-yolov8@<sha>` when the trained model ships.
 _DEFAULT_HF_REPO = "keremberke/yolov8s-pothole-segmentation@d6d5df4ac1a9e40b0180635b03198ddec88c4875"
 ```
 
 **Phase 7 change:** replace the constant value only; preserve and update the comment block to reference Phase 7 and remove the "Phase 7 will swap this" forward reference. SHA captured via:
 ```python
 from huggingface_hub import HfApi
-sha = HfApi().model_info("Hratchg/road-quality-la-yolov8").sha
+sha = HfApi().model_info("hratcho/road-quality-la-yolov8").sha
 ```
 
 **SHA regex pattern at line 58 (no change needed; already accepts `Hratchg/...@<sha>`):**
@@ -321,7 +321,7 @@ python scripts/finetune_detector.py \
     --epochs 50 \
     --batch 32 \
     --patience 15 \
-    --push-to-hub Hratchg/road-quality-la-yolov8
+    --push-to-hub hratcho/road-quality-la-yolov8
 ```
 
 **`_run_training` pattern at lines 129-188 (reference for understanding what the script does):**
@@ -489,13 +489,13 @@ def test_none_returns_default_hf_repo_via_hf_hub_download(self, monkeypatch):
         assert call_kwargs["filename"] == "best.pt"
 ```
 
-**Phase 7 update:** change `assert call_kwargs["repo_id"] == "keremberke/yolov8s-pothole-segmentation"` to `assert call_kwargs["repo_id"] == "Hratchg/road-quality-la-yolov8"`. Also add a new test:
+**Phase 7 update:** change `assert call_kwargs["repo_id"] == "keremberke/yolov8s-pothole-segmentation"` to `assert call_kwargs["repo_id"] == "hratcho/road-quality-la-yolov8"`. Also add a new test:
 ```python
 def test_default_hf_repo_pin_contains_sha(self):
     """SC #4: _DEFAULT_HF_REPO must contain @<sha> (pickle-ACE mitigation)."""
     factory = _reload_factory()
     assert "@" in factory._DEFAULT_HF_REPO
-    assert factory._DEFAULT_HF_REPO.startswith("Hratchg/road-quality-la-yolov8@")
+    assert factory._DEFAULT_HF_REPO.startswith("hratcho/road-quality-la-yolov8@")
 ```
 
 This test verifies both the repo identity and the SHA pin (the `@` requirement) — covers SC #4 and Phase 2 Pitfall 8 mitigation.
@@ -517,10 +517,10 @@ cur.execute("DELETE FROM segment_defects WHERE source = 'mapillary'")
 **Source:** `data_pipeline/detector_factory.py:40-54`
 **Apply to:** `_DEFAULT_HF_REPO` update after HF publish; the `@<sha>` suffix is mandatory.
 ```python
-_DEFAULT_HF_REPO = "Hratchg/road-quality-la-yolov8@<sha>"
+_DEFAULT_HF_REPO = "hratcho/road-quality-la-yolov8@<sha>"
 # SHA captured via:
 from huggingface_hub import HfApi
-sha = HfApi().model_info("Hratchg/road-quality-la-yolov8").sha
+sha = HfApi().model_info("hratcho/road-quality-la-yolov8").sha
 ```
 
 ### Bootstrap CI pattern (Phase 2 D-08)

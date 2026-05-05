@@ -14,7 +14,7 @@ requires:
 provides:
   - RED test scaffold for bootstrap_ci_map50 (data_pipeline/tests/test_eval.py)
   - RED test scaffold for wipe_mapillary_rows + --wipe-mapillary CLI flag (backend/tests/test_ingest_mapillary.py)
-  - RED test scaffold asserting _DEFAULT_HF_REPO starts with Hratchg/road-quality-la-yolov8@ (backend/tests/test_detector_factory.py)
+  - RED test scaffold asserting _DEFAULT_HF_REPO starts with hratcho/road-quality-la-yolov8@ (backend/tests/test_detector_factory.py)
 
 affects:
   - 07-02 (must implement bootstrap_ci_map50 to turn test_eval.py GREEN)
@@ -70,7 +70,7 @@ completed: 2026-04-29
 - Created `data_pipeline/tests/` package (new directory + empty `__init__.py`) so pytest can collect tests alongside the module
 - Created `data_pipeline/tests/test_eval.py` with `TestBootstrapCiMap50` (4 methods): valid range, degenerate no-GT, deterministic seed=42, default seed=42 assertion — fails with `ImportError: cannot import name 'bootstrap_ci_map50'`
 - Extended `backend/tests/test_ingest_mapillary.py` with 4 RED methods in `TestPlan04Flags`: helper exists, hardcoded WHERE literal (T-07-04 mitigation), rowcount+commit mock, `--wipe-mapillary` CLI flag — all fail with `AttributeError` / assertion failures
-- Extended `backend/tests/test_detector_factory.py`: flipped existing `test_none_returns_default_hf_repo_via_hf_hub_download` to assert `Hratchg/road-quality-la-yolov8` + revision present; added `test_default_hf_repo_pin_contains_sha` asserting `@<sha>` format — both fail with `AssertionError` against current `keremberke/...` constant
+- Extended `backend/tests/test_detector_factory.py`: flipped existing `test_none_returns_default_hf_repo_via_hf_hub_download` to assert `hratcho/road-quality-la-yolov8` + revision present; added `test_default_hf_repo_pin_contains_sha` asserting `@<sha>` format — both fail with `AssertionError` against current `keremberke/...` constant
 
 ## Task Commits
 
@@ -99,7 +99,7 @@ Each task was committed atomically:
 | test_wipe_mapillary_rows_returns_rowcount_and_commits | backend/tests/test_ingest_mapillary.py | AttributeError: module has no attribute 'wipe_mapillary_rows' | Plan 07-03 |
 | test_help_lists_wipe_mapillary_flag | backend/tests/test_ingest_mapillary.py | AssertionError: --wipe-mapillary not in stdout | Plan 07-03 |
 | test_none_returns_default_hf_repo_via_hf_hub_download | backend/tests/test_detector_factory.py | AssertionError: repo_id == 'keremberke/...' not 'Hratchg/...' | Plan 07-07 |
-| test_default_hf_repo_pin_contains_sha | backend/tests/test_detector_factory.py | AssertionError: does not start with 'Hratchg/road-quality-la-yolov8@' | Plan 07-07 |
+| test_default_hf_repo_pin_contains_sha | backend/tests/test_detector_factory.py | AssertionError: does not start with 'hratcho/road-quality-la-yolov8@' | Plan 07-07 |
 
 ## Decisions Made
 

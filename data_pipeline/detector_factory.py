@@ -50,7 +50,7 @@ logger = logging.getLogger(__name__)
 # To bump: capture the new SHA via `huggingface_hub.HfApi().model_info(repo).sha`
 # AFTER verifying the new revision against the LA test set, and replace the
 # segment after `@`. Phase 7 will swap this entirely to
-# `Hratchg/road-quality-la-yolov8@<sha>` when the trained model ships.
+# `hratcho/road-quality-la-yolov8@<sha>` when the trained model ships.
 _DEFAULT_HF_REPO = "keremberke/yolov8s-pothole-segmentation@d6d5df4ac1a9e40b0180635b03198ddec88c4875"
 _DEFAULT_HF_FILENAME = "best.pt"
 

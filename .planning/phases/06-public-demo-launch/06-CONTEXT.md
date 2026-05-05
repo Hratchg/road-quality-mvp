@@ -65,11 +65,11 @@ The Phase 2 `scripts/fetch_eval_data.py` had three 0.01-deg LA zones. Mapillary 
 **How to apply:** Plan 06-03 documents both options; operator picks at execution time.
 
 ### D-05: HuggingFace repo + revision pin
-Repo name: `Hratchg/road-quality-la-yolov8` (operator's HF account `Hratchg` matches their GitHub). Pinned revision: SHA hash of the first published commit, NOT `main` (per Phase 2 D-13 + Pitfall 8 — pickle-ACE risk).
+Repo name: `hratcho/road-quality-la-yolov8` (operator's HF account `Hratchg` matches their GitHub). Pinned revision: SHA hash of the first published commit, NOT `main` (per Phase 2 D-13 + Pitfall 8 — pickle-ACE risk).
 
 **Why:** Floating `main` tag means anyone with HF write access (including a future compromised token) can replace the model with a malicious one. Pinned revision freezes the artifact.
 
-**How to apply:** Plan 06-04: after `finetune_detector.py --push-to-hub Hratchg/road-quality-la-yolov8`, capture the HF commit SHA and update `_DEFAULT_HF_REPO` constant in `data_pipeline/detector_factory.py` to include `@<sha>`.
+**How to apply:** Plan 06-04: after `finetune_detector.py --push-to-hub hratcho/road-quality-la-yolov8`, capture the HF commit SHA and update `_DEFAULT_HF_REPO` constant in `data_pipeline/detector_factory.py` to include `@<sha>`.
 
 ### D-06: Real Mapillary ingestion against prod DB
 Run `scripts/ingest_mapillary.py` once against the deployed road-quality-db (via flyctl ssh, NOT proxy — see Phase 5 BLOCKING anti-pattern in 05-LESSONS-LEARNED.md). Populates `segment_defects` rows with `source='mapillary'` so Map View shows real detections.
