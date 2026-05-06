@@ -1,0 +1,34 @@
+{
+  "model_path": "keremberke/yolov8s-pothole-segmentation@d6d5df4ac1a9e40b0180635b03198ddec88c4875",
+  "model_repo": "keremberke/yolov8s-pothole-segmentation",
+  "model_revision": "d6d5df4ac1a9e40b0180635b03198ddec88c4875",
+  "split": "test",
+  "n_images": 136,
+  "n_gt_bboxes": 33,
+  "n_pred_bboxes": 46,
+  "iou_threshold": 0.5,
+  "tp": 1,
+  "fp": 45,
+  "fn": 32,
+  "precision": 0.021739130434782608,
+  "precision_ci_95": [
+    0.0,
+    0.021739130434782608,
+    0.06818181818181818
+  ],
+  "recall": 0.030303030303030304,
+  "recall_ci_95": [
+    0.0,
+    0.030303030303030304,
+    0.0967741935483871
+  ],
+  "map50": 0.0004734848484848485,
+  "map50_ci_95": [
+    0.0,
+    0.0004734848484848485,
+    0.004714584486993449
+  ],
+  "bootstrap_resamples": 1000,
+  "bootstrap_seed": 42,
+  "method_note": "Phase 7 D-10 baseline re-eval. Manual val() bypass (predict() + match_predictions + bootstrap_ci) because keremberke is a segmentation model and val() crashes on bbox-only labels (Plan 06-05 SUMMARY exact error documented)."
+}
