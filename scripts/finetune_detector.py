@@ -150,19 +150,28 @@ def _run_training(args: argparse.Namespace) -> int:
         args.device,
         args.seed,
     )
+    train_kwargs = dict(
+        data=str(args.data),
+        epochs=args.epochs,
+        batch=args.batch,
+        imgsz=args.imgsz,
+        device=args.device,
+        patience=args.patience,
+        project=str(args.project),
+        name=args.name,
+        seed=args.seed,
+        exist_ok=True,  # allow re-runs under same name
+    )
+    if args.lr0 is not None:
+        train_kwargs["lr0"] = args.lr0
+    if args.cos_lr:
+        train_kwargs["cos_lr"] = True
+    logger.info(
+        "Hyperparam overrides: lr0=%s cos_lr=%s imgsz=%d",
+        args.lr0, args.cos_lr, args.imgsz,
+    )
     try:
-        results = model.train(
-            data=str(args.data),
-            epochs=args.epochs,
-            batch=args.batch,
-            imgsz=args.imgsz,
-            device=args.device,
-            patience=args.patience,
-            project=str(args.project),
-            name=args.name,
-            seed=args.seed,
-            exist_ok=True,  # allow re-runs under same name
-        )
+        results = model.train(**train_kwargs)
     except Exception:
         import traceback
 
@@ -284,6 +293,20 @@ def main() -> int:
     )
     parser.add_argument(
         "--imgsz", type=int, default=640, help="Input image size"
+    )
+    parser.add_argument(
+        "--lr0",
+        type=float,
+        default=None,
+        help=(
+            "Initial learning rate override (ultralytics default: 0.01 SGD). "
+            "Lower (e.g. 0.001) helps prevent collapse on sparse-positive datasets."
+        ),
+    )
+    parser.add_argument(
+        "--cos-lr",
+        action="store_true",
+        help="Enable cosine LR schedule (helps prevent early collapse).",
     )
     parser.add_argument(
         "--device",
