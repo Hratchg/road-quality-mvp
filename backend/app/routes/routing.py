@@ -253,18 +253,68 @@ def find_route(req: RouteRequest):
 
     with get_connection() as conn:
         with conn.cursor() as cur:
-            # Snap to nearest nodes
+            # Snap to nearest nodes (UNCHANGED)
             cur.execute(SNAP_NODE_SQL, (req.origin.lon, req.origin.lat))
             origin_node = cur.fetchone()["id"]
-
             cur.execute(SNAP_NODE_SQL, (req.destination.lon, req.destination.lat))
             dest_node = cur.fetchone()["id"]
 
-            # K-shortest paths
-            cur.execute(KSP_FULL_SQL, (origin_node, dest_node, K))
-            ksp_rows = cur.fetchall()
+            ksp_rows: list[dict] = []
+            bbox_params = {
+                "o_lon": req.origin.lon, "o_lat": req.origin.lat,
+                "d_lon": req.destination.lon, "d_lat": req.destination.lat,
+                "buf": ROUTE_FILTER_BUFFER_DEG,
+            }
 
-            # Group by path_id
+            # Phase 8 attempt 1: bbox-filtered subgraph + pgr_dijkstra K=5
+            # with edge-weight perturbation. Catches QueryCanceled so a
+            # timeout at this layer doesn't bubble to HTTP 500 (08-PERF-NUMBERS.md
+            # 'Fallback Chain Observation' was the bug in the reverted plan).
+            try:
+                cur.execute(CREATE_FILTERED_EDGES_SQL, bbox_params)
+                cur.execute(INDEX_FILTERED_EDGES_SQL)
+                ksp_rows = find_k_shortest_via_dijkstra(
+                    cur, origin_node, dest_node, k=K,
+                    edges_table="rq_filtered_edges",
+                )
+            except psycopg2.errors.QueryCanceled:
+                conn.rollback()
+                ksp_rows = []
+
+            # Phase 8 attempt 2: widen the buffer. Triggers on either empty
+            # result OR QueryCanceled from attempt 1.
+            if not ksp_rows:
+                try:
+                    cur.execute("DROP TABLE IF EXISTS rq_filtered_edges")
+                    wide_params = {
+                        **bbox_params,
+                        "buf": ROUTE_FILTER_BUFFER_DEG * ROUTE_FILTER_WIDEN_FACTOR,
+                    }
+                    cur.execute(CREATE_FILTERED_EDGES_SQL, wide_params)
+                    cur.execute(INDEX_FILTERED_EDGES_SQL)
+                    ksp_rows = find_k_shortest_via_dijkstra(
+                        cur, origin_node, dest_node, k=K,
+                        edges_table="rq_filtered_edges",
+                    )
+                except psycopg2.errors.QueryCanceled:
+                    conn.rollback()
+                    ksp_rows = []
+
+            # Phase 8 attempt 3: full-graph fallback via pgr_dijkstra K=5.
+            # Last-resort correctness guarantee. Triggers on either empty
+            # result OR QueryCanceled from attempt 2.
+            if not ksp_rows:
+                try:
+                    cur.execute("DROP TABLE IF EXISTS rq_filtered_edges")
+                    ksp_rows = find_k_shortest_via_dijkstra(
+                        cur, origin_node, dest_node, k=K,
+                        edges_table="road_segments",
+                    )
+                except psycopg2.errors.QueryCanceled:
+                    conn.rollback()
+                    ksp_rows = []
+
+            # Group by path_id (UNCHANGED from pre-Phase-8 logic)
             paths: dict[int, list[int]] = {}
             for row in ksp_rows:
                 paths.setdefault(row["path_id"], []).append(row["edge"])
@@ -285,7 +335,7 @@ def find_route(req: RouteRequest):
                     per_segment_metrics=[],
                 )
 
-            # Fetch all segment data
+            # Fetch all segment data (UNCHANGED)
             all_edge_ids = list({eid for edges in paths.values() for eid in edges})
             cur.execute(SEGMENTS_BY_IDS_SQL, (all_edge_ids,))
             seg_rows = cur.fetchall()

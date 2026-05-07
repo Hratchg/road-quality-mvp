@@ -51,6 +51,32 @@ def _mock_segment_data():
     ]
 
 
+def _mock_dijkstra_iteration_1():
+    """Simulate pgr_dijkstra returning path 1 (2 edges) on a tiny mock graph.
+
+    Row shape matches pgr_dijkstra's output (seq, edge, cost) -- not pgr_ksp's.
+    The helper find_k_shortest_via_dijkstra() tags these with path_id=1 before
+    returning to find_route().
+    """
+    return [
+        {"seq": 1, "edge": 1, "cost": 60.0},
+        {"seq": 2, "edge": 2, "cost": 60.0},
+    ]
+
+
+def _mock_dijkstra_iteration_2():
+    """Simulate pgr_dijkstra returning path 2 (different 2 edges) on iteration 2."""
+    return [
+        {"seq": 1, "edge": 3, "cost": 70.0},
+        {"seq": 2, "edge": 4, "cost": 70.0},
+    ]
+
+
+def _mock_dijkstra_empty():
+    """Iteration 3 returns 0 rows -> helper breaks early, returns 2 paths total."""
+    return []
+
+
 def _setup_mock_conn(mock_conn):
     """Wire up mock connection with cursor context managers."""
     mock_cursor = MagicMock()
@@ -70,9 +96,17 @@ def test_route_returns_best_and_fastest(mock_conn):
         {"id": 100},  # origin node
         {"id": 200},  # destination node
     ]
+    # find_route() now calls find_k_shortest_via_dijkstra (K=5 iterations).
+    # Mock iteration 1 returns path 1, iteration 2 returns path 2, iteration 3
+    # returns empty (helper breaks early -- 2 distinct paths total). Then
+    # SEGMENTS_BY_IDS_SQL fetchall returns segment data. The CREATE TEMP TABLE,
+    # CREATE INDEX, and DROP TABLE statements all use cur.execute() but
+    # don't consume from fetchall.side_effect.
     mock_cursor.fetchall.side_effect = [
-        _mock_ksp_results(),
-        _mock_segment_data(),
+        _mock_dijkstra_iteration_1(),  # K=1 dijkstra result (path 1)
+        _mock_dijkstra_iteration_2(),  # K=2 dijkstra result (path 2)
+        _mock_dijkstra_empty(),         # K=3 dijkstra returns empty -> helper breaks
+        _mock_segment_data(),           # SEGMENTS_BY_IDS_SQL
     ]
 
     client = TestClient(app)
@@ -105,8 +139,13 @@ def test_route_returns_warning_with_zero_budget(mock_conn):
         {"id": 100},
         {"id": 200},
     ]
+    # See test_route_returns_best_and_fastest above for the per-iteration mock
+    # rationale. Same 4-element fetchall.side_effect: 3 dijkstra iterations
+    # (path 1, path 2, empty -> break) + segment data.
     mock_cursor.fetchall.side_effect = [
-        _mock_ksp_results(),
+        _mock_dijkstra_iteration_1(),
+        _mock_dijkstra_iteration_2(),
+        _mock_dijkstra_empty(),
         _mock_segment_data(),
     ]
 
