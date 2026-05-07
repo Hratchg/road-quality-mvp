@@ -234,6 +234,24 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: TBD
 **UI hint**: yes
 
+### Phase 8: Routing Performance
+**Goal**: Fix `pgr_ksp` latency for long cross-LA trips so the demo works anywhere in LA, not just within 5 km of a single neighborhood (currently 20-90s for long trips; 1-2s for short DTLA-local trips).
+**Depends on**: Phase 7
+**Why this phase exists**: pgRouting's `pgr_ksp` evaluates its inner SQL via PostgreSQL SPI, which does not use the GiST index on `road_segments.geom`. A spatial bbox WHERE clause inside the pgr_ksp SQL string is a full sequential scan — discovered during 2026-04-29 demo prep after failing both ST_Expand/ST_Collect and ST_MakeEnvelope approaches. Reverted to original full-graph query; root cause and fix approach documented here.
+**Proposed approach**: Two-step routing — pre-filter with a regular psycopg2 query (uses GiST index) into a temp table bounded to the OD corridor, then pass the temp table to `pgr_dijkstra` or `pgr_ksp`. Alternatively: a pre-materialized BBOX-indexed topology view.
+**Current workaround**: Keep origin/destination pairs within ~5 km (DTLA-local, single-neighborhood). Those trips are 1-2s cold, 0.1s cached.
+**Relevant code**: `backend/app/routes/routing.py::KSP_SQL` (line 16), call site at line ~79.
+**Success Criteria**:
+  1. Cross-LA route (e.g. West LA → Pasadena, ~20 km) returns in < 5s uncached
+  2. Short DTLA trips remain ≤ 2s uncached (no regression)
+  3. Existing route tests pass
+**Plans**: 5 plans
+- [ ] 08-01-PLAN.md — Wave 0 RED: live-DB perf regression tests (test_cross_la_under_5s + test_dtla_under_2s) gated by db_has_topology (SC #1, SC #2 anchors)
+- [ ] 08-02-PLAN.md — SQL constants + buffer config: ROUTE_FILTER_BUFFER_DEG, CREATE_FILTERED_EDGES_SQL, INDEX_FILTERED_EDGES_SQL, KSP_FILTERED_SQL; rename KSP_SQL → KSP_FULL_SQL; helper unit tests pin Pitfalls A and G
+- [ ] 08-03-PLAN.md — Wire 3-attempt fallback chain (filter → wide-filter → full-graph) into find_route(); preserve mocked-test compatibility per RESEARCH §7
+- [ ] 08-04-PLAN.md — Live perf validation against seeded local DB; capture measured numbers in 08-PERF-NUMBERS.md; operator checkpoint on SC budgets
+- [ ] 08-05-PLAN.md — Documentation closure: inline routing.py comment block citing Pitfalls A/G + README perf claim with measured number
+
 ## Progress
 
 **Execution Order:**
@@ -254,22 +272,11 @@ Phases execute in numeric order within M1: 1 → 2 → 3 → 4 → 5 → 6. Phas
 | 4. Authentication | M1 | 0/TBD | Not started | - |
 | 5. Cloud Deployment | M1 | 0/TBD | Not started | - |
 | 6. Public Demo Launch | M1 | 0/TBD | Not started | - |
-
-### Phase 8: Routing Performance
-**Goal**: Fix `pgr_ksp` latency for long cross-LA trips so the demo works anywhere in LA, not just within 5 km of a single neighborhood (currently 20-90s for long trips; 1-2s for short DTLA-local trips).
-**Depends on**: Phase 7
-**Why this phase exists**: pgRouting's `pgr_ksp` evaluates its inner SQL via PostgreSQL SPI, which does not use the GiST index on `road_segments.geom`. A spatial bbox WHERE clause inside the pgr_ksp SQL string is a full sequential scan — discovered during 2026-04-29 demo prep after failing both ST_Expand/ST_Collect and ST_MakeEnvelope approaches. Reverted to original full-graph query; root cause and fix approach documented here.
-**Proposed approach**: Two-step routing — pre-filter with a regular psycopg2 query (uses GiST index) into a temp table bounded to the OD corridor, then pass the temp table to `pgr_dijkstra` or `pgr_ksp`. Alternatively: a pre-materialized BBOX-indexed topology view.
-**Current workaround**: Keep origin/destination pairs within ~5 km (DTLA-local, single-neighborhood). Those trips are 1-2s cold, 0.1s cached.
-**Relevant code**: `backend/app/routes/routing.py::KSP_SQL` (line 16), call site at line ~79.
-**Success Criteria**:
-  1. Cross-LA route (e.g. West LA → Pasadena, ~20 km) returns in < 5s uncached
-  2. Short DTLA trips remain ≤ 2s uncached (no regression)
-  3. Existing route tests pass
-**Plans**: TBD
+| 8. Routing Performance | M1 | 0/5 | Planned | - |
 
 ---
 *Roadmap initialized: 2026-04-23 after ingest synthesis + codebase map*
 *Phase 2 planned: 2026-04-23*
 *Phase 3 planned: 2026-04-25*
 *Phase 8 added: 2026-04-29 — routing performance; root cause documented after failed bbox filter experiment*
+*Phase 8 planned: 2026-05-04 — 5 plans (RED tests → SQL constants → control-flow wiring → live perf validation → docs closure)*
