@@ -1,17 +1,108 @@
 # Detector Accuracy — LA Evaluation Report
 
-**Version:** 0.2.0
-**Last Updated:** 2026-04-28
-**Status:** Phase 6 baseline numbers populated. Phase 7 will replace these with fine-tuned-on-LA detector results.
+**Version:** 0.3.0
+**Last Updated:** 2026-05-07
+**Status:** Phase 7 fine-tuning attempted (2 iterations) — closed as documented NEGATIVE result. Production retains the public baseline detector.
 
 ---
 
 This document records the methodology and reported accuracy of the
 pothole detector used by road-quality-mvp, evaluated on hand-labelled
 Los Angeles street-level imagery sourced from Mapillary. It is the
-citation target for the public demo (ROADMAP M1 Phase 6).
+citation target for the public demo.
 
-## Sample size caveat (Phase 6 baseline)
+## TL;DR — what's actually shipping in production
+
+**`keremberke/yolov8s-pothole-segmentation@d6d5df4ac1a9e40b0180635b03198ddec88c4875`** — the public-baseline detector. No LA fine-tune in production. Phase 7 attempted to fine-tune twice; both attempts failed the win-check against this baseline on the held-out test split. See "Phase 7 fine-tuning attempt" section below for honest documentation.
+
+| What's true | What's not true |
+|------------|----------------|
+| Real Mapillary imagery is detected end-to-end and drives routing | The detector is fine-tuned on LA imagery |
+| 1322 LA images hand-labelled with 171 positive pothole bboxes | The fine-tuned model is in production |
+| Phase 7 training ran twice on real EC2 / Colab GPUs | The fine-tuned model beats the public baseline |
+| Both training attempts are public on HuggingFace at `hratcho/road-quality-la-yolov8` | (anything else implying a successful fine-tune) |
+
+---
+
+## Phase 7 fine-tuning attempt (NEGATIVE result, both iterations)
+
+Phase 7 sourced ~10× more LA imagery than Phase 6, hand-labelled 171
+positive bboxes (vs 17 in Phase 6), and ran two fine-tuning iterations
+on `yolov8s.pt`. Both failed the D-11 win-check (non-overlapping 95% CI
+on at least one of {Precision, Recall, mAP@0.5}, trained better than
+baseline) on the held-out test split.
+
+### Iteration 1 — full collapse
+
+- **SHA:** `hratcho/road-quality-la-yolov8@af7af59ad138554c67e774bd48cfe60e04193909`
+- **Hyperparameters:** `--epochs 50 --batch 32 --imgsz 640 --patience 15` (default lr=0.01)
+- **Outcome:** Model emitted **zero predictions on every split** even at
+  conf=0.01. Default lr=0.01 too aggressive for a 13%-positive dataset
+  (171 positives across 1322 images); loss landscape gave a strong
+  "predict nothing" attractor that the optimizer never escaped.
+
+### Iteration 2 — trained but didn't generalize to test
+
+- **SHA:** `hratcho/road-quality-la-yolov8@84a874c2a5e7b08a9a701d31492bf7808356b0e0`
+- **Hyperparameters:** `--epochs 100 --batch 16 --imgsz 800 --lr0 0.001 --patience 30 --cos-lr`
+- **Internal val metrics during training:** P=0.184, R=0.0714,
+  mAP@0.5=0.0619 — real learning visible.
+- **External eval on held-out test split:** P=0.000, R=0.000,
+  mAP@0.5=0.000 — model emits 0 predictions on test even at conf=0.001.
+- **Per-split smoke test (5 images each, conf=0.001):**
+  - Train: 7, 4, 57, 1, 3 predictions (model knows train well)
+  - Val: 0, 6, 0, 25, 9 predictions (decent density)
+  - Test: 0, 3, 0, 0, 0 predictions (essentially blind)
+
+### Likely root cause: train/val/test labeling-style drift
+
+The CVAT labeling session went **test → val → train**. Operator skill
+drifted upward across the session (~6+ hours of labeling); the test
+labels were the operator's earliest pass and are systematically less
+consistent with train/val labels than train/val are with each other.
+The model learned the train/val labeling style but the same potholes
+annotated in the earlier-pass test style aren't recognized.
+
+This is a real labeling-quality phenomenon, not a model defect — see
+`.planning/phases/07-la-trained-detector/FUTURE-FINETUNE-OPTIONS.md` for
+the recommended fix paths if a future re-attempt is undertaken.
+
+### Phase 7 re-eval'd baseline (replaces Phase 6's 3-positive numbers)
+
+The keremberke baseline was re-eval'd on the new 33-positive test split
+(SC #1 met) using the same val()-bypass methodology as Phase 6. These
+are now the canonical baseline numbers — Phase 6's 3-positive numbers
+are preserved below for traceability but the wide CIs there make them
+not statistically usable.
+
+| Metric | Value | 95% CI |
+|--------|-------|--------|
+| Precision | 0.022 | [0.000, 0.068] |
+| Recall    | 0.030 | [0.000, 0.097] |
+| mAP@0.5   | 0.0005 | [0.000, 0.005] |
+| TP / FP / FN | 1 / 45 / 32 | — |
+
+136 images, 33 ground-truth positive bboxes. The keremberke model is
+weak on this LA imagery (high false-positive rate, low recall) — but
+both Phase 7 trained iterations were *strictly worse* on this same
+test split.
+
+### Why Phase 7 closed instead of iterating further
+
+Phase 7 D-13 caps trained runs at 2 (both spent). Per the negative
+contingency: close as documented negative result, keep production on
+the baseline, ship Phase 7 by ingesting the lessons learned and
+preserving the dataset/scripts/model weights for any future re-attempt.
+
+Both trained model weights remain public on HF for reproducibility:
+the iter-1 weights document the collapse mode; the iter-2 weights
+document the train/val/test drift mode. Anyone re-running this
+project can pick up from `data/eval_la/` (committed to git) and
+the eval scripts in `scripts/eval_*_phase7.py`.
+
+---
+
+## Sample size caveat (Phase 6 baseline — historical)
 
 The numbers below are computed against a **17-image / 3-positive-bbox**
 LA test split (per Phase 6 Plan 06-04). Confidence intervals are

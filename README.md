@@ -14,7 +14,7 @@ A public LA pothole-aware routing demo. Pick two points on the map; get a "faste
 
 **Pipeline:**
 - Imagery: real Mapillary CC-BY-SA street-level captures from 12 LA zones spanning DTLA, the Westside, the Valley fringe, and known-bad-pavement corridors (Mid-City east of La Brea, Boyle Heights, parts of South LA)
-- Detector: YOLOv8 fine-tuned on hand-labelled LA Mapillary imagery — sequence-grouped 70/20/10 train/val/test splits, single-class "pothole" with severity derived from confidence, image-level bootstrap CIs at IoU=0.5. Methodology + measurements in [`docs/DETECTOR_EVAL.md`](docs/DETECTOR_EVAL.md).
+- Detector: `keremberke/yolov8s-pothole-segmentation` (public baseline, revision-pinned). LA-specific fine-tuning was attempted in Phase 7 (1322 hand-labelled images, 171 positive bboxes, 2 training iterations) and closed as a documented negative result — both iterations failed the win-check against the public baseline on a held-out test split. Both attempted models are public on HF at `hratcho/road-quality-la-yolov8` for reproducibility. Methodology + numbers + failure analysis in [`docs/DETECTOR_EVAL.md`](docs/DETECTOR_EVAL.md).
 - Routing: real Mapillary detections drive the pothole-score signal end-to-end; segments outside the ingested coverage fall back to the synthetic IRI baseline so the routing diff stays visible LA-wide.
 - Reproducibility: dataset rebuild is one command (`python scripts/fetch_eval_data.py --build`); model weights load from a revision-pinned HuggingFace repo (pickle-ACE drift protection in `data_pipeline/detector_factory.py`); training is a single `scripts/finetune_detector.py` invocation across laptop CPU / Colab T4 / EC2 g5.xlarge recipes.
 
@@ -22,7 +22,7 @@ A public LA pothole-aware routing demo. Pick two points on the map; get a "faste
 
 ## Current Status
 
-**M1 shipped.** Public demo URL is live with real Mapillary detections, an LA-trained YOLOv8 pothole detector, and a Fly.io tri-app cloud deploy (db + backend + frontend) reproducible from `main`.
+**M1 shipped.** Public demo URL is live with real Mapillary detections (detected with the public-baseline YOLOv8 pothole model) and a Fly.io tri-app cloud deploy (db + backend + frontend) reproducible from `main`. Phase 7's LA-specific fine-tune was attempted and closed as documented negative — see `docs/DETECTOR_EVAL.md` for the full retrospective.
 
 19/19 M0 backend tests + 200+ M1 backend tests passing. See `.planning/ROADMAP.md` for the full phase status.
 

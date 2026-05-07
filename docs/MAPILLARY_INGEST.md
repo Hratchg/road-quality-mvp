@@ -104,7 +104,8 @@ CHECK constraint) so it is safe to re-run.
 | `--no-keep` | off | Delete downloaded images after detection. The manifest is still written first (Pattern 5). |
 | `--json-out PATH` | unset | Write the run summary JSON to this path in addition to printing it to stdout. |
 | `--wipe-synthetic` | off | **Destructive.** `DELETE FROM segment_defects WHERE source = 'synthetic'` BEFORE writing real data. Aborts (exit 2) if zero detections will be written, unless `--force-wipe` is also passed. |
-| `--force-wipe` | off | Allow `--wipe-synthetic` even when zero detections will be written. Use with care: deletes synthetic data with nothing to replace it. |
+| `--wipe-mapillary` | off | **Destructive.** `DELETE FROM segment_defects WHERE source = 'mapillary'` BEFORE writing real data. Same safety latch as `--wipe-synthetic` — aborts (exit 2) on zero-detection runs unless `--force-wipe` is passed. Added in Phase 7 Plan 07-03 to support detector re-ingestion when the trained-model SHA changes. NOT executed against production in Phase 7 (closed as D-13 negative; trained model emits 0 predictions on test split, so re-ingestion would degrade the live demo). |
+| `--force-wipe` | off | Allow `--wipe-synthetic` or `--wipe-mapillary` even when zero detections will be written. Use with care: deletes existing data with nothing to replace it. |
 | `--no-recompute` | off | Skip the post-ingest `compute_scores.py --source all` subprocess. Default is auto-recompute on success. |
 | `-v, --verbose` | off | DEBUG-level logging. |
 
