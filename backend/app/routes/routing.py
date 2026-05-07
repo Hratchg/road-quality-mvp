@@ -1,4 +1,5 @@
 import json
+import os
 from fastapi import APIRouter
 from app.db import get_connection
 from app.models import RouteRequest, RouteResponse, RouteInfo, SegmentMetric
@@ -13,10 +14,57 @@ SNAP_NODE_SQL = """
     LIMIT 1
 """
 
-KSP_SQL = """
+# Phase 8: Pre-filter buffer for the OD bbox passed into ST_MakeEnvelope.
+# Default 0.03 deg ~= 3.3 km at LA latitude (RESEARCH §3, §9 defaults table).
+# Override via env to widen on operator request without a redeploy.
+ROUTE_FILTER_BUFFER_DEG = float(os.environ.get("ROUTE_FILTER_BUFFER_DEG", "0.03"))
+ROUTE_FILTER_WIDEN_FACTOR = float(os.environ.get("ROUTE_FILTER_WIDEN_FACTOR", "2.0"))
+
+KSP_FULL_SQL = """
     SELECT path_id, seq, edge, cost
     FROM pgr_ksp(
         'SELECT id, source, target, travel_time_s AS cost FROM road_segments',
+        %s, %s, %s, directed := false
+    )
+    WHERE edge != -1
+"""
+
+# Phase 8: Pre-filter the OD-corridor edges using the GiST index on
+# road_segments.geom (RESEARCH §1 — the index is invisible inside pgr_ksp's
+# SPI, so the filter MUST happen in this OUTER psycopg2 query, not inlined).
+# AND source IS NOT NULL / AND target IS NOT NULL excludes any edges that
+# pgr_createTopology failed to wire up — those would be useless to pgr_ksp.
+CREATE_FILTERED_EDGES_SQL = """
+    CREATE TEMP TABLE rq_filtered_edges ON COMMIT DROP AS
+    SELECT id, source, target, travel_time_s
+    FROM road_segments
+    WHERE geom && ST_MakeEnvelope(
+        LEAST(%(o_lon)s, %(d_lon)s) - %(buf)s,
+        LEAST(%(o_lat)s, %(d_lat)s) - %(buf)s,
+        GREATEST(%(o_lon)s, %(d_lon)s) + %(buf)s,
+        GREATEST(%(o_lat)s, %(d_lat)s) + %(buf)s,
+        4326
+    )
+    AND source IS NOT NULL
+    AND target IS NOT NULL
+"""
+
+# Phase 8 Pitfall G: pgr_ksp's inner Dijkstra joins on source/target. Without
+# btree indexes on those columns the temp table degrades back to seq scan.
+# Two CREATE INDEX statements separated by `;` — psycopg2 supports multiple
+# statements per execute() call (RESEARCH Assumption A4).
+INDEX_FILTERED_EDGES_SQL = """
+    CREATE INDEX ON rq_filtered_edges (source);
+    CREATE INDEX ON rq_filtered_edges (target);
+"""
+
+# Phase 8: Same pgr_ksp call as KSP_FULL_SQL but reads from the temp table
+# instead of the full 209k-edge road_segments. K=5 + directed:=false locked
+# by CON-route-selection-algorithm.
+KSP_FILTERED_SQL = """
+    SELECT path_id, seq, edge, cost
+    FROM pgr_ksp(
+        'SELECT id, source, target, travel_time_s AS cost FROM rq_filtered_edges',
         %s, %s, %s, directed := false
     )
     WHERE edge != -1
@@ -76,7 +124,7 @@ def find_route(req: RouteRequest):
             dest_node = cur.fetchone()["id"]
 
             # K-shortest paths
-            cur.execute(KSP_SQL, (origin_node, dest_node, K))
+            cur.execute(KSP_FULL_SQL, (origin_node, dest_node, K))
             ksp_rows = cur.fetchall()
 
             # Group by path_id
