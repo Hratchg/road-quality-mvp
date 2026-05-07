@@ -1,5 +1,7 @@
 import json
 import os
+
+import psycopg2  # for psycopg2.errors.QueryCanceled in find_route() Task 2
 from fastapi import APIRouter
 from app.db import get_connection
 from app.models import RouteRequest, RouteResponse, RouteInfo, SegmentMetric
@@ -83,6 +85,141 @@ SEGMENTS_BY_IDS_SQL = """
 """
 
 K = 5
+
+# Phase 8 — pgr_dijkstra outer SQL. The inner_sql is built per-iteration
+# inside find_k_shortest_via_dijkstra(); see that function's docstring for
+# why edge-weight perturbation runs Yen's-style algorithm linear in K
+# instead of pgr_ksp's super-linear-in-K Yen's enumeration.
+PGR_DIJKSTRA_OUTER_SQL = """
+    SELECT seq, edge, cost
+    FROM pgr_dijkstra(
+        %(inner_sql)s,
+        %(origin)s, %(dest)s, directed := false
+    )
+    WHERE edge != -1
+    ORDER BY seq
+"""
+
+# Penalty multiplier applied to edges from previously-found paths. Multiplicative
+# (not additive) so it dominates any realistic alt-path cost difference. 1000x
+# means a blocked 300-second edge becomes a 300000-second edge -- two orders of
+# magnitude above any plausible full-route cost in LA. Override via env var if
+# operator wants tighter or looser path-diversity behavior.
+DIJKSTRA_BLOCKED_EDGE_PENALTY = float(
+    os.environ.get("DIJKSTRA_BLOCKED_EDGE_PENALTY", "1000.0")
+)
+
+
+def find_k_shortest_via_dijkstra(
+    cur,
+    origin_node: int,
+    dest_node: int,
+    k: int = 5,
+    edges_table: str = "rq_filtered_edges",
+    weight_penalty: float | None = None,
+) -> list[dict]:
+    """Run pgr_dijkstra k times with edge-weight perturbation between iterations.
+
+    Returns a list of row dicts in pgr_ksp output shape:
+      [{"path_id": 1, "seq": 1, "edge": 42, "cost": 3.5}, ...]
+
+    Why this exists (Phase 8 second-replan):
+      pgr_ksp with K=5 explodes super-linearly on dense urban subgraphs
+      (08-PERF-NUMBERS.md: K=1 = 0.4s, K=3 = 20s+, K=5 = 12s timeout, all
+      on the same 10k-edge subgraph). pgr_dijkstra called K times with
+      edge-weight perturbation between calls is linear in K -- the
+      industry-standard k-shortest-paths approach used by OSRM and Valhalla.
+      Same K=5 candidate paths, same row shape, much better complexity.
+
+    Algorithm (Yen's-style edge-weight perturbation):
+      1. Run pgr_dijkstra(origin, dest) on the unperturbed graph -> path_1.
+      2. Collect path_1's edge IDs into the `blocked` set.
+      3. For i in 2..k: run pgr_dijkstra with cost-of-blocked-edges
+         multiplied by weight_penalty (so subsequent runs prefer
+         alternatives but can still cross blocked edges if no
+         alternative exists). Add new path's edges to `blocked`.
+      4. If iteration i returns 0 rows, stop early (no more distinct paths).
+
+    Why edge-weight perturbation (not edge removal):
+      - Edge removal can leave the graph disconnected for the OD pair,
+        returning 0 rows after the first path.
+      - Multiplicative penalty (cost * 1000) makes blocked edges
+        "expensive but still traversable"; pgr_dijkstra still finds
+        a path through them if no cheaper alternative exists.
+
+    Args:
+        cur: an open psycopg2 cursor on a connection that has already
+            run CREATE TEMP TABLE for `edges_table` (when edges_table
+            != "road_segments"). The cursor MUST share the transaction
+            with the temp-table creation -- see Pitfall C in 08-RESEARCH.md.
+        origin_node: vertex ID returned by SNAP_NODE_SQL for the origin.
+        dest_node: vertex ID returned by SNAP_NODE_SQL for the destination.
+        k: number of K-shortest paths to find. Default 5
+            (CON-route-selection-algorithm).
+        edges_table: name of the table to read edges from. "rq_filtered_edges"
+            (the bbox-filtered temp table from Plan 08-02) or "road_segments"
+            (full-graph fallback). Caller-controlled, never user-supplied --
+            do NOT pass user input here (T-08-03b-01).
+        weight_penalty: multiplier applied to edges in already-found paths.
+            None = read DIJKSTRA_BLOCKED_EDGE_PENALTY (1000.0 default).
+
+    Returns:
+        list of dicts with keys {"path_id", "seq", "edge", "cost"}. Empty
+        list when iteration 1 returns 0 rows (caller falls back). Up to
+        k * <path-length> rows in the happy path.
+
+    Security (T-08-03b-01):
+        The inner SQL string interpolates ONLY system-controlled values:
+        - `edges_table` is a hardcoded caller-side string (caller is
+          find_route() in this same module).
+        - `blocked_literal` is a comma-separated list of int()-coerced
+          edge IDs returned BY pgr_dijkstra ITSELF in prior iterations.
+          User input never reaches this string.
+        - `weight_penalty` is float()-coerced from a module constant.
+        psycopg2 still parameter-binds origin / dest via %(origin)s /
+        %(dest)s in the OUTER SQL.
+    """
+    if weight_penalty is None:
+        weight_penalty = DIJKSTRA_BLOCKED_EDGE_PENALTY
+
+    rows: list[dict] = []
+    blocked: list[int] = []
+
+    for path_id in range(1, k + 1):
+        # int() coercion prevents any non-integer slipping through.
+        # blocked items are always BIGINT edge IDs from the DB.
+        blocked_literal = ",".join(str(int(e)) for e in blocked)
+        inner_sql = (
+            f"SELECT id, source, target, "
+            f"CASE WHEN id = ANY(ARRAY[{blocked_literal}]::bigint[]) "
+            f"THEN cost * {float(weight_penalty)} ELSE cost END AS cost "
+            f"FROM (SELECT id, source, target, travel_time_s AS cost "
+            f"FROM {edges_table}) AS e"
+        )
+        cur.execute(
+            PGR_DIJKSTRA_OUTER_SQL,
+            {"inner_sql": inner_sql, "origin": origin_node, "dest": dest_node},
+        )
+        path_rows = cur.fetchall()
+
+        if not path_rows:
+            # Iteration 1 with no rows -> no path in this subgraph; caller
+            # must widen or fall back. Iterations 2..k with no rows ->
+            # we just ran out of distinct alternatives; return what we have.
+            break
+
+        for r in path_rows:
+            rows.append(
+                {
+                    "path_id": path_id,
+                    "seq": r["seq"],
+                    "edge": r["edge"],
+                    "cost": r["cost"],
+                }
+            )
+            blocked.append(int(r["edge"]))
+
+    return rows
 
 
 @router.post("/route", response_model=RouteResponse)
