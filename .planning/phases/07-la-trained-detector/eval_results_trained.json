@@ -1,7 +1,7 @@
 {
-  "model_path": "hratcho/road-quality-la-yolov8@af7af59ad138554c67e774bd48cfe60e04193909",
+  "model_path": "hratcho/road-quality-la-yolov8@84a874c2a5e7b08a9a701d31492bf7808356b0e0",
   "model_repo": "hratcho/road-quality-la-yolov8",
-  "model_revision": "af7af59ad138554c67e774bd48cfe60e04193909",
+  "model_revision": "84a874c2a5e7b08a9a701d31492bf7808356b0e0",
   "split": "test",
   "n_images": 136,
   "n_gt_bboxes": 33,
