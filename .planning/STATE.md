@@ -4,14 +4,14 @@ milestone: v0.3.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 7 context gathered
-last_updated: "2026-04-29T01:49:04.512Z"
-last_activity: 2026-04-29 -- Phase 7 execution started
+last_updated: "2026-05-07T22:17:31.825Z"
+last_activity: 2026-05-07
 progress:
-  total_phases: 7
-  completed_phases: 6
-  total_plans: 36
-  completed_plans: 28
-  percent: 78
+  total_phases: 8
+  completed_phases: 7
+  total_plans: 41
+  completed_plans: 38
+  percent: 93
 ---
 
 # Project State
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-23)
 
 **Core value:** Given any two points in LA, show the user a route that is demonstrably smoother than the fastest route, using real road-quality data.
-**Current focus:** Phase 7 — LA-Trained Detector
+**Current focus:** Phase 08 — routing-performance
 
 ## Current Position
 
-Phase: 7 (LA-Trained Detector) — EXECUTING
-Plan: 1 of 8
+Phase: 08 (routing-performance) — EXECUTING
+Plan: 2 of 5
 Plans: 4 of 4 complete
-Status: Executing Phase 7
-Last activity: 2026-04-29 -- Phase 7 execution started
+Status: Ready to execute
+Last activity: 2026-05-07
 
 Progress (M1): [█░░░░░░░░░] 17% (1 of 6 M1 phases complete)
 Overall (M0 + M1): [██████░░░░] 62% (8 of 13 phases complete; M0 shipped + M1 Phase 1)
@@ -58,6 +58,7 @@ Overall (M0 + M1): [██████░░░░] 62% (8 of 13 phases complete
 - Trend: —
 
 *Updated after each plan completion*
+| Phase 08-routing-performance P01 | 12min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,7 @@ Recent decisions affecting current work:
 - M0 (shipped): Routing via pgRouting `pgr_ksp`, k=5, seed=42, Leaflet default + `VITE_MAPBOX_TOKEN` for Mapbox
 - M0 (carryover): Seed radius = 10 km (SPEC); verify the literal in `scripts/seed_data.py` during Phase 1
 - M0 (carryover): `road_segments.source`/`target` = BIGINT (SPEC); verify migration literal during Phase 1
+- [Phase ?]: Phase 8 RED gate (08-01) installed: backend/tests/test_routing_performance.py asserts PERF-01 < 5s and PERF-02 <= 2s; gated by db_has_topology so CI auto-skips
 
 ### Pending Todos
 
@@ -103,9 +105,9 @@ Carried forward to later phases (not blockers now, will be addressed in-phase):
 
 ## Session Continuity
 
-Last session: --stopped-at
+Last session: 2026-05-07T22:17:28.050Z
 Stopped at: Phase 7 context gathered
-Resume file: --resume-file
+Resume file: None
 
 **Planned Phase:** 7 (LA-Trained Detector) — 8 plans — 2026-04-28T21:59:14.644Z
 **Completed Phase:** 1 (MVP Integrity Cleanup) — 4 plans — 2026-04-23

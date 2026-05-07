@@ -246,7 +246,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Short DTLA trips remain ≤ 2s uncached (no regression)
   3. Existing route tests pass
 **Plans**: 5 plans
-- [ ] 08-01-PLAN.md — Wave 0 RED: live-DB perf regression tests (test_cross_la_under_5s + test_dtla_under_2s) gated by db_has_topology (SC #1, SC #2 anchors)
+- [x] 08-01-PLAN.md — Wave 0 RED: live-DB perf regression tests (test_cross_la_under_5s + test_dtla_under_2s) gated by db_has_topology (SC #1, SC #2 anchors)
 - [ ] 08-02-PLAN.md — SQL constants + buffer config: ROUTE_FILTER_BUFFER_DEG, CREATE_FILTERED_EDGES_SQL, INDEX_FILTERED_EDGES_SQL, KSP_FILTERED_SQL; rename KSP_SQL → KSP_FULL_SQL; helper unit tests pin Pitfalls A and G
 - [ ] 08-03-PLAN.md — Wire 3-attempt fallback chain (filter → wide-filter → full-graph) into find_route(); preserve mocked-test compatibility per RESEARCH §7
 - [ ] 08-04-PLAN.md — Live perf validation against seeded local DB; capture measured numbers in 08-PERF-NUMBERS.md; operator checkpoint on SC budgets
@@ -272,7 +272,7 @@ Phases execute in numeric order within M1: 1 → 2 → 3 → 4 → 5 → 6. Phas
 | 4. Authentication | M1 | 0/TBD | Not started | - |
 | 5. Cloud Deployment | M1 | 0/TBD | Not started | - |
 | 6. Public Demo Launch | M1 | 0/TBD | Not started | - |
-| 8. Routing Performance | M1 | 0/5 | Planned | - |
+| 8. Routing Performance | M1 | 1/5 | In Progress|  |
 
 ---
 *Roadmap initialized: 2026-04-23 after ingest synthesis + codebase map*
