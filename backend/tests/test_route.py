@@ -51,6 +51,16 @@ def _mock_segment_data():
     ]
 
 
+# Phase 8 compat note: find_route() now issues 5 extra cur.execute() calls per
+# request (CREATE TEMP TABLE, two CREATE INDEX statements collapsed into one
+# execute via the multi-statement INDEX_FILTERED_EDGES_SQL, KSP_FILTERED, and
+# optionally a widen retry / full-graph fallback). MagicMock does NOT couple
+# execute() calls to fetchone/fetchall side_effect lists — only fetchone and
+# fetchall calls consume from those lists. The happy path still does exactly
+# 2 fetchones (snap origin, snap dest) and 2 fetchalls (ksp rows, segment
+# rows), so these mocks need NO adjustment. RESEARCH §7 prediction confirmed
+# during 08-03 execution: tests pass unchanged. Do not "fix" the side_effect
+# lists below by extending them — the count is correct as-is.
 def _setup_mock_conn(mock_conn):
     """Wire up mock connection with cursor context managers."""
     mock_cursor = MagicMock()
