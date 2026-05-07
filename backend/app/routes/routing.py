@@ -116,56 +116,18 @@ def find_route(req: RouteRequest):
 
     with get_connection() as conn:
         with conn.cursor() as cur:
-            # Snap to nearest nodes (unchanged)
+            # Snap to nearest nodes
             cur.execute(SNAP_NODE_SQL, (req.origin.lon, req.origin.lat))
             origin_node = cur.fetchone()["id"]
 
             cur.execute(SNAP_NODE_SQL, (req.destination.lon, req.destination.lat))
             dest_node = cur.fetchone()["id"]
 
-            # Phase 8 attempt 1: pre-filter the OD-corridor edges via the
-            # GiST index on road_segments.geom (RESEARCH §1 — the index is
-            # invisible inside pgr_ksp's SPI, so this OUTER query is the
-            # whole point of the fix). T-08-03-01 mitigation: every value
-            # bound via psycopg2 named-param style; never f-string.
-            bbox_params = {
-                "o_lon": req.origin.lon, "o_lat": req.origin.lat,
-                "d_lon": req.destination.lon, "d_lat": req.destination.lat,
-                "buf": ROUTE_FILTER_BUFFER_DEG,
-            }
-            cur.execute(CREATE_FILTERED_EDGES_SQL, bbox_params)
-            cur.execute(INDEX_FILTERED_EDGES_SQL)
-            cur.execute(KSP_FILTERED_SQL, (origin_node, dest_node, K))
+            # K-shortest paths
+            cur.execute(KSP_FULL_SQL, (origin_node, dest_node, K))
             ksp_rows = cur.fetchall()
 
-            # Phase 8 attempt 2: widen the buffer if no path found in the
-            # tight corridor (RESEARCH §4 — covers the corridor-edge case
-            # without falling all the way back to the full graph). DROP
-            # without IF EXISTS — RESEARCH Assumption A7: ON COMMIT DROP
-            # only fires at transaction end, so within this same `with`
-            # block the temp table persists across attempts and MUST be
-            # explicitly dropped before re-creating.
-            if not ksp_rows:
-                cur.execute("DROP TABLE rq_filtered_edges")
-                wide_params = {
-                    **bbox_params,
-                    "buf": ROUTE_FILTER_BUFFER_DEG * ROUTE_FILTER_WIDEN_FACTOR,
-                }
-                cur.execute(CREATE_FILTERED_EDGES_SQL, wide_params)
-                cur.execute(INDEX_FILTERED_EDGES_SQL)
-                cur.execute(KSP_FILTERED_SQL, (origin_node, dest_node, K))
-                ksp_rows = cur.fetchall()
-
-            # Phase 8 attempt 3: full-graph fallback. Preserves the original
-            # pre-Phase-8 behavior (RESEARCH §4 — correctness guarantee).
-            # Triggers if both filtered attempts found no path — usually
-            # means an edge-of-graph OD pair near the LA-area boundary.
-            if not ksp_rows:
-                cur.execute("DROP TABLE rq_filtered_edges")
-                cur.execute(KSP_FULL_SQL, (origin_node, dest_node, K))
-                ksp_rows = cur.fetchall()
-
-            # Group by path_id (unchanged from pre-Phase-8 logic)
+            # Group by path_id
             paths: dict[int, list[int]] = {}
             for row in ksp_rows:
                 paths.setdefault(row["path_id"], []).append(row["edge"])
@@ -186,7 +148,7 @@ def find_route(req: RouteRequest):
                     per_segment_metrics=[],
                 )
 
-            # Fetch all segment data (unchanged)
+            # Fetch all segment data
             all_edge_ids = list({eid for edges in paths.values() for eid in edges})
             cur.execute(SEGMENTS_BY_IDS_SQL, (all_edge_ids,))
             seg_rows = cur.fetchall()

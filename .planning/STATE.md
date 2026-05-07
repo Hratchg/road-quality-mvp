@@ -4,14 +4,14 @@ milestone: v0.3.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 7 context gathered
-last_updated: "2026-05-07T22:32:16.315Z"
+last_updated: "2026-05-07T22:25:16.904Z"
 last_activity: 2026-05-07
 progress:
   total_phases: 8
   completed_phases: 7
   total_plans: 41
-  completed_plans: 40
-  percent: 98
+  completed_plans: 39
+  percent: 95
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-23)
 ## Current Position
 
 Phase: 08 (routing-performance) — EXECUTING
-Plan: 4 of 5
+Plan: 3 of 5
 Plans: 4 of 4 complete
 Status: Ready to execute
 Last activity: 2026-05-07
@@ -60,7 +60,6 @@ Overall (M0 + M1): [██████░░░░] 62% (8 of 13 phases complete
 *Updated after each plan completion*
 | Phase 08-routing-performance P01 | 12min | 1 tasks | 1 files |
 | Phase 08-routing-performance P02 | 3m 16s | 2 tasks | 2 files |
-| Phase 08-routing-performance PP03 | 2m 4s | 2 tasks tasks | 2 files files |
 
 ## Accumulated Context
 
@@ -76,8 +75,6 @@ Recent decisions affecting current work:
 - [Phase ?]: Two-phase SQL refactor under TDD: Plan 08-02 lands SQL constants + their unit-test contract; Plan 08-03 wires them into find_route(). Reviewer sees SQL shape locked separately from control-flow change.
 - [Phase ?]: Env-var module constants tested via importlib.reload + monkeypatch.setenv pattern: read constant -> assert default; setenv + reload -> assert new value; finally-block delenv + reload to restore default for downstream tests.
 - [Phase ?]: psycopg2 named-parameter binding (%(o_lon)s style) mandatory for SQL with untrusted lat/lon — never f-string or .format() lat/lon into SQL. Test pins this contract (T-08-02-01 mitigation).
-- [Phase ?]: Plan 08-03: 3-attempt fallback chain (filter -> wide-filter -> full-graph) wired into find_route() preserves correctness for edge-of-graph OD pairs while pre-filtering corridor edges via GiST index. Single connection invariant; explicit DROP TABLE between attempts; ON COMMIT DROP at outer block exit.
-- [Phase ?]: Plan 08-03: MagicMock.execute() does NOT consume from fetchone/fetchall side_effect lists. Control-flow changes that add only DDL execute() calls require zero mock-fixture adjustment. RESEARCH §7 prediction confirmed.
 
 ### Pending Todos
 
@@ -112,7 +109,7 @@ Carried forward to later phases (not blockers now, will be addressed in-phase):
 
 ## Session Continuity
 
-Last session: 2026-05-07T22:32:11.198Z
+Last session: 2026-05-07T22:25:16.900Z
 Stopped at: Phase 7 context gathered
 Resume file: None
 
