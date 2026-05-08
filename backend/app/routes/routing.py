@@ -117,6 +117,7 @@ def find_k_shortest_via_dijkstra(
     k: int = 5,
     edges_table: str = "rq_filtered_edges",
     weight_penalty: float | None = None,
+    early_exit_at: int | None = None,
 ) -> list[dict]:
     """Run pgr_dijkstra k times with edge-weight perturbation between iterations.
 
@@ -139,6 +140,8 @@ def find_k_shortest_via_dijkstra(
          alternatives but can still cross blocked edges if no
          alternative exists). Add new path's edges to `blocked`.
       4. If iteration i returns 0 rows, stop early (no more distinct paths).
+      5. If `early_exit_at` is set and we have collected that many distinct
+         paths, stop early.
 
     Why edge-weight perturbation (not edge removal):
       - Edge removal can leave the graph disconnected for the OD pair,
@@ -162,11 +165,18 @@ def find_k_shortest_via_dijkstra(
             do NOT pass user input here (T-08-03b-01).
         weight_penalty: multiplier applied to edges in already-found paths.
             None = read DIJKSTRA_BLOCKED_EDGE_PENALTY (1000.0 default).
+        early_exit_at: if set, stop after this many distinct paths collected
+            even if k is larger. Used by find_route() to cap dijkstra calls
+            on filtered-subgraph attempts (where path diversity is naturally
+            limited by the smaller search space, so 3 paths capture nearly
+            all the variation that 5 would). The full-graph fallback passes
+            None to get the full K=5 enumeration. None = no early exit.
 
     Returns:
         list of dicts with keys {"path_id", "seq", "edge", "cost"}. Empty
         list when iteration 1 returns 0 rows (caller falls back). Up to
-        k * <path-length> rows in the happy path.
+        k * <path-length> rows in the happy path; capped at
+        early_exit_at * <path-length> when early_exit_at is set.
 
     Security (T-08-03b-01):
         The inner SQL string interpolates ONLY system-controlled values:
@@ -219,6 +229,14 @@ def find_k_shortest_via_dijkstra(
             )
             blocked.append(int(r["edge"]))
 
+        # Phase 8 tuning (08-PERF-NUMBERS.md Run 2 -> Run 3): early-exit when
+        # caller has signalled a smaller path budget. On filtered subgraphs
+        # the search space is naturally limited, so 3 paths capture nearly
+        # all the diversity that 5 would -- saving 40% of the dijkstra calls
+        # on cross-LA where each iteration is ~580ms.
+        if early_exit_at is not None and path_id >= early_exit_at:
+            break
+
     return rows
 
 
@@ -270,12 +288,20 @@ def find_route(req: RouteRequest):
             # with edge-weight perturbation. Catches QueryCanceled so a
             # timeout at this layer doesn't bubble to HTTP 500 (08-PERF-NUMBERS.md
             # 'Fallback Chain Observation' was the bug in the reverted plan).
+            #
+            # early_exit_at=3 (08-PERF-NUMBERS.md Run 2 -> Run 3 tuning): the
+            # filtered subgraph has limited path diversity, so the marginal
+            # benefit of K=5 over K=3 is tiny while the cost is ~40% extra
+            # dijkstra calls. Cross-LA before tuning: 5 x ~580ms = 2.9s of
+            # dijkstra alone. After tuning: 3 x ~580ms = 1.7s. Full K=5
+            # is reserved for attempt 3 below.
             try:
                 cur.execute(CREATE_FILTERED_EDGES_SQL, bbox_params)
                 cur.execute(INDEX_FILTERED_EDGES_SQL)
                 ksp_rows = find_k_shortest_via_dijkstra(
                     cur, origin_node, dest_node, k=K,
                     edges_table="rq_filtered_edges",
+                    early_exit_at=3,
                 )
             except psycopg2.errors.QueryCanceled:
                 conn.rollback()
@@ -295,6 +321,7 @@ def find_route(req: RouteRequest):
                     ksp_rows = find_k_shortest_via_dijkstra(
                         cur, origin_node, dest_node, k=K,
                         edges_table="rq_filtered_edges",
+                        early_exit_at=3,
                     )
                 except psycopg2.errors.QueryCanceled:
                     conn.rollback()
@@ -302,13 +329,17 @@ def find_route(req: RouteRequest):
 
             # Phase 8 attempt 3: full-graph fallback via pgr_dijkstra K=5.
             # Last-resort correctness guarantee. Triggers on either empty
-            # result OR QueryCanceled from attempt 2.
+            # result OR QueryCanceled from attempt 2. early_exit_at=None
+            # (full K=5 enumeration) since this is the only attempt that
+            # sees the entire graph and we want maximum path diversity for
+            # the rare-case where filtered subgraph yielded 0 paths.
             if not ksp_rows:
                 try:
                     cur.execute("DROP TABLE IF EXISTS rq_filtered_edges")
                     ksp_rows = find_k_shortest_via_dijkstra(
                         cur, origin_node, dest_node, k=K,
                         edges_table="road_segments",
+                        early_exit_at=None,
                     )
                 except psycopg2.errors.QueryCanceled:
                     conn.rollback()
