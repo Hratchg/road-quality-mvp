@@ -39,14 +39,14 @@ created: 2026-05-08
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 9-01-01 | 01 | 1 | REQ-crash-ingest-lacity | T-9-01 | Migration applies cleanly + idempotent | unit (DDL replay) | `pytest backend/tests/test_migrations.py::test_migration_004_idempotent -x` | ❌ W0 | ⬜ pending |
+| 9-01-01 | 01 | 1 | REQ-crash-ingest-lacity | T-9-01 | Migration applies cleanly + idempotent | unit (DDL replay) | `pytest backend/tests/test_migration_004.py::test_migration_004_idempotent -x` | ❌ W0 | ⬜ pending |
 | 9-02-01 | 02 | 2 | REQ-crash-ingest-lacity | — | KABCO mocode → highest-tier resolution | unit | `pytest backend/tests/test_lacity_mocodes.py::test_multi_severity_resolves_to_highest -x` | ❌ W0 | ⬜ pending |
 | 9-02-02 | 02 | 2 | REQ-crash-ingest-lacity | — | No-severity-code row raises ValueError (Pitfall 2) | unit RED | `pytest backend/tests/test_lacity_mocodes.py::test_no_severity_code_raises_value_error -x` | ❌ W0 | ⬜ pending |
 | 9-02-03 | 02 | 2 | REQ-crash-ingest-lacity | — | Defensive separator parsing (space + comma) | unit | `pytest backend/tests/test_lacity_mocodes.py::test_separator_robustness -x` | ❌ W0 | ⬜ pending |
 | 9-02-04 | 02 | 2 | REQ-crash-snap-match | T-9-02 | snap returns nearest within radius | unit (DB) | `pytest backend/tests/test_snap.py::test_snap_within_radius -x` | ❌ W0 | ⬜ pending |
 | 9-02-05 | 02 | 2 | REQ-crash-snap-match | T-9-02 | snap returns (None, None) outside radius | unit (DB) | `pytest backend/tests/test_snap.py::test_snap_outside_radius -x` | ❌ W0 | ⬜ pending |
 | 9-03-01 | 03 | 2 | REQ-crash-ingest-lacity | T-9-03 | Socrata client paginates correctly | unit (mock requests) | `pytest backend/tests/test_lacity_socrata.py::test_iter_crashes_pages -x` | ❌ W0 | ⬜ pending |
-| 9-03-02 | 03 | 2 | REQ-crash-ingest-lacity | — | $where composes date + within_box | unit (URL inspect) | `pytest backend/tests/test_lacity_socrata.py::test_where_clause_composition -x` | ❌ W0 | ⬜ pending |
+| 9-03-02 | 03 | 2 | REQ-crash-ingest-lacity | — | $where composes date + within_box | unit (URL inspect) | `pytest backend/tests/test_lacity_socrata.py::test_where_clause_composition_with_bbox -x` | ❌ W0 | ⬜ pending |
 | 9-03-03 | 03 | 2 | REQ-crash-ingest-lacity | — | Fixture committed per D-09-05/07 coverage criteria | filesystem | `test -f data/crashes_la/lacity_fixture.csv && wc -l < data/crashes_la/lacity_fixture.csv` | ❌ W0 | ⬜ pending |
 | 9-04-01 | 04 | 3 | REQ-crash-ingest-lacity | T-9-04 | Run-summary JSON has all 10 D-09-08 keys | integration (CSV fixture) | `pytest backend/tests/test_ingest_crashes.py::test_run_summary_shape -x` | ❌ W0 | ⬜ pending |
 | 9-04-02 | 04 | 3 | REQ-crash-ingest-lacity | T-9-05 | Re-running ingest on same fixture inserts 0 new rows | integration | `pytest backend/tests/test_ingest_crashes.py::test_idempotent_reingest -x` | ❌ W0 | ⬜ pending |
@@ -62,7 +62,7 @@ created: 2026-05-08
 
 ## Wave 0 Requirements
 
-- [ ] `backend/tests/test_migrations.py` (or extend if exists) — migration 004 idempotency tests for REQ-crash-ingest-lacity
+- [ ] `backend/tests/test_migration_004.py` — migration 004 idempotency + FK type INTEGER tests for REQ-crash-ingest-lacity (mirrors `test_migration_002.py` per-migration file pattern)
 - [ ] `backend/tests/test_lacity_mocodes.py` — KABCO mocode mapper tests for REQ-crash-ingest-lacity
 - [ ] `backend/tests/test_lacity_socrata.py` — Socrata client mock tests for REQ-crash-ingest-lacity
 - [ ] `backend/tests/test_snap.py` — snap-match primitive tests for REQ-crash-snap-match (DB-dependent; auto-skip without DATABASE_URL)

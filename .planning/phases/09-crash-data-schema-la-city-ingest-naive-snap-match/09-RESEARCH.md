@@ -44,8 +44,8 @@ Phase 9 is a near-clone of Phase 3 with three substitutions: (1) Mapillary v4 cl
 - **D-09-12:** Migration 004 mirrors `002_mapillary_provenance.sql` exactly: `CREATE TABLE IF NOT EXISTS`, separate `CREATE UNIQUE INDEX IF NOT EXISTS`, `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, `DROP CONSTRAINT IF EXISTS` then `ADD CONSTRAINT` for the CHECK.
 
 **Mocode → Severity Mapping**
-- **D-09-13:** `data_pipeline/lacity_mocodes.py` exposes `map_mocodes_to_severity(mocodes_str: str) -> str`: splits the field, looks up each code in an explicit `MOCODE_SEVERITY_MAP` dict, returns the highest-severity tier present (`fatal > injury > pdo`), **raises `ValueError` on any unknown code** — no silent default.
-- **D-09-14:** Wave-0 RED test loads `lacity_fixture.csv`, asserts every row's mocodes successfully maps; loads a synthetic row with `mocodes="ZZZ99"` and asserts `ValueError`. Test name: `test_unknown_mocode_raises_value_error`.
+- **D-09-13 (REVISED in CONTEXT.md):** `data_pipeline/lacity_mocodes.py` exposes `map_mocodes_to_severity(mocodes_str: str) -> str`: defensively splits via `mocodes.replace(",", " ").split()` (live samples are space-separated), looks up each token in `KABCO_SEVERITY_MAP = {"3027": "fatal", "3024": "injury", "3025": "injury", "3026": "injury", "3028": "pdo"}`, returns the highest-severity tier present (`fatal > injury > pdo`). **Charitable read:** non-KABCO codes (vehicle, weather, etc.) are ignored; `ValueError` only fires when ZERO severity-relevant codes appear (Pitfall 2 contract: catch operator-style drift loud when the severity scale shifts, not on every non-severity LAPD code in normal data).
+- **D-09-14:** Wave-0 RED test loads `lacity_fixture.csv`, asserts every row's mocodes successfully maps; loads a synthetic row with `mocodes="3401 3701"` (vehicle/weather codes only, NO severity code) and asserts `ValueError`. Test name: `test_no_severity_code_raises_value_error`.
 
 **Idempotency**
 - **D-09-15:** `ON CONFLICT DO NOTHING` on `(source, source_record_id)` UNIQUE.
@@ -938,15 +938,15 @@ Wave 3:  [09-04]
 
 **If this table is empty:** All claims in this research were verified or cited — no user confirmation needed.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Strict vs charitable read of D-09-13.** Does "raises ValueError on any unknown code" mean "any code not in the 5-element severity map" (strict — every row fails) or "if no severity code maps" (charitable — only orphan rows fail)? **Recommendation:** Confirm with user during plan-discuss-phase 09-02; the charitable read matches reality and makes the test in D-09-14 pass.
+1. **Strict vs charitable read of D-09-13.** **RESOLVED:** Charitable read locked in `09-CONTEXT.md` D-09-13 REVISED + D-09-14. Non-KABCO codes (vehicle, weather) are ignored; `ValueError` only fires when ZERO severity-relevant codes (3024-3028) appear in a row. RED test fixture row uses `mocodes="3401 3701"` and asserts `ValueError`. Test name: `test_no_severity_code_raises_value_error`.
 
-2. **Snap-distance percentile library.** stdlib `statistics.quantiles(xs, n=100)[q-1]` is correct but reads awkwardly; numpy is already a project dep but pulling it into a CLI for one percentile feels heavy. **Recommendation:** stdlib for purity; revisit only if benchmarks show stdlib is materially slower (it isn't at 144k floats).
+2. **Snap-distance percentile library.** **RESOLVED:** stdlib `statistics.quantiles(xs, n=100)[q-1]` is the chosen approach per Plan 09-04. No numpy dep added for percentile alone; benchmark on 144k floats is sub-second.
 
-3. **`responses` mock library or stdlib `unittest.mock`?** Phase 3's `test_mapillary.py` uses... [need to verify]. **Recommendation:** stdlib `unittest.mock.patch` against `requests.get` is sufficient and adds no dep; matches the project's "minimize deps" stance.
+3. **`responses` mock library or stdlib `unittest.mock`?** **RESOLVED:** stdlib `unittest.mock.patch` per Plan 09-03 — verified during planning. Adds no dependency; matches project's minimize-deps stance.
 
-4. **Should the driver retry on Socrata 429?** `with_retry` from ingest_mapillary.py:306 handles 429 + 5xx with exponential backoff. **Recommendation:** Yes — wrap `iter_crashes` calls in `with_retry`. Lift `with_retry` into `data_pipeline/snap.py`-adjacent shared helper, OR copy-paste the 4 lines (project precedent leans copy-paste for tiny utilities; lifting would force a Phase-9 refactor of `ingest_mapillary.py` import line which is out of scope).
+4. **Should the driver retry on Socrata 429?** **RESOLVED:** Yes — Plan 09-03/04 mirrors `with_retry` from `ingest_mapillary.py:306` (4xx-on-429 + 5xx with exponential backoff). Copy-paste the small helper rather than lifting (project precedent for tiny utilities; lifting would force out-of-scope refactor of `ingest_mapillary.py` import line).
 
 ## Environment Availability
 
@@ -985,7 +985,7 @@ Wave 3:  [09-04]
 | REQ-crash-ingest-lacity | `lacity_socrata.iter_crashes` paginates correctly (page_size, $offset, stops on partial page, $order=:id) | unit (mock requests) | `pytest backend/tests/test_lacity_socrata.py::test_iter_crashes_pages -x` | ❌ Wave 0 |
 | REQ-crash-ingest-lacity | `lacity_socrata.iter_crashes` composes `$where` with date + `within_box` correctly | unit (URL inspect) | `pytest backend/tests/test_lacity_socrata.py::test_where_clause_composition -x` | ❌ Wave 0 |
 | REQ-crash-ingest-lacity | `map_mocodes_to_severity` returns highest tier present | unit | `pytest backend/tests/test_lacity_mocodes.py::test_multi_severity_resolves_to_highest -x` | ❌ Wave 0 |
-| REQ-crash-ingest-lacity | `map_mocodes_to_severity` raises ValueError on no-severity-code row | unit (D-09-14 RED) | `pytest backend/tests/test_lacity_mocodes.py::test_unknown_mocode_raises_value_error -x` | ❌ Wave 0 |
+| REQ-crash-ingest-lacity | `map_mocodes_to_severity` raises ValueError on no-severity-code row | unit (D-09-14 RED) | `pytest backend/tests/test_lacity_mocodes.py::test_no_severity_code_raises_value_error -x` | ❌ Wave 0 |
 | REQ-crash-ingest-lacity | `map_mocodes_to_severity` handles space-sep, comma-sep, mixed-whitespace | unit | `pytest backend/tests/test_lacity_mocodes.py::test_separator_robustness -x` | ❌ Wave 0 |
 | REQ-crash-ingest-lacity | Run-summary JSON has all 10 D-09-08 keys including snap_distance_m {p50,p95,max} | integration (CSV fixture) | `pytest backend/tests/test_ingest_crashes.py::test_run_summary_shape -x` | ❌ Wave 0 |
 | REQ-crash-ingest-lacity | Re-running ingest on same fixture inserts 0 new rows (idempotency) | integration | `pytest backend/tests/test_ingest_crashes.py::test_idempotent_reingest -x` | ❌ Wave 0 |

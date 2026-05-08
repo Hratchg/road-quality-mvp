@@ -62,7 +62,11 @@ Full details in `milestones/v0.3.0-ROADMAP.md`. Audit: `milestones/v0.3.0-MILEST
   3. `data_pipeline/lacity_mocodes.py` maps every `mocodes` value present in a 200-row LA City fixture to one of `fatal | injury | pdo`, AND raises `ValueError` on a synthetic unknown code (Wave-0 RED test per v0.3.0 KEY LESSON 2 — code-set drift surfaces loudly, never silently defaults to PDO)
   4. Run-summary JSON includes `dropped_outside_snap` counter; crashes farther than `LACITY_SNAP_M` from any segment are NOT inserted (audited by counting `crash_records` rows whose `snap_distance_m > LACITY_SNAP_M` — must be zero)
   5. 5-test integration suite passes: idempotent re-ingest, snap-distance correctness on a synthetic mid-block crash, dropped-out-of-bounds counter, FK preservation when a `road_segments` row is deleted (`ON DELETE SET NULL`), run-summary JSON shape
-**Plans**: TBD
+**Plans** (4 plans, 3 waves):
+- [ ] 09-01-PLAN.md — Migration 004 (crash_records table + segment_scores.crash_norm column) + Wave-0 RED idempotency test [Wave 1]
+- [ ] 09-02-PLAN.md — KABCO mocode→severity mapper (`data_pipeline/lacity_mocodes.py`) + shared snap primitive (`data_pipeline/snap.py`) + their unit tests [Wave 2, parallel with 09-03]
+- [ ] 09-03-PLAN.md — Socrata SoQL client (`data_pipeline/lacity_socrata.py`) + committed CSV fixture (`data/crashes_la/lacity_fixture.csv`) + mock-based client tests [Wave 2, parallel with 09-02]
+- [ ] 09-04-PLAN.md — Driver CLI (`scripts/ingest_crashes.py`) + 5-test integration suite + `.env.example` updates [Wave 3]
 
 ### Phase 10: Crash Scoring Formula + Locked-Weight Routing API
 **Goal**: Per-segment `crash_norm` is pre-baked into `segment_scores` from a severity-weighted, length-normalized, p95-capped sum of `crash_records`, and `/route` uses module constants `W_IRI=0.40, W_POT=0.35, W_CRASH=0.25` while silently accepting (and ignoring) legacy `weight_iri` / `weight_potholes` request fields.
@@ -114,7 +118,7 @@ Full details in `milestones/v0.3.0-ROADMAP.md`. Audit: `milestones/v0.3.0-MILEST
 | 6. Public Demo Launch | v0.3.0 | 4/4 | Complete | 2026-04-28 |
 | 7. LA-Trained Detector | v0.3.0 | 7/8 | Complete (negative) | 2026-05-07 |
 | 8. Routing Performance | v0.3.0 | 5/5 | Complete | 2026-05-07 |
-| 9. Crash-Data Schema + LA City Ingest + Snap-Match | v0.4.0 | 0/? | Not started — defining plans | — |
+| 9. Crash-Data Schema + LA City Ingest + Snap-Match | v0.4.0 | 0/4 | Plans defined | — |
 | 10. Crash Scoring Formula + Locked-Weight Routing API | v0.4.0 | 0/? | Not started | — |
 | 11. Frontend Slider Removal + Disclaimer + Caption | v0.4.0 | 0/? | Not started | — |
 | 12. Cloud Deploy + First Ingest + Verification + Doc Carryforward | v0.4.0 | 0/? | Not started | — |
