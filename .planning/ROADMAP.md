@@ -90,7 +90,8 @@ Full details in `milestones/v0.3.0-ROADMAP.md`. Audit: `milestones/v0.3.0-MILEST
   3. The Map View static caption is the EXACT locked copy `"Crash data: LA City open-data through March 2024. Single-segment attribution; intersection distribution to be added in a future release."` (NOT a new map layer, NOT a heatmap, NOT per-segment markers — locked anti-features per PROJECT.md)
   4. `GET /segments?bbox=...` against the local stack returns features whose `properties` dict contains a `crash_norm` numeric field on EVERY feature (default 0 for segments with no crashes; non-zero for ≥1 segment after Phase 9 + Phase 10 have run)
   5. Manual smoke: open Map View on `localhost:3000` after a fresh ingest+recompute, see ≥1 segment with non-zero `crash_norm` in the GeoJSON; open Route Finder, see disclaimer rendered next to the action button; verify NO new map layer toggle has appeared
-**Plans**: TBD
+**Plans** (1 plan, 1 wave):
+- [ ] 11-01-PLAN.md — Frontend slider removal + locked disclaimer + data-vintage caption + crash_norm type-through (TDD with vitest); 3 atomic commits [Wave 1]
 **UI hint**: yes
 
 ### Phase 12: Cloud Deploy + First LA City Ingest + Verification + Doc Carryforward
@@ -120,7 +121,7 @@ Full details in `milestones/v0.3.0-ROADMAP.md`. Audit: `milestones/v0.3.0-MILEST
 | 8. Routing Performance | v0.3.0 | 5/5 | Complete | 2026-05-07 |
 | 9. Crash-Data Schema + LA City Ingest + Snap-Match | v0.4.0 | 4/4 | Complete   | 2026-05-08 |
 | 10. Crash Scoring Formula + Locked-Weight Routing API | v0.4.0 | 3/3 | Complete   | 2026-05-08 |
-| 11. Frontend Slider Removal + Disclaimer + Caption | v0.4.0 | 0/? | Not started | — |
+| 11. Frontend Slider Removal + Disclaimer + Caption | v0.4.0 | 0/1 | Not started | — |
 | 12. Cloud Deploy + First Ingest + Verification + Doc Carryforward | v0.4.0 | 0/? | Not started | — |
 
 ---
