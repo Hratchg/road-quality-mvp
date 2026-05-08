@@ -22,14 +22,24 @@ pytestmark = pytest.mark.integration
 
 @pytest.fixture
 def a_segment_centroid(db_conn):
-    """Pick any road_segments row; return (id, centroid_lon, centroid_lat).
+    """Pick any road_segments row; return (id, point_lon, point_lat) where the
+    point is GUARANTEED to lie on the LineString (its midpoint).
+
+    Note: we use ST_LineInterpolatePoint(geom, 0.5), NOT ST_Centroid(geom).
+    For a curved or multi-vertex LineString the centroid (geometric mean of
+    vertices / bbox center) sits OFF the line — empirically up to 7m off
+    even for short LA street segments — which would make `dist_m < 1.0`
+    assertions flaky. ST_LineInterpolatePoint always returns a point ON
+    the line at the requested fractional offset (0.5 = midpoint).
 
     Skips test if no road_segments rows exist (CI may not be seeded).
     """
     with db_conn.cursor() as cur:
         cur.execute(
             """
-            SELECT id, ST_X(ST_Centroid(geom)) AS clon, ST_Y(ST_Centroid(geom)) AS clat
+            SELECT id,
+                   ST_X(ST_LineInterpolatePoint(geom, 0.5)) AS clon,
+                   ST_Y(ST_LineInterpolatePoint(geom, 0.5)) AS clat
             FROM road_segments
             ORDER BY id
             LIMIT 1
@@ -106,38 +116,49 @@ def test_snap_returns_none_tuple_outside_radius(db_conn, a_segment_centroid):
     assert result == (None, None), f"expected (None, None), got {result}"
 
 
-def test_snap_picks_nearest_when_multiple_in_radius(db_conn):
-    """If two segments are within the radius, the nearest one wins (ORDER BY <->).
+def test_snap_picks_nearest_when_multiple_in_radius(db_conn, a_segment_centroid):
+    """If many segments are within the radius, the NEAREST one wins (ORDER BY <->).
 
-    Pick a point at the midpoint of two known-adjacent road_segments.id values
-    if seeded data has them; otherwise auto-skip. We use the convention that
-    seed_data populates contiguous LA street centerlines, so adjacent ids tend
-    to be adjacent geometries.
+    LA's seeded road network is dense (>200k segments), so a 500m radius
+    centered on any segment's midpoint will include many candidates. The
+    `ORDER BY geom <-> point LIMIT 1` clause must pick the original segment
+    (distance ~0) rather than any of its many neighbors at meter-scale
+    distances. If the ORDER BY were missing, ST_DWithin would simply return
+    "the first row PostGIS happens to find," which is unlikely to be the
+    on-line midpoint segment.
     """
+    seg_id, clon, clat = a_segment_centroid
     with db_conn.cursor() as cur:
+        # Sanity check: the radius is large enough to include many candidates,
+        # so the test exercises KNN ordering rather than a single-candidate
+        # short-circuit.
         cur.execute(
             """
-            SELECT a.id AS a_id, b.id AS b_id,
-                   (ST_X(ST_Centroid(a.geom)) + ST_X(ST_Centroid(b.geom))) / 2 AS mlon,
-                   (ST_Y(ST_Centroid(a.geom)) + ST_Y(ST_Centroid(b.geom))) / 2 AS mlat,
-                   ST_Distance(a.geom::geography, b.geom::geography) AS sep_m
-            FROM road_segments a JOIN road_segments b ON b.id = a.id + 1
-            WHERE ST_Distance(a.geom::geography, b.geom::geography) < 200
-            ORDER BY a.id LIMIT 1
-            """
+            SELECT COUNT(*) AS n FROM road_segments
+            WHERE ST_DWithin(
+                geom::geography,
+                ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography,
+                500
+            )
+            """,
+            (clon, clat),
         )
         row = cur.fetchone()
-    if not row:
-        pytest.skip("No adjacent close-by road_segments pair found; need seeded LA data")
-    if isinstance(row, dict):
-        a_id, b_id, mlon, mlat = row["a_id"], row["b_id"], float(row["mlon"]), float(row["mlat"])
-    else:
-        a_id, b_id, mlon, mlat = row[0], row[1], float(row[2]), float(row[3])
-    with db_conn.cursor() as cur:
-        result = snap_point_to_segment(cur, mlon, mlat, snap_meters=500.0)
+        candidate_count = int(row["n"]) if isinstance(row, dict) else int(row[0])
+        assert candidate_count > 1, (
+            f"test prerequisite: need >1 candidate within 500m to exercise KNN ordering; "
+            f"got {candidate_count}"
+        )
+
+        result = snap_point_to_segment(cur, clon, clat, snap_meters=500.0)
     matched, dist_m = result
-    # Either of the two should be acceptable (whichever is closer to the midpoint
-    # by KNN); we just verify SOME match within the tight radius.
-    assert matched in (a_id, b_id), (
-        f"expected nearest of ({a_id}, {b_id}); got {matched}"
+    # The exact same segment whose midpoint we used must win — its distance
+    # is ~0, all others are meters away. KNN ordering picks the smallest <->.
+    assert matched == seg_id, (
+        f"expected nearest segment id={seg_id} (midpoint distance ~0); "
+        f"got id={matched} at dist_m={dist_m} — ORDER BY geom <-> may be missing "
+        f"or KNN GIST index not being used"
+    )
+    assert dist_m < 1.0, (
+        f"distance to the picked segment should be ~0; got {dist_m}m"
     )
