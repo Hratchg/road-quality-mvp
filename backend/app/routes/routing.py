@@ -19,6 +19,8 @@ SNAP_NODE_SQL = """
 # Phase 8: Pre-filter buffer for the OD bbox passed into ST_MakeEnvelope.
 # Default 0.03 deg ~= 3.3 km at LA latitude (RESEARCH §3, §9 defaults table).
 # Override via env to widen on operator request without a redeploy.
+# Tuning rationale: .planning/milestones/v0.3.0-phases/08-routing-performance/08-PERF-NUMBERS.md
+# Operator docs: README "Configuration" section + .env.example (Phase 12 carryforward).
 ROUTE_FILTER_BUFFER_DEG = float(os.environ.get("ROUTE_FILTER_BUFFER_DEG", "0.03"))
 ROUTE_FILTER_WIDEN_FACTOR = float(os.environ.get("ROUTE_FILTER_WIDEN_FACTOR", "2.0"))
 
