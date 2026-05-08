@@ -63,29 +63,29 @@ By end of phase, `python scripts/ingest_crashes.py --source lacity` against the 
 - **D-09-09:** Run-summary written to stdout AND optionally to a file via `--summary-out path/to/summary.json`. Mirrors the v0.3.0 Phase 3 Plan 03-04 structured run-summary pattern.
 
 ### Schema (Migration 004)
-- **D-09-10:** New `crash_records` table with these columns (final):
+- **D-09-10:** New `crash_records` table with these columns (final, FK type corrected per 09-RESEARCH.md):
   ```sql
   id BIGSERIAL PRIMARY KEY,
   source TEXT NOT NULL CHECK (source IN ('lacity')),  -- expanded to 'switrs' in v0.4.1
   source_record_id TEXT NOT NULL,                       -- LA City: dr_no
   severity TEXT NOT NULL CHECK (severity IN ('fatal','injury','pdo')),
   occurred_at DATE NOT NULL,
-  snapped_segment_id BIGINT REFERENCES road_segments(id) ON DELETE SET NULL,
+  snapped_segment_id INTEGER REFERENCES road_segments(id) ON DELETE SET NULL,
   snap_distance_m DOUBLE PRECISION,
   geom GEOMETRY(POINT, 4326) NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   ```
-  Plus `UNIQUE INDEX idx_crash_records_source_id ON crash_records(source, source_record_id)` for ON-CONFLICT idempotency. Plus GIST index on `geom`. **`record_status` deferred to v0.4.1** (only relevant once SWITRS lands).
+  Plus `UNIQUE INDEX idx_crash_records_source_id ON crash_records(source, source_record_id)` for ON-CONFLICT idempotency. Plus GIST index on `geom`. **`record_status` deferred to v0.4.1** (only relevant once SWITRS lands). **FK type INTEGER (not BIGINT)** because `road_segments.id` is declared `SERIAL` in `db/migrations/001_initial.sql` — verified by 09-RESEARCH.md and matches `segment_defects.segment_id INTEGER REFERENCES road_segments(id)` precedent.
 - **D-09-11:** `segment_scores.crash_norm DOUBLE PRECISION NOT NULL DEFAULT 0.0` added by migration 004 even though it is populated in Phase 10 — keeps the schema migration atomic and the LEFT JOIN COALESCE(0) safety net intact for the Phase 9 → 10 gap.
 - **D-09-12:** Migration 004 mirrors `002_mapillary_provenance.sql` exactly: `CREATE TABLE IF NOT EXISTS`, separate `CREATE UNIQUE INDEX IF NOT EXISTS`, `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, `DROP CONSTRAINT IF EXISTS` then `ADD CONSTRAINT` for the CHECK. Applies cleanly in both fresh-init AND re-apply-on-existing-DB scenarios.
 
 ### Mocode → Severity Mapping
-- **D-09-13:** `data_pipeline/lacity_mocodes.py` exposes `map_mocodes_to_severity(mocodes_str: str) -> str` that:
-  - Splits comma-separated `mocodes` field
-  - Looks up each code in an explicit `MOCODE_SEVERITY_MAP` dict
+- **D-09-13 (REVISED per 09-RESEARCH.md):** `data_pipeline/lacity_mocodes.py` exposes `map_mocodes_to_severity(mocodes_str: str) -> str` that:
+  - **Defensively splits the `mocodes` field on whitespace AND commas:** `mocodes.replace(",", " ").split()` — live samples confirm Socrata returns SPACE-separated codes (e.g., `"3401 3701 3024"`), but defensive comma-handling future-proofs against format drift
+  - Looks up each token in an explicit `KABCO_SEVERITY_MAP` dict containing ONLY the 5 LAPD KABCO severity codes from the authoritative LAPD PDF: `{"3027": "fatal", "3024": "injury", "3025": "injury", "3026": "injury", "3028": "pdo"}` (3027=K Fatal; 3024=A Severe; 3025=B Visible; 3026=C Complaint; 3028=N Non-Injury)
   - Returns the highest-severity tier present (`fatal` > `injury` > `pdo`)
-  - **Raises `ValueError` on any unknown code** — no silent default, no fallback to `pdo` (per Pitfall 2 + KEY LESSON 2 from v0.3.0 Phase 7 operator-style drift)
-- **D-09-14:** Wave-0 RED test loads `lacity_fixture.csv`, asserts every row's mocodes successfully maps; loads a synthetic row with `mocodes="ZZZ99"` and asserts `ValueError`. Test name: `test_unknown_mocode_raises_value_error`.
+  - **Charitable interpretation of "unknown code":** non-KABCO codes (vehicle codes, weather codes, etc.) are IGNORED — they are expected and benign. Only when ZERO severity-relevant codes (3024-3028) appear in the row's mocodes does the function raise `ValueError("no KABCO severity code in mocodes='%s'" % mocodes_str)`. This matches Pitfall 2 / KEY LESSON 2's intent (catch operator-style drift loudly when the severity scale itself shifts), without flooding ValueError on every non-severity LAPD code in normal data.
+- **D-09-14:** Wave-0 RED test loads `lacity_fixture.csv`, asserts every row's mocodes successfully maps; loads a synthetic row with `mocodes="3401 3701"` (vehicle/weather codes only, no severity code) and asserts `ValueError`. Test name: `test_no_severity_code_raises_value_error`. Plus `test_mocodes_whitespace_split` and `test_mocodes_comma_fallback_split` to pin the defensive parser.
 
 ### Idempotency
 - **D-09-15:** ON CONFLICT DO NOTHING on `(source, source_record_id)` UNIQUE. Mirrors v0.3.0 Phase 3 D-08. Re-running the script on the same data produces zero new rows; re-fetch from Socrata is allowed (cheap, idempotent at DB layer). LA City's `dr_no` (district report number) is the `source_record_id`.
@@ -120,6 +120,7 @@ The following implementation details are NOT user gray areas — Claude/planner 
 - `.planning/ROADMAP.md` § Phase 9 (success criteria + dependencies)
 
 ### Research grounding
+- `.planning/phases/09-crash-data-schema-la-city-ingest-naive-snap-match/09-RESEARCH.md` — Phase-9-specific research (1050 lines): live-verified Socrata field schema, LAPD KABCO catalog 3024-3028, exact endpoint URL + paging behavior, 4-plan / 3-wave decomposition, verbatim Pattern 1-5 code excerpts, **VALIDATION-architecture section** (Nyquist test sample frequencies and criterion mapping)
 - `.planning/research/SUMMARY.md` — cross-doc consensus + build-order chain + data-source surprises
 - `.planning/research/STACK.md` — geopandas>=1.0 bump rationale; sodapy rejection; LA City Socrata dataset URL + endpoint shape
 - `.planning/research/ARCHITECTURE.md` — schema decisions (a–g); snap-match approach (75m vs 25m tolerance rationale, naive vs intersection-buffer); migration ordering
