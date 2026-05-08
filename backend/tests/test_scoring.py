@@ -87,10 +87,9 @@ class TestLockedConstants:
 
 
 class TestCrashScoringMath:
-    """Pin the severity weights and the fatal cap (D-10-04, D-10-05).
-
-    Task 2 extends this class with cap-arithmetic, length-floor, and
-    p95-clip helper tests that mirror the SQL primitives Plan 10-02 will use.
+    """Pin the severity weights, fatal cap, and the per-segment formula
+    primitives (cap clamp, length floor, p95 normalization) that Plan 10-02
+    will execute in SQL. Pure-Python helpers below mirror the SQL contract.
     """
 
     # --- Severity weight ratios (D-10-04) ---
@@ -115,6 +114,119 @@ class TestCrashScoringMath:
         assert FATAL_CAP_K == 3
         assert FATAL_CAP == 24
         assert FATAL_CAP == FATAL_CAP_K * FATAL_WEIGHT
+
+    # --- Helpers mirroring SQL primitives that Plan 10-02 will use ---
+    #
+    # These pure-Python helpers pin the numerical contract that the
+    # correlated-subquery SQL in compute_scores.py --source crash will
+    # reproduce. If the SQL drifts from spec, the histogram smoke test in
+    # 10-02 catches it; if these helpers drift, the SQL diverges.
+    # Both directions are guarded.
+
+    @staticmethod
+    def _capped(raw_sum: float) -> float:
+        """LEAST(raw_sum, FATAL_CAP) — single-fatal cap clamp (D-10-05)."""
+        return min(raw_sum, FATAL_CAP)
+
+    @staticmethod
+    def _floor_km(length_m: float) -> float:
+        """GREATEST(length_m / 1000.0, 0.05) — 50m segment-length floor.
+
+        Pins D-10-07 corrected form: divide by 1000.0 (column is length_m,
+        NOT length_km — verified against migration 001).
+        """
+        return max(length_m / 1000.0, 0.05)
+
+    @staticmethod
+    def _p95_normalize(raw_per_km: float, p95: float) -> float:
+        """LEAST(1.0, raw_per_km / p95) — D-10-08 clip-to-one normalization."""
+        return min(1.0, raw_per_km / p95)
+
+    @staticmethod
+    def _p95_normalize_safe(raw_per_km: float, p95: float) -> float:
+        """SQL form: NULLIF(p95, 0) → divide → COALESCE(0).
+
+        Pitfall 6 + D-10-09: degenerate zero-crash dataset must not
+        divide by zero; segments default to 0.0.
+        """
+        return 0.0 if p95 == 0 else min(1.0, raw_per_km / p95)
+
+    # --- Cap-arithmetic tests (Test 12) ---
+
+    def test_single_fatal_cap_clamps_raw_sum(self):
+        # Boundary: at the cap exactly — no clamp.
+        assert self._capped(24) == 24
+        # Just past the cap.
+        assert self._capped(25) == 24
+        # Severe clamp: 4 fatals (32) drops to 24.
+        assert self._capped(100) == 24
+        # Below cap: pass-through.
+        assert self._capped(10) == 10
+        # Zero-crash segment: 0 stays 0.
+        assert self._capped(0) == 0
+
+    # --- Length-floor tests (Test 13) ---
+
+    def test_length_floor_50m_in_km_units(self):
+        # Below the 50m floor — clamp to 0.05 km.
+        assert abs(self._floor_km(10) - 0.05) < 1e-9
+        assert abs(self._floor_km(49) - 0.05) < 1e-9
+        # Boundary: exactly 50m → 0.05 km (no clamp needed; 50/1000 == 0.05).
+        assert abs(self._floor_km(50) - 0.05) < 1e-9
+        # Above floor: pass-through.
+        assert abs(self._floor_km(60) - 0.06) < 1e-9
+        # Typical city block: 1.5km.
+        assert abs(self._floor_km(1500) - 1.5) < 1e-9
+
+    # --- p95 clip tests (Test 14) ---
+
+    def test_p95_clip_to_one(self):
+        # Above p95 → clip to 1.0.
+        assert self._p95_normalize(20, 10) == 1.0
+        # Below p95 → linear scale.
+        assert abs(self._p95_normalize(5, 10) - 0.5) < 1e-9
+        # Boundary: at p95 → exactly 1.0.
+        assert self._p95_normalize(10, 10) == 1.0
+        # Zero raw → zero norm.
+        assert self._p95_normalize(0, 10) == 0.0
+
+    # --- Zero-p95 safety net (Test 15) ---
+
+    def test_zero_p95_yields_zero_or_safety_net(self):
+        # Pitfall 6: degenerate dataset (no crashes anywhere) → no divide-by-zero.
+        # SQL idiom: NULLIF(p95, 0) returns NULL, then COALESCE(..., 0) → 0.
+        assert self._p95_normalize_safe(5, 0) == 0.0
+        assert self._p95_normalize_safe(0, 0) == 0.0
+
+    # --- Zero-crash segment default (Test 16) ---
+
+    def test_zero_crash_segment_default_norm(self):
+        # End-to-end compose: 200m segment, no crashes, p95=5.
+        length_km = self._floor_km(200)
+        assert abs(length_km - 0.2) < 1e-9
+        capped = self._capped(0)
+        assert capped == 0
+        raw_per_km = capped / length_km
+        assert raw_per_km == 0
+        crash_norm = self._p95_normalize_safe(raw_per_km, 5)
+        assert crash_norm == 0.0  # D-10-09: zero-crash segments default to 0.0.
+
+    # --- Canonical realistic segment (Test 17) ---
+
+    def test_canonical_segment_below_p95(self):
+        # 500m segment with 2 injuries + 1 PDO; p95=30 over the dataset.
+        raw_sum = 2 * INJURY_WEIGHT + 1 * PDO_WEIGHT  # = 7
+        assert raw_sum == 7
+        length_km = self._floor_km(500)  # 0.5
+        assert abs(length_km - 0.5) < 1e-9
+        capped = self._capped(raw_sum)  # 7 (below cap)
+        assert capped == 7
+        raw_per_km = capped / length_km  # 14.0
+        assert abs(raw_per_km - 14.0) < 1e-9
+        crash_norm = self._p95_normalize_safe(raw_per_km, 30)
+        # 14 / 30 ≈ 0.467 — exactly the "long-tailed, not bimodal" target
+        # distribution that Pitfall 5's ≥50% in [0.05, 0.5] check verifies.
+        assert abs(crash_norm - 14.0 / 30.0) < 1e-9
 
 
 class TestComputeSegmentCostV4:
