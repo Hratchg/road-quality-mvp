@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class LatLon(BaseModel):
@@ -7,12 +7,18 @@ class LatLon(BaseModel):
 
 
 class RouteRequest(BaseModel):
+    # D-10-13: silent ignore of legacy weight_iri/weight_potholes + any
+    # other extra fields. Field defaults below are PRESERVED for v0.2.0
+    # test compat (RouteRequest().weight_iri == 50) but UNUSED at runtime
+    # since the locked outer weights apply unconditionally.
+    model_config = ConfigDict(extra='ignore')
+
     origin: LatLon
     destination: LatLon
     include_iri: bool = True
     include_potholes: bool = True
-    weight_iri: float = Field(default=50, ge=0, le=100)
-    weight_potholes: float = Field(default=50, ge=0, le=100)
+    weight_iri: float = Field(default=50, ge=0, le=100)        # PRESERVED for v0.2.0 test compat (D-10-13); unused at runtime
+    weight_potholes: float = Field(default=50, ge=0, le=100)   # PRESERVED for v0.2.0 test compat (D-10-13); unused at runtime
     max_extra_minutes: float = Field(default=5, ge=0)
 
 

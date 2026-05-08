@@ -26,26 +26,35 @@ def _mock_ksp_results():
 
 
 def _mock_segment_data():
-    """Segment data for edges referenced by ksp."""
+    """Segment data for edges referenced by ksp.
+
+    Plan 10-03: crash_norm added (D-10-17). Set to 0.0 to preserve the
+    v0.2.0 invariant that path 1 is both fastest and lowest-cost on this
+    synthetic graph; path-2-cheaper test scenarios are out of scope here.
+    """
     return [
         {
             "id": 1, "travel_time_s": 60.0, "iri_norm": 0.8,
             "pothole_score_total": 3.0, "moderate_score": 1.5, "severe_score": 1.5,
+            "crash_norm": 0.0,
             "geojson": '{"type":"LineString","coordinates":[[-118.24,34.05],[-118.245,34.055]]}',
         },
         {
             "id": 2, "travel_time_s": 60.0, "iri_norm": 0.7,
             "pothole_score_total": 2.0, "moderate_score": 1.0, "severe_score": 1.0,
+            "crash_norm": 0.0,
             "geojson": '{"type":"LineString","coordinates":[[-118.245,34.055],[-118.25,34.06]]}',
         },
         {
             "id": 3, "travel_time_s": 70.0, "iri_norm": 0.2,
             "pothole_score_total": 0.5, "moderate_score": 0.3, "severe_score": 0.2,
+            "crash_norm": 0.0,
             "geojson": '{"type":"LineString","coordinates":[[-118.24,34.05],[-118.242,34.058]]}',
         },
         {
             "id": 4, "travel_time_s": 70.0, "iri_norm": 0.1,
             "pothole_score_total": 0.0, "moderate_score": 0.0, "severe_score": 0.0,
+            "crash_norm": 0.0,
             "geojson": '{"type":"LineString","coordinates":[[-118.242,34.058],[-118.25,34.06]]}',
         },
     ]

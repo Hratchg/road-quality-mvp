@@ -4,7 +4,11 @@ from app.main import app
 
 
 def _mock_segments():
-    """Return fake segment rows as if from DB."""
+    """Return fake segment rows as if from DB.
+
+    Plan 10-03 (D-10-17): crash_norm added. Default 0.0 here so the existing
+    test_segments_returns_geojson assertions stay numerically stable.
+    """
     return [
         {
             "id": 1,
@@ -13,6 +17,7 @@ def _mock_segments():
             "moderate_score": 1.5,
             "severe_score": 0.5,
             "pothole_score_total": 2.0,
+            "crash_norm": 0.0,
         }
     ]
 
