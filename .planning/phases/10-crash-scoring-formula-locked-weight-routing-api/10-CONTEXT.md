@@ -32,7 +32,7 @@ This phase does NOT touch:
 - **D-10-06:** PDO support: schema accepts the `pdo` tier (Phase 9 added severity 0–4 — pdo is severity 0). LA City `mocodes` → PDO mapping is lossy by design (most LA City rows lack PDO codes); this is documented in the Phase 12 runbook, not blocking for Phase 10.
 
 ### Per-Segment crash_norm Formula (REQ-crash-scoring-formula)
-- **D-10-07:** Per-segment formula: `raw_sum / GREATEST(length_km, 0.05)`, where `raw_sum = SUM(severity_weight)` over crashes snapped to that segment within the 5-year window. The `0.05` km floor (50m minimum) prevents short-segment divide-by-near-zero. Length is read from `road_segments.length_km` (already populated by Phase 8 baseline).
+- **D-10-07:** Per-segment formula: `raw_sum / GREATEST(length_m / 1000.0, 0.05)`, where `raw_sum = SUM(severity_weight)` over crashes snapped to that segment within the 5-year window. The `0.05` km floor (50m minimum) prevents short-segment divide-by-near-zero. Length is read from `road_segments.length_m` (already populated; column is in METERS — divide by 1000.0 for km units). **CORRECTED 2026-05-08: original D-10-07 wrote `length_km` but the schema column is `length_m` (verified against migration 001).**
 - **D-10-08:** Normalize against the **95th percentile** of all per-segment per-km severity sums across the whole dataset (`PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY raw_per_km)`). Clip the result to `[0, 1]`. This produces a long-tailed distribution, NOT the bimodal 0/1 split that academic 100:10:1 weights would produce (Pitfall 5).
 - **D-10-09:** Segments with zero crashes get `crash_norm = 0` (already guaranteed by the migration 004 `DEFAULT 0.0 NOT NULL` column). The COALESCE(0) safety net works because Phase 9 made the column NOT NULL.
 
@@ -43,10 +43,10 @@ This phase does NOT touch:
   UPDATE segment_scores SET crash_norm = LEAST(1.0, raw_per_km / p95)
   FROM (
     SELECT rs.id,
-           SUM(CASE c.severity_kabco WHEN 4 THEN FATAL_WEIGHT WHEN 3 THEN INJURY_WEIGHT ELSE PDO_WEIGHT END) / GREATEST(rs.length_km, 0.05) AS raw_per_km
+           SUM(CASE c.severity_kabco WHEN 4 THEN FATAL_WEIGHT WHEN 3 THEN INJURY_WEIGHT ELSE PDO_WEIGHT END) / GREATEST(rs.length_m / 1000.0, 0.05) AS raw_per_km
     FROM road_segments rs
     LEFT JOIN crash_records c ON c.snapped_segment_id = rs.id
-    GROUP BY rs.id, rs.length_km
+    GROUP BY rs.id, rs.length_m / 1000.0
   ) sub, (SELECT PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY raw_per_km) AS p95 FROM ...) p95v
   WHERE segment_scores.segment_id = sub.id
   ```
