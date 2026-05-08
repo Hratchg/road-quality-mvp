@@ -104,12 +104,36 @@ def test_route_respects_time_budget(client, db_has_topology):
     fastest = data["fastest_route"]
     best = data["best_route"]
 
-    # With zero budget, best should equal fastest OR a warning is present
+    # Phase 8 (08-PERF-NUMBERS.md Run 2): the K-shortest-paths algorithm
+    # changed from pgr_ksp (Yen's enumeration) to pgr_dijkstra x K with
+    # edge-weight perturbation (industry-standard linear-in-K approach).
+    # The new algorithm is more aggressive about finding alternatives, so
+    # on small subgraphs it can return multiple paths with the SAME total
+    # travel time but DIFFERENT defect-weighted cost. With max_extra_minutes=0
+    # the within-budget filter still admits any path with
+    # total_time_s <= fastest_time, so when two paths tie on time the
+    # lower-cost one is selected as 'best' -- a correct outcome that the
+    # warning logic in routing.py does not flag (warning fires only when
+    # best is forced to equal fastest by path-id).
+    #
+    # The contract this test pins: with zero budget, EITHER
+    #   (a) best matches fastest exactly, OR
+    #   (b) a warning is present explaining a forced fallback, OR
+    #   (c) best ties on travel time with fastest but has a lower
+    #       defect-weighted cost (legitimate same-budget alternative).
     same_route = (
         fastest["total_time_s"] == best["total_time_s"]
         and fastest["total_cost"] == best["total_cost"]
     )
-    assert same_route or data.get("warning") is not None
+    tied_time_diff_cost = (
+        fastest["total_time_s"] == best["total_time_s"]
+        and best["total_cost"] <= fastest["total_cost"]
+    )
+    assert (
+        same_route
+        or data.get("warning") is not None
+        or tied_time_diff_cost
+    )
 
 
 @pytest.mark.timeout(60)
