@@ -45,7 +45,7 @@ Full details in `milestones/v0.3.0-ROADMAP.md`. Audit: `milestones/v0.3.0-MILEST
 
 ### v0.4.0 M2 Crash-Aware Routing (Phases 9-12) — IN PROGRESS
 
-- [ ] **Phase 9: Crash-Data Schema + LA City Ingest + Naive Snap-Match** — Migration 004, `scripts/ingest_crashes.py`, `data_pipeline/lacity_socrata.py`, `data_pipeline/lacity_mocodes.py`, `snap_match_crash()`; LA City rows land in `crash_records` with single-segment FK
+- [x] **Phase 9: Crash-Data Schema + LA City Ingest + Naive Snap-Match** — Migration 004, `scripts/ingest_crashes.py`, `data_pipeline/lacity_socrata.py`, `data_pipeline/lacity_mocodes.py`, `snap_match_crash()`; LA City rows land in `crash_records` with single-segment FK (completed 2026-05-08)
 - [ ] **Phase 10: Crash Scoring Formula + Locked-Weight Routing API** — `compute_scores.py --source crash`, `crash_norm` p95-capped, module constants `W_IRI/W_POT/W_CRASH = 0.40/0.35/0.25`, silent-ignore Pydantic `extra='ignore'`, deprecation header
 - [ ] **Phase 11: Frontend Slider Removal + Liability Disclaimer + Data-Vintage Caption** — `ControlPanel.tsx` strips IRI/pothole sliders (max-extra-minutes preserved), `RouteFinder.tsx` drops the field from `/route` POST, disclaimer + caption rendered with locked copy
 - [ ] **Phase 12: Cloud Deploy + First LA City Ingest + Verification + Doc Carryforward** — Migration 004 applied via `flyctl ssh console -C` (locked anti-pattern), first ingest + recompute against live DB, backend+frontend redeploy, manual route spot-checks, `.env.example` + README document `ROUTE_FILTER_BUFFER_DEG` / `ROUTE_FILTER_WIDEN_FACTOR` (carryforward)
@@ -66,7 +66,7 @@ Full details in `milestones/v0.3.0-ROADMAP.md`. Audit: `milestones/v0.3.0-MILEST
 - [x] 09-01-PLAN.md — Migration 004 (crash_records table + segment_scores.crash_norm column) + Wave-0 RED idempotency test [Wave 1]
 - [x] 09-02-PLAN.md — KABCO mocode→severity mapper (`data_pipeline/lacity_mocodes.py`) + shared snap primitive (`data_pipeline/snap.py`) + their unit tests [Wave 2, parallel with 09-03]
 - [x] 09-03-PLAN.md — Socrata SoQL client (`data_pipeline/lacity_socrata.py`) + committed CSV fixture (`data/crashes_la/lacity_fixture.csv`) + mock-based client tests [Wave 2, parallel with 09-02]
-- [ ] 09-04-PLAN.md — Driver CLI (`scripts/ingest_crashes.py`) + 5-test integration suite + `.env.example` updates [Wave 3]
+- [x] 09-04-PLAN.md — Driver CLI (`scripts/ingest_crashes.py`) + 5-test integration suite + `.env.example` updates [Wave 3]
 
 ### Phase 10: Crash Scoring Formula + Locked-Weight Routing API
 **Goal**: Per-segment `crash_norm` is pre-baked into `segment_scores` from a severity-weighted, length-normalized, p95-capped sum of `crash_records`, and `/route` uses module constants `W_IRI=0.40, W_POT=0.35, W_CRASH=0.25` while silently accepting (and ignoring) legacy `weight_iri` / `weight_potholes` request fields.
@@ -118,7 +118,7 @@ Full details in `milestones/v0.3.0-ROADMAP.md`. Audit: `milestones/v0.3.0-MILEST
 | 6. Public Demo Launch | v0.3.0 | 4/4 | Complete | 2026-04-28 |
 | 7. LA-Trained Detector | v0.3.0 | 7/8 | Complete (negative) | 2026-05-07 |
 | 8. Routing Performance | v0.3.0 | 5/5 | Complete | 2026-05-07 |
-| 9. Crash-Data Schema + LA City Ingest + Snap-Match | v0.4.0 | 3/4 | In Progress|  |
+| 9. Crash-Data Schema + LA City Ingest + Snap-Match | v0.4.0 | 4/4 | Complete   | 2026-05-08 |
 | 10. Crash Scoring Formula + Locked-Weight Routing API | v0.4.0 | 0/? | Not started | — |
 | 11. Frontend Slider Removal + Disclaimer + Caption | v0.4.0 | 0/? | Not started | — |
 | 12. Cloud Deploy + First Ingest + Verification + Doc Carryforward | v0.4.0 | 0/? | Not started | — |
