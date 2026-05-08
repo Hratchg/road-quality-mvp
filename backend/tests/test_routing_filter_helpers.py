@@ -201,3 +201,59 @@ def test_dijkstra_helper_weight_penalty_override_propagates_to_sql():
     inner_2 = cur.execute.call_args_list[1][0][1]["inner_sql"]
     # The penalty literal appears in the CASE WHEN clause. float(42.5) -> "42.5".
     assert "cost * 42.5" in inner_2
+
+
+# ---------------------------------------------------------------------------
+# Phase 8 Plan 08-03 tuning -- early_exit_at parameter unit tests
+# ---------------------------------------------------------------------------
+
+
+def test_dijkstra_helper_early_exit_at_3_caps_iterations():
+    """early_exit_at=3 with k=5 stops after 3 distinct paths collected.
+
+    Pins the cross-LA tuning behavior (08-PERF-NUMBERS.md Run 2 -> Run 3):
+    on the bbox-filtered subgraph, find_route() passes early_exit_at=3 to
+    cap dijkstra calls at 3 even though K=5 is the global path budget.
+    Caller still gets 3 distinct path_ids; the saving is ~40% of the
+    dijkstra work that the 4th and 5th iterations would have done.
+    """
+    cur = _make_cursor([
+        [{"seq": 1, "edge": 10, "cost": 5.0},
+         {"seq": 2, "edge": 11, "cost": 5.0}],
+        [{"seq": 1, "edge": 20, "cost": 6.0},
+         {"seq": 2, "edge": 21, "cost": 6.0}],
+        [{"seq": 1, "edge": 30, "cost": 7.0},
+         {"seq": 2, "edge": 31, "cost": 7.0}],
+        # If early_exit_at were ignored the helper would also pull these:
+        [{"seq": 1, "edge": 40, "cost": 8.0}],
+        [{"seq": 1, "edge": 50, "cost": 9.0}],
+    ])
+    rows = routing.find_k_shortest_via_dijkstra(
+        cur, 100, 200, k=5, early_exit_at=3,
+    )
+    # 3 distinct paths, 6 rows total. Iterations 4 and 5 NOT executed.
+    assert sorted({r["path_id"] for r in rows}) == [1, 2, 3]
+    assert len(rows) == 6
+    assert cur.execute.call_count == 3
+
+
+def test_dijkstra_helper_early_exit_at_none_runs_full_k():
+    """early_exit_at=None (default) runs the full K iterations.
+
+    The full-graph fallback in find_route() (attempt 3) passes None so it
+    gets the full K=5 enumeration -- maximum path diversity for the rare
+    case where the filtered subgraph yielded zero paths.
+    """
+    cur = _make_cursor([
+        [{"seq": 1, "edge": 10, "cost": 5.0}],
+        [{"seq": 1, "edge": 20, "cost": 6.0}],
+        [{"seq": 1, "edge": 30, "cost": 7.0}],
+        [{"seq": 1, "edge": 40, "cost": 8.0}],
+        [{"seq": 1, "edge": 50, "cost": 9.0}],
+    ])
+    rows = routing.find_k_shortest_via_dijkstra(
+        cur, 100, 200, k=5, early_exit_at=None,
+    )
+    # All 5 iterations executed, all 5 path_ids present.
+    assert sorted({r["path_id"] for r in rows}) == [1, 2, 3, 4, 5]
+    assert cur.execute.call_count == 5
