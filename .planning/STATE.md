@@ -4,7 +4,7 @@ milestone: v0.3.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 7 context gathered
-last_updated: "2026-05-08T00:35:22.348Z"
+last_updated: "2026-05-08T01:46:29.725Z"
 last_activity: 2026-05-08
 progress:
   total_phases: 8
@@ -111,6 +111,17 @@ Carried forward to later phases (not blockers now, will be addressed in-phase):
 | Scale | Redis / distributed cache, `/segments` pagination | Deferred to post-M1 | 2026-04-23 (roadmap init) |
 | Infra | Alembic migrations, SQLAlchemy migration | Deferred to post-M1 | 2026-04-23 (roadmap init) |
 | Scope | Multi-city support, mobile native apps, OAuth/SSO | Deferred to post-M1 | 2026-04-23 (roadmap init) |
+
+### Acknowledged at v0.3.0 milestone close (2026-05-07)
+
+Items acknowledged and deferred at milestone close — operator-runbook walkthroughs that artifact-level verification covered but live-deploy validation did not. Does not block close; v0.3.0-MILESTONE-AUDIT.md status is `passed`.
+
+| Category | Item | Status |
+|----------|------|--------|
+| uat | 02-HUMAN-UAT.md | partial — 4 pending operator runbook scenarios (real-data eval numbers) |
+| verification | 02-VERIFICATION.md | human_needed — tooling verified; live-data numbers pending operator runbook |
+| verification | 03-VERIFICATION.md | human_needed — pipeline verified; live Mapillary smoke + SC #4 ranking-diff demo pending operator runbook |
+| verification | 05-VERIFICATION.md | human_needed — 9/9 SCs verified at artifact level; 5 live-deploy items pending in 05-HUMAN-UAT.md |
 
 ## Session Continuity
 
