@@ -24,6 +24,8 @@ A public LA pothole-aware routing demo. Pick two points on the map; get a "faste
 
 **M1 shipped.** Public demo URL is live with real Mapillary detections (detected with the public-baseline YOLOv8 pothole model) and a Fly.io tri-app cloud deploy (db + backend + frontend) reproducible from `main`. Phase 7's LA-specific fine-tune was attempted and closed as documented negative — see `docs/DETECTOR_EVAL.md` for the full retrospective.
 
+**Routing performance (Phase 8):** cross-LA routes (~20 km, e.g. West LA → Pasadena) return in ~2.47s uncached on a fully-seeded local DB (~209k segments); short DTLA-local trips remain ~0.385s. Phase 8 fix — pre-filter the OD corridor via the GiST index into a temp table, then run pgr_dijkstra × K with edge-weight perturbation (linear in K) instead of pgr_ksp's super-linear-in-K Yen's enumeration. See [`.planning/phases/08-routing-performance/08-PERF-NUMBERS.md`](.planning/phases/08-routing-performance/08-PERF-NUMBERS.md) for the full measurement run.
+
 19/19 M0 backend tests + 200+ M1 backend tests passing. See `.planning/ROADMAP.md` for the full phase status.
 
 ## Quick Start
