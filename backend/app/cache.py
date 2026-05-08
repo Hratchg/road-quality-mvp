@@ -45,23 +45,23 @@ def make_route_cache_key(
     origin_lon: float,
     dest_lat: float,
     dest_lon: float,
-    include_iri: bool,
-    include_potholes: bool,
-    weight_iri: float,
-    weight_potholes: float,
     max_extra_minutes: float,
 ) -> str:
-    """Build a deterministic hash key from all route request parameters."""
+    """Build a deterministic hash key from the route request parameters
+    that AFFECT THE COMPUTED RESPONSE.
+
+    Phase 10 (D-10-14, Pitfall 2): include_iri, include_potholes,
+    weight_iri, weight_potholes were dropped from this signature because
+    the locked outer weights (W_IRI=0.40, W_POT=0.35, W_CRASH=0.25)
+    apply unconditionally — those fields no longer affect total_cost,
+    so they should not fragment the cache.
+    """
     raw = json.dumps(
         {
             "origin_lat": origin_lat,
             "origin_lon": origin_lon,
             "dest_lat": dest_lat,
             "dest_lon": dest_lon,
-            "include_iri": include_iri,
-            "include_potholes": include_potholes,
-            "weight_iri": weight_iri,
-            "weight_potholes": weight_potholes,
             "max_extra_minutes": max_extra_minutes,
         },
         sort_keys=True,

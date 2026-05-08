@@ -29,7 +29,8 @@ def get_segments(bbox: str = Query(..., description="min_lon,min_lat,max_lon,max
             rs.iri_norm,
             COALESCE(ss.moderate_score, 0) AS moderate_score,
             COALESCE(ss.severe_score, 0) AS severe_score,
-            COALESCE(ss.pothole_score_total, 0) AS pothole_score_total
+            COALESCE(ss.pothole_score_total, 0) AS pothole_score_total,
+            COALESCE(ss.crash_norm, 0) AS crash_norm
         FROM road_segments rs
         LEFT JOIN segment_scores ss ON rs.id = ss.segment_id
         WHERE rs.geom && ST_MakeEnvelope(%s, %s, %s, %s, 4326)
@@ -51,6 +52,7 @@ def get_segments(bbox: str = Query(..., description="min_lon,min_lat,max_lon,max
                 "moderate_score": row["moderate_score"],
                 "severe_score": row["severe_score"],
                 "pothole_score_total": row["pothole_score_total"],
+                "crash_norm": row["crash_norm"],   # D-10-17 / D-10-18: default 0.0 since column is NOT NULL DEFAULT 0.0
             },
         })
 

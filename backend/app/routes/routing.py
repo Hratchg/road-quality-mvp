@@ -2,10 +2,10 @@ import json
 import os
 
 import psycopg2  # for psycopg2.errors.QueryCanceled in find_route() Task 2
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from app.db import get_connection
 from app.models import RouteRequest, RouteResponse, RouteInfo, SegmentMetric
-from app.scoring import normalize_weights, compute_segment_cost
+from app.scoring import compute_segment_cost
 from app.cache import get_route_cached, set_route_cached, make_route_cache_key
 
 router = APIRouter()
@@ -78,7 +78,8 @@ SEGMENTS_BY_IDS_SQL = """
         ST_AsGeoJSON(rs.geom) AS geojson,
         COALESCE(ss.moderate_score, 0) AS moderate_score,
         COALESCE(ss.severe_score, 0) AS severe_score,
-        COALESCE(ss.pothole_score_total, 0) AS pothole_score_total
+        COALESCE(ss.pothole_score_total, 0) AS pothole_score_total,
+        COALESCE(ss.crash_norm, 0) AS crash_norm
     FROM road_segments rs
     LEFT JOIN segment_scores ss ON rs.id = ss.segment_id
     WHERE rs.id = ANY(%s)
@@ -241,17 +242,22 @@ def find_k_shortest_via_dijkstra(
 
 
 @router.post("/route", response_model=RouteResponse)
-def find_route(req: RouteRequest):
-    w_iri, w_pot = normalize_weights(
-        req.include_iri, req.include_potholes,
-        req.weight_iri, req.weight_potholes,
+def find_route(req: RouteRequest, response: Response):
+    # D-10-15 + Pitfall 4: set Deprecation header at the TOP of the handler,
+    # BEFORE the audit-log INSERT and BEFORE the cache check, so that:
+    #   - cache hits (early return below) inherit the header
+    #   - no-route fallbacks (RouteResponse return at "No route found") inherit it
+    #   - successful responses (final return response) inherit it
+    # FastAPI Response-parameter pattern: response.headers persist on the
+    # final response regardless of which return statement executes.
+    # EXACT-STRING locked per CONTEXT D-10-15 — do NOT paraphrase.
+    response.headers["Deprecation"] = (
+        "weight_iri,weight_potholes ignored as of v0.4.0"
     )
 
     cache_key = make_route_cache_key(
         req.origin.lat, req.origin.lon,
         req.destination.lat, req.destination.lon,
-        req.include_iri, req.include_potholes,
-        req.weight_iri, req.weight_potholes,
         req.max_extra_minutes,
     )
 
@@ -419,9 +425,11 @@ def find_route(req: RouteRequest):
             t = seg["travel_time_s"]
             iri = seg["iri_norm"] or 0.0
             pot = seg["pothole_score_total"] or 0.0
+            crash = seg["crash_norm"] or 0.0   # D-10-14: Plan 10-02 populates this column
 
             total_time += t
-            total_cost += compute_segment_cost(t, iri, pot, w_iri, w_pot)
+            # D-10-02 / D-10-14: new 4-arg signature, no w_iri/w_pot, locked outer weights.
+            total_cost += compute_segment_cost(t, iri, pot, crash)
             total_iri += iri
             total_mod += seg["moderate_score"]
             total_sev += seg["severe_score"]
