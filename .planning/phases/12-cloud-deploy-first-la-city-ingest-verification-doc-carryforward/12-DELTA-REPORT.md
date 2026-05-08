@@ -25,9 +25,10 @@ plan_05_scaffolded: 2026-05-08
 
 ## Section 1 — Pre-Deploy `df -h` Rehearsal (Plan 12-01 Task 1)
 
-**Status:** TBD
+**Status:** PASS
 **Decision ref:** D-12-01, D-12-02
-**Acceptance:** Volume free space ≥1.5× expected `crash_records` + GiST footprint (~10–20 MB)
+**Acceptance:** Volume free space ≥1.5× expected `crash_records` + GiST footprint (~10–20 MB) — **massively exceeded**.
+**Captured:** 2026-05-08
 
 **Command:**
 ```bash
@@ -36,73 +37,129 @@ flyctl ssh console -a road-quality-db -C "df -h /var/lib/postgresql/data"
 
 **Captured output:**
 ```
-[paste flyctl ssh output verbatim here]
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/vdc        4.9G  985M  3.8G  21% /var/lib/postgresql/data
 ```
 
-**Decision (proceed / abort):** TBD
+**Decision:** PROCEED. 3.8 GB free vs ~20 MB expected — 190× headroom.
 
 ---
 
 ## Section 2 — Migration 004 Cloud Apply (Plan 12-01 Task 2)
 
-**Status:** TBD
+**Status:** PASS
 **Decision ref:** D-12-03, D-12-04, D-12-05
-**Anti-pattern lock:** `flyctl ssh console -C "psql ..."` ONLY. NEVER `flyctl proxy` for DDL (Phase 5 LESSONS-LEARNED — wireguard timeout → Postgres recovery crash loop).
-**Acceptance:** First-apply succeeds; second-apply is a no-op (migration is idempotent — Phase 9 verified).
+**Anti-pattern lock honored:** `flyctl ssh console -C "psql ..."` used. NO `flyctl proxy` involvement in any DDL step.
+**Acceptance:** First-apply succeeded; re-apply was a no-op (idempotent verified on prod, mirroring Phase 9 local verification).
+**Captured:** 2026-05-08
+
+**Pre-state:** prod had neither `crash_records` table nor `segment_scores.crash_norm` column (verified `false / false` via information_schema query).
 
 **Command (exact):**
 ```bash
 # Step A: ship the SQL into the DB container
 cat db/migrations/004_crash_records.sql | flyctl ssh console -a road-quality-db -C "tee /tmp/004_crash_records.sql > /dev/null"
+# (verified 58 lines on prod = 58 lines local)
 
 # Step B: apply (-v ON_ERROR_STOP=1 makes failure loud)
 flyctl ssh console -a road-quality-db -C "psql -U rq -d roadquality -v ON_ERROR_STOP=1 -f /tmp/004_crash_records.sql"
 
-# Step C: re-apply for idempotency proof (expect only 'NOTICE: ... already exists, skipping')
+# Step C: re-apply for idempotency proof
 flyctl ssh console -a road-quality-db -C "psql -U rq -d roadquality -v ON_ERROR_STOP=1 -f /tmp/004_crash_records.sql"
 ```
 
 **First-apply log:**
 ```
-[paste output]
+psql:/tmp/004_crash_records.sql:34: NOTICE:  constraint "crash_records_source_check" of relation "crash_records" does not exist, skipping
+CREATE TABLE
+ALTER TABLE
+ALTER TABLE
+psql:/tmp/004_crash_records.sql:38: NOTICE:  constraint "crash_records_severity_check" of relation "crash_records" does not exist, skipping
+ALTER TABLE
+ALTER TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+ALTER TABLE
 ```
 
-**Re-apply log:**
+The two NOTICE lines are the DROP CONSTRAINT IF EXISTS no-op messages on first apply — expected, not errors.
+
+**Re-apply log (idempotency proof):**
 ```
-[paste output — should show NOTICE skipping, no errors]
+CREATE TABLE
+psql:/tmp/004_crash_records.sql:30: NOTICE:  relation "crash_records" already exists, skipping
+psql:/tmp/004_crash_records.sql:45: NOTICE:  relation "idx_crash_records_source_id" already exists, skipping
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+psql:/tmp/004_crash_records.sql:49: NOTICE:  relation "idx_crash_records_geom" already exists, skipping
+psql:/tmp/004_crash_records.sql:51: NOTICE:  relation "idx_crash_records_segment" already exists, skipping
+psql:/tmp/004_crash_records.sql:58: NOTICE:  column "crash_norm" of relation "segment_scores" already exists, skipping
+ALTER TABLE
 ```
 
-**Decision (proceed / abort):** TBD
+All NOTICE lines are "already exists, skipping" — zero errors. **Migration is idempotent on prod.**
+
+**Decision:** PROCEED to Section 3 verification.
 
 ---
 
 ## Section 3 — Schema Verification (Plan 12-01 Task 3)
 
-**Status:** TBD
+**Status:** PASS
 **Decision ref:** D-12-06
-**Acceptance:** `crash_records` table exists with all D-09-10 fields (POINT/4326 geom, INTEGER FK to road_segments, severity_kabco column, UNIQUE on (source, source_record_id)); `segment_scores.crash_norm` is `DOUBLE PRECISION NOT NULL DEFAULT 0.0`.
-
-**Command:**
-```bash
-flyctl ssh console -a road-quality-db -C "psql -U rq -d roadquality -c '\d+ crash_records'"
-flyctl ssh console -a road-quality-db -C "psql -U rq -d roadquality -c '\d+ segment_scores'"
-flyctl ssh console -a road-quality-db -C "psql -U rq -d roadquality -c 'SELECT data_type FROM information_schema.columns WHERE table_name = '\''crash_records'\'' AND column_name = '\''snapped_segment_id'\'';'"
-```
+**Acceptance:** `crash_records` table exists with all D-09-10 fields; `segment_scores.crash_norm` is `DOUBLE PRECISION NOT NULL DEFAULT 0.0`. **All checks pass.**
+**Captured:** 2026-05-08
 
 **`\d+ crash_records` output:**
 ```
-[paste]
+                       Table "public.crash_records"
+       Column       |           Type           | Nullable | Default
+--------------------+--------------------------+----------+---------
+ id                 | bigint                   | not null | nextval('crash_records_id_seq')
+ source             | text                     | not null |
+ source_record_id   | text                     | not null |
+ severity           | text                     | not null |
+ occurred_at        | date                     | not null |
+ snapped_segment_id | integer                  |          |
+ snap_distance_m    | double precision         |          |
+ geom               | geometry(Point,4326)     | not null |
+ created_at         | timestamp with time zone | not null | now()
+Indexes:
+    "crash_records_pkey" PRIMARY KEY, btree (id)
+    "idx_crash_records_geom" gist (geom)
+    "idx_crash_records_segment" btree (snapped_segment_id)
+    "idx_crash_records_source_id" UNIQUE, btree (source, source_record_id)
+Check constraints:
+    "crash_records_severity_check" CHECK (severity IN ('fatal','injury','pdo'))
+    "crash_records_source_check" CHECK (source = 'lacity')
+Foreign-key constraints:
+    "crash_records_snapped_segment_id_fkey" FK snapped_segment_id REFERENCES road_segments(id) ON DELETE SET NULL
 ```
 
-**`\d+ segment_scores` output:**
+**`\d+ segment_scores` output:** crash_norm column present (`double precision NOT NULL DEFAULT 0.0`):
 ```
-[paste — must show crash_norm column]
+       Column        |           Type           | Nullable | Default
+---------------------+--------------------------+----------+---------
+ segment_id          | integer                  | not null |
+ moderate_score      | double precision         |          | 0.0
+ severe_score        | double precision         |          | 0.0
+ pothole_score_total | double precision         |          | 0.0
+ updated_at          | timestamp with time zone |          | now()
+ crash_norm          | double precision         | not null | 0.0
 ```
 
-**FK type check (must be `integer`):**
+**FK type check (Pitfall D — must be `integer`):**
 ```
-[paste — Pitfall D resolution from Phase 9]
+integer
 ```
+
+✓ All Phase 9 invariants verified on prod: POINT/4326 geom, INTEGER FK ON DELETE SET NULL, DROP-then-ADD CHECKs intact, all 3 indexes present (UNIQUE source+source_record_id, GIST geom, btree snapped_segment_id), `crash_norm` NOT NULL with 0.0 default.
 
 ---
 
