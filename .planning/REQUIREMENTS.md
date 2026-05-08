@@ -65,7 +65,7 @@ Add historical crash data as a third routing-cost factor and replace user-tunabl
 
 ### Frontend / Public-Facing
 
-- [ ] **REQ-frontend-slider-removal**: Control Panel sheds the IRI weight slider + pothole weight slider; max-extra-minutes slider stays. Map View carries a one-line data-vintage legend. Route Finder shows a one-sentence liability disclaimer at the route-selection moment using "lower historical crash density," NOT "safer route."
+- [x] **REQ-frontend-slider-removal**: Control Panel sheds the IRI weight slider + pothole weight slider; max-extra-minutes slider stays. Map View carries a one-line data-vintage legend. Route Finder shows a one-sentence liability disclaimer at the route-selection moment using "lower historical crash density," NOT "safer route."
   - **Acceptance:**
     - `frontend/src/components/ControlPanel.tsx` no longer renders IRI / pothole sliders; `max_extra_minutes` slider preserved
     - `frontend/src/components/RouteFinder.tsx` POST body to `/route` no longer includes `weight_iri` / `weight_potholes`
@@ -128,7 +128,7 @@ Mapped to phases by the roadmapper.
 | REQ-crash-snap-match | Phase 9 | Complete |
 | REQ-crash-scoring-formula | Phase 10 | Complete |
 | REQ-route-api-locked-weights | Phase 10 | Complete |
-| REQ-frontend-slider-removal | Phase 11 | Pending |
+| REQ-frontend-slider-removal | Phase 11 | Complete |
 | REQ-crash-cloud-deploy | Phase 12 | Pending |
 | REQ-route-filter-env-vars-doc | Phase 12 | Pending |
 
