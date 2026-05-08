@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.3.0
-milestone_name: milestone
-status: executing
-stopped_at: Phase 7 context gathered
-last_updated: "2026-05-08T01:46:29.725Z"
+milestone: v0.4.0
+milestone_name: Crash-Aware Routing
+status: planning
+last_updated: "2026-05-08T02:21:26.848Z"
 last_activity: 2026-05-08
 progress:
-  total_phases: 8
-  completed_phases: 8
-  total_plans: 41
-  completed_plans: 42
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -25,14 +24,10 @@ See: .planning/PROJECT.md (updated 2026-04-23)
 
 ## Current Position
 
-Phase: 08 (routing-performance) — EXECUTING
-Plan: 5 of 5
-Plans: 4 of 4 complete
-Status: Ready to execute
-Last activity: 2026-05-08
-
-Progress (M1): [█░░░░░░░░░] 17% (1 of 6 M1 phases complete)
-Overall (M0 + M1): [██████░░░░] 62% (8 of 13 phases complete; M0 shipped + M1 Phase 1)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-05-08 — Milestone v0.4.0 started
 
 ## Performance Metrics
 

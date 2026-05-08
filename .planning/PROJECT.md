@@ -57,9 +57,30 @@ Given any two points in LA, show the user a route that is demonstrably smoother 
 
 ### Active
 
-<!-- Empty. Run /gsd-new-milestone to scope the next milestone. -->
+<!-- v0.4.0 Crash-Aware Routing — populated by REQUIREMENTS.md when it lands. -->
 
-(No active requirements — milestone open. Next milestone TBD.)
+- [ ] Crash-data ingest pipeline (SWITRS/TIMS + LA City open-data) with historical aggregate + three-tier severity (fatal/injury/PDO)
+- [ ] Snap-match crashes to road segments → per-segment `crash_norm`
+- [ ] Scoring formula update: locked weights `0.40·iri_norm + 0.35·pothole_norm + 0.25·crash_norm` (replaces user-tunable sliders)
+- [ ] Frontend: remove IRI/pothole sliders from Control Panel (keep max-extra-minutes); segment colors continue to encode the locked cost
+- [ ] Backend: `/route` API silently ignores `w_IRI` / `w_pothole` if present (backwards-compatible)
+- [ ] Operator runbook for quarterly crash-data refresh
+- [ ] Document Phase 8 env vars (`ROUTE_FILTER_BUFFER_DEG`, `ROUTE_FILTER_WIDEN_FACTOR`) in README/.env.example (carryforward from v0.3.0)
+
+## Current Milestone: v0.4.0 Crash-Aware Routing
+
+**Goal:** Add historical crash data as a third routing-cost factor and replace user-tunable weight sliders with a single locked weighting (40 IRI / 35 pothole / 25 crash), so the public demo recommends routes that avoid both rough roads AND crash-prone segments.
+
+**Target features:**
+- Crash-data ingest pipeline (SWITRS/TIMS + LA City open-data) — historical aggregate, three-tier severity
+- Snap-match crashes to road segments → `crash_norm` per segment
+- Locked scoring weights: `cost = travel_time + 0.40·iri_norm + 0.35·pothole_norm + 0.25·crash_norm`
+- Slimmer Control Panel — sliders removed, max-extra-minutes retained
+- Backwards-compatible `/route` API (silently ignores `w_IRI` / `w_pothole`)
+- Quarterly crash-data refresh runbook
+- Document Phase 8 routing-buffer env vars
+
+**Out of scope this milestone:** Phase 7 v2 detector retry; deferred operator UAT walkthroughs (02/03/05); auth re-enablement; crash heatmap/markers map layer; multi-city expansion.
 
 ### Out of Scope
 
@@ -112,7 +133,7 @@ Given any two points in LA, show the user a route that is demonstrably smoother 
 - **Stack (database)**: PostgreSQL 16 + PostGIS 3.4 + pgRouting 3.6 (Fly uses 3.8 custom image), geometry SRID 4326.
 - **Schema**: Four-table schema in `CON-db-schema` is load-bearing. `road_segments.source`/`target` BIGINT (verified Phase 1). Migrations under `db/migrations/`.
 - **API contracts**: `/health`, `/segments`, `/route`, `/cache/stats`, `/cache/clear` shapes locked. /health now returns 503 on DB unreachability per Phase 5.
-- **Scoring math**: `cost_segment = travel_time_s + w_IRI*iri_norm + w_pothole*(moderate_score + severe_score)` is locked. Weight normalization rules locked.
+- **Scoring math (v0.3.0, SUPERSEDED in v0.4.0):** `cost_segment = travel_time_s + w_IRI*iri_norm + w_pothole*(moderate_score + severe_score)` with user-tunable weights. **Replaced in v0.4.0 by locked constants:** `cost_segment = travel_time_s + 0.40*iri_norm + 0.35*pothole_norm + 0.25*crash_norm`. Weight normalization rules removed (no longer needed with fixed constants). Migration path: existing `/route` API still accepts `w_IRI` / `w_pothole` per locked CON-route-api but backend ignores them.
 - **Route-selection algorithm**: K=5 candidate paths preserved. Implementation: pgr_dijkstra × K with edge-weight perturbation (Yen's-style, replaces pgr_ksp K=5 per Phase 8 D-08-03; OSRM/Valhalla pattern).
 - **Routing 3-attempt fallback**: filter (3.3 km buffer) → wide-filter (×2) → full-graph. Catches BOTH `psycopg2.errors.QueryCanceled` AND empty-result conditions per Phase 8.
 - **Detector protocol**: `PotholeDetector` Protocol with `detect(image_path) -> list[Detection]`. Production model: `keremberke/yolov8s-pothole-segmentation` via `_DEFAULT_HF_REPO` per Phase 6 D-09 / Phase 7 D-13.
@@ -146,5 +167,22 @@ Given any two points in LA, show the user a route that is demonstrably smoother 
 | pgr_dijkstra × K with edge-weight perturbation replacing pgr_ksp K=5 | pgr_ksp super-linear timed out at 12s on dense urban subgraphs; OSRM/Valhalla pattern is linear in K | ✓ Good (v0.3.0 Phase 8) |
 | 3-attempt fallback chain (filter → wide → full) catching `QueryCanceled` AND empty results | Reverted Plan 08-03 only caught empty results — timeouts bubbled to HTTP 500 | ✓ Good (v0.3.0 Phase 8) |
 
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
 ---
-*Last updated: 2026-05-08 after v0.3.0 milestone close (M1: Phases 1-8, 41 plans, 73 tasks shipped)*
+*Last updated: 2026-05-08 — v0.4.0 milestone started (Crash-Aware Routing)*
