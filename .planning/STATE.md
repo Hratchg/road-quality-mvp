@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: Crash-Aware Routing
 status: planning
-last_updated: "2026-05-08T02:21:26.848Z"
+last_updated: "2026-05-08T03:30:00.000Z"
 last_activity: 2026-05-08
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,99 +17,108 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-23)
+See: .planning/PROJECT.md (updated 2026-05-08)
 
 **Core value:** Given any two points in LA, show the user a route that is demonstrably smoother than the fastest route, using real road-quality data.
-**Current focus:** Phase 08 — routing-performance
+**Current focus:** Phase 9 — Crash-Data Schema + LA City Ingest + Naive Snap-Match (v0.4.0 M2 first phase)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 9 — Crash-Data Schema + LA City Ingest + Naive Snap-Match
 Plan: —
-Status: Defining requirements
-Last activity: 2026-05-08 — Milestone v0.4.0 started
+Status: Not started — defining plans
+Last activity: 2026-05-08 — v0.4.0 ROADMAP created (4 phases / 7 reqs mapped, Option B thin slice)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 20 (M1)
-- Average duration: —
-- Total execution time: —
+- Total plans completed (M0+M1): 41 (M1) + M0 baseline
+- Average plan duration (M1): see milestones/v0.3.0-ROADMAP.md
+- Total execution time (M1): 16 days (2026-04-22 → 2026-05-07)
 
-**By Phase:**
+**By Phase (M1 historical):**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| — | — | — | — |
-| 02 | 5 | - | - |
-| 03 | 5 | - | - |
-| 04 | 5 | - | - |
-| 05 | 5 | - | - |
+| 1 | 4 | — | — |
+| 2 | 5 | — | — |
+| 3 | 5 | — | — |
+| 4 | 5 | — | — |
+| 5 | 5 | — | — |
+| 6 | 4 | — | — |
+| 7 | 7 | — | — |
+| 8 | 5 | — | — |
 
 **Recent Trend:**
 
-- Last 5 plans: —
-- Trend: —
+- Last 5 plans (M1 Phase 8): see archive
+- Phase 8 plan velocity: P01=12min, P02=3m16s, P03=25min, P05=2min
 
 *Updated after each plan completion*
-| Phase 08-routing-performance P01 | 12min | 1 tasks | 1 files |
-| Phase 08-routing-performance P02 | 3m 16s | 2 tasks | 2 files |
-| Phase 08-routing-performance P03 | 25min | 3 tasks | 3 files |
-| Phase 08-routing-performance P05 | 2 min | 2 tasks tasks | 2 files files |
 
 ## Accumulated Context
 
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
 
-- M0 (shipped): Routing via pgRouting `pgr_ksp`, k=5, seed=42, Leaflet default + `VITE_MAPBOX_TOKEN` for Mapbox
-- M0 (carryover): Seed radius = 10 km (SPEC); verify the literal in `scripts/seed_data.py` during Phase 1
-- M0 (carryover): `road_segments.source`/`target` = BIGINT (SPEC); verify migration literal during Phase 1
-- [Phase ?]: Phase 8 RED gate (08-01) installed: backend/tests/test_routing_performance.py asserts PERF-01 < 5s and PERF-02 <= 2s; gated by db_has_topology so CI auto-skips
-- [Phase ?]: Two-phase SQL refactor under TDD: Plan 08-02 lands SQL constants + their unit-test contract; Plan 08-03 wires them into find_route(). Reviewer sees SQL shape locked separately from control-flow change.
-- [Phase ?]: Env-var module constants tested via importlib.reload + monkeypatch.setenv pattern: read constant -> assert default; setenv + reload -> assert new value; finally-block delenv + reload to restore default for downstream tests.
-- [Phase ?]: psycopg2 named-parameter binding (%(o_lon)s style) mandatory for SQL with untrusted lat/lon — never f-string or .format() lat/lon into SQL. Test pins this contract (T-08-02-01 mitigation).
-- [Phase ?]: Plan 08-03 (replan): pgr_dijkstra x K with edge-weight perturbation (Yen's-style, linear in K) replaces pgr_ksp K=5 (super-linear, timed out at 12s on dense urban subgraphs). Industry-standard approach used by OSRM and Valhalla. K=5 output contract preserved (CON-route-selection-algorithm).
-- [Phase ?]: Plan 08-03: 3-attempt fallback chain catches BOTH psycopg2.errors.QueryCanceled AND empty-result conditions, with conn.rollback() between attempts. The reverted Plan 08-03 only caught empty results -- timeouts bubbled to HTTP 500 (08-PERF-NUMBERS.md Fallback Chain Observation).
-- [Phase ?]: Phase 8 docs closure: README perf claim cross-links 08-PERF-NUMBERS.md as source-of-truth; routing.py inline header at lines 272-298 cites RESEARCH §8 Pitfalls A and G to prevent re-introduction of the 2026-04-29 pgr_ksp-on-temp-table disaster.
+**Carried forward from M1 v0.3.0 (load-bearing for v0.4.0):**
+
+- Long DDL on Fly DB MUST run via `flyctl ssh console -C "psql ..."`, NEVER `flyctl proxy` — wireguard timeouts trigger Postgres recovery crash loops (Phase 5 LESSONS-LEARNED). Locked anti-pattern.
+- Fully-seeded LA dataset needs ≥2 GB DB memory + ≥3 GB volume; Migration 004 must verify free volume space pre-apply.
+- pgr_dijkstra × K with edge-weight perturbation (Yen's-style, linear in K) replaced pgr_ksp K=5; routing.py:272-298 has inline anti-pattern pin citing RESEARCH §8 Pitfalls A and G. Phase 10 must NOT inline crash-aggregation SQL into routing.py — pre-bake in compute_scores.py only.
+- 3-attempt fallback chain (filter → wide → full) catches BOTH `psycopg2.errors.QueryCanceled` AND empty-result conditions. Preserved unchanged through v0.4.0.
+- Auth removed in commit `d0ef452` for public demo; backend modules dormant; re-enable via `AUTH_ENABLED=true` env var. Out of scope for v0.4.0.
+- REQ-ID hygiene at supersede commits: any commit with "remove" / "supersede" / "drop" must update REQUIREMENTS.md + PROJECT.md in the same diff (v0.3.0 ce190d2 fix pattern). Audit gate at milestone close.
+
+**v0.4.0-specific decisions (locked at scoping, recorded in REQUIREMENTS.md):**
+
+- Option B end-to-end thin slice scope: LA City Socrata only (no SWITRS/TIMS), naive single-nearest-segment snap (no fractional intersection attribution), flat 5-year window (no exponential decay), no equity audit, no synthetic crash seed. SWITRS, fractional snap, decay, EQUITY_NOTE.md deferred to v0.4.1.
+- Locked outer weights `W_IRI=0.40, W_POT=0.35, W_CRASH=0.25` as module constants in `backend/app/scoring.py`; user-tunable sliders removed from frontend; `/route` Pydantic model uses `extra='ignore'` for backwards-compat (silent ignore of `weight_iri` / `weight_potholes`).
+- Severity weights `fatal:injury:pdo = 8:3:1` (literature-converged routing-cost ratio, NOT academic 100:10:1 which saturates `crash_norm`); per-segment raw sum / `GREATEST(length_km, 0.05)`; p95 cap; clipped to [0, 1].
+- Crash storage: NEW table `crash_records` (NOT extend `segment_defects`); NEW additive column `segment_scores.crash_norm DEFAULT 0`. Migration 004 follows 002 idempotency precedent.
+- Snap-match reuses `snap_match_image()` SQL primitive from `ingest_mapillary.py:255` with wider tolerance (default ~50m via `LACITY_SNAP_M`, env-tunable) — naive single-nearest-segment is acceptable for v0.4.0 with documented disclaimer about intersection attribution.
+- Frontend anti-features locked OUT: no crash heatmap, no per-segment crash markers, no separate map layer, no severity-tier toggle, no "safer route" copy (use "lower historical crash density" / "crash-aware").
 
 ### Pending Todos
 
-From `.planning/codebase/CONCERNS.md` — these are flagged for M1 phases where they naturally belong:
+Mapped to v0.4.0 phases:
 
-- Phase 1: Reconcile BIGINT vs INTEGER on source/target columns, Mapbox env var, seed radius literal, psycopg2 pin
-- Phase 2: Fix hardcoded YOLO model path (CWD-relative → env-var configurable)
-- Phase 4: Replace dev defaults `rq`/`rqpass`/`roadquality` with proper secret management at sign-up/sign-in scope
-- Phase 5: Lock down CORS, add DB connection pooling, deepen `/health` to check DB reachability, add retention policy for `route_requests` audit log, externalize `VITE_API_URL`
-
-Tracked in-roadmap — not separately filed under `.planning/todos/`.
+- Phase 9: Reuse `(source, source_record_id)` UNIQUE pattern from migration 002; `lacity_mocodes.py` Wave-0 RED test for unknown-code branch (v0.3.0 KEY LESSON 2 — silent code-set drift)
+- Phase 10: `normalize_weights()` becomes dead code; mark `# DEPRECATED v0.4.0` rather than delete (test compatibility); fatal-overweighting smoke test against 5 known-safe arterials before declaring scoring done
+- Phase 11: Disclaimer text is EXACT-string locked in REQUIREMENTS.md; do NOT paraphrase; verify no new map layer/toggle slips in (Pitfall 10 build-then-supersede risk)
+- Phase 12: `df -h` Fly volume rehearsal BEFORE migration apply; `flyctl ssh console -C` for DDL (locked); document `ROUTE_FILTER_BUFFER_DEG` + `ROUTE_FILTER_WIDEN_FACTOR` in `.env.example` + README (carryforward from v0.3.0 Phase 8 tech debt)
 
 ### Blockers/Concerns
 
-None blocking Phase 1 start.
+None blocking Phase 9 start.
 
-Carried forward to later phases (not blockers now, will be addressed in-phase):
+Carried-forward from v0.3.0 close (not blockers; will be addressed in-phase or remain known limitations):
 
-- Frontend assumes localhost API URL — blocker for Phase 5, noted.
-- No request ID correlation / structured logging — deferred (out of scope for M1).
-- No `/segments` pagination — deferred unless demo triggers the issue.
-- No DB backup strategy — worth revisiting in Phase 5 if deploy target offers managed backups.
+- 5 Mapillary integration tests hang on `subprocess.run` selectors.poll — pre-existing; do NOT fix in v0.4.0 unless Phase 9 ingest tests trip the same pattern
+- README:312 stale prose (seed-on-demand description) — out of scope for v0.4.0
+- Untracked: `data/eval_la/labels/test.cache` + `.planning/phases/03-mapillary-ingestion-pipeline/.Rhistory` — gitignore housekeeping; out of scope
+- 4 deferred operator-runbook walkthroughs (02-HUMAN-UAT, 02/03/05-VERIFICATION) — known carry-forward; out of scope for v0.4.0
 
 ## Deferred Items
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| Observability | Structured logging, Prometheus metrics, request IDs | Deferred to post-M1 | 2026-04-23 (roadmap init) |
-| Scale | Redis / distributed cache, `/segments` pagination | Deferred to post-M1 | 2026-04-23 (roadmap init) |
-| Infra | Alembic migrations, SQLAlchemy migration | Deferred to post-M1 | 2026-04-23 (roadmap init) |
-| Scope | Multi-city support, mobile native apps, OAuth/SSO | Deferred to post-M1 | 2026-04-23 (roadmap init) |
+| Observability | Structured logging, Prometheus metrics, request IDs | Deferred to post-v0.4.0 | 2026-04-23 (roadmap init) |
+| Scale | Redis / distributed cache, `/segments` pagination | Deferred to post-v0.4.0 | 2026-04-23 (roadmap init) |
+| Infra | Alembic migrations, SQLAlchemy migration | Deferred to post-v0.4.0 | 2026-04-23 (roadmap init) |
+| Scope | Multi-city support, mobile native apps, OAuth/SSO | Deferred to post-v0.4.0 | 2026-04-23 (roadmap init) |
+| Crash data | SWITRS/TIMS source | Deferred to v0.4.1 | 2026-05-08 (Option B scoping) |
+| Crash data | Fractional intersection snap-match | Deferred to v0.4.1 | 2026-05-08 (Option B scoping) |
+| Crash data | Exponential recency decay (TAU=3y) | Deferred to v0.4.1 | 2026-05-08 (Option B scoping) |
+| Crash data | EQUITY_NOTE.md cross-neighborhood audit | Deferred to v0.4.1 | 2026-05-08 (Option B scoping) |
+| Crash data | Synthetic crash seed mode | Deferred (operator declined) | 2026-05-08 (Option B scoping) |
+| Crash data | `record_status` provisional/final tracking | Deferred to v0.4.1 (only relevant with SWITRS) | 2026-05-08 |
 
 ### Acknowledged at v0.3.0 milestone close (2026-05-07)
 
-Items acknowledged and deferred at milestone close — operator-runbook walkthroughs that artifact-level verification covered but live-deploy validation did not. Does not block close; v0.3.0-MILESTONE-AUDIT.md status is `passed`.
+Items acknowledged and deferred at milestone close — operator-runbook walkthroughs that artifact-level verification covered but live-deploy validation did not. Did not block close; v0.3.0-MILESTONE-AUDIT.md status is `passed`.
 
 | Category | Item | Status |
 |----------|------|--------|
@@ -120,10 +129,10 @@ Items acknowledged and deferred at milestone close — operator-runbook walkthro
 
 ## Session Continuity
 
-Last session: 2026-05-08T00:35:19.260Z
-Stopped at: Phase 7 context gathered
+Last session: 2026-05-08T03:30:00.000Z
+Stopped at: ROADMAP for v0.4.0 written (Phases 9-12 / 7 reqs mapped, Option B thin slice)
 Resume file: None
 
-**Planned Phase:** 7 (LA-Trained Detector) — 8 plans — 2026-04-28T21:59:14.644Z
-**Completed Phase:** 1 (MVP Integrity Cleanup) — 4 plans — 2026-04-23
-**Phase 5 UAT walkthrough:** 2026-04-27 → 2026-04-28 — 16 defects surfaced + fixed inline (8 commits) — see .planning/phases/05-cloud-deployment/05-HUMAN-UAT.md
+**Planned Phase:** 9 (Crash-Data Schema + LA City Ingest + Naive Snap-Match) — plans TBD — 2026-05-08
+**Completed Phase (most recent):** 8 (Routing Performance) — 5/5 plans — 2026-05-07
+**Next action:** `/gsd-plan-phase 9` to decompose Phase 9 into executable plans

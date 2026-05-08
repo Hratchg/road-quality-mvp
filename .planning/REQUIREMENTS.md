@@ -124,13 +124,13 @@ Mapped to phases by the roadmapper.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-crash-ingest-lacity | TBD (likely Phase 10) | Pending |
-| REQ-crash-snap-match | TBD (likely Phase 10 or 11) | Pending |
-| REQ-crash-scoring-formula | TBD (likely Phase 11 or 12) | Pending |
-| REQ-route-api-locked-weights | TBD (likely Phase 12) | Pending |
-| REQ-frontend-slider-removal | TBD (likely Phase 13) | Pending |
-| REQ-crash-cloud-deploy | TBD (likely Phase 14) | Pending |
-| REQ-route-filter-env-vars-doc | TBD (likely Phase 14 or 15) | Pending |
+| REQ-crash-ingest-lacity | Phase 9 | Pending |
+| REQ-crash-snap-match | Phase 9 | Pending |
+| REQ-crash-scoring-formula | Phase 10 | Pending |
+| REQ-route-api-locked-weights | Phase 10 | Pending |
+| REQ-frontend-slider-removal | Phase 11 | Pending |
+| REQ-crash-cloud-deploy | Phase 12 | Pending |
+| REQ-route-filter-env-vars-doc | Phase 12 | Pending |
 
 **Coverage:**
 
