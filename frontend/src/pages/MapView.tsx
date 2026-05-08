@@ -3,29 +3,21 @@ import { MapContainer, TileLayer, GeoJSON, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import ControlPanel, { ControlState } from "../components/ControlPanel";
 import Legend from "../components/Legend";
-import { fetchSegments } from "../api";
+import { fetchSegments, SegmentProperties } from "../api";
 
 const LA_CENTER: [number, number] = [34.0522, -118.2437];
 
-function scoreForFeature(
-  props: any,
-  controls: ControlState
-): number {
-  const { includeIri, includePotholes, weightIri, weightPotholes } = controls;
-  if (!includeIri && !includePotholes) return 0;
+// Locked-weight visual blend mirrors backend W_IRI=0.40 / W_POT=0.35
+// normalized within the visual sum (sum=0.75): 0.5333 IRI + 0.4667 pothole.
+// crash_norm is typed-through (SegmentProperties below) but NOT visualized
+// per anti-features D-11-07, D-11-10, D-11-11, D-11-12 (locked OUT).
+const VISUAL_W_IRI = 0.40 / 0.75; // ≈ 0.5333
+const VISUAL_W_POT = 0.35 / 0.75; // ≈ 0.4667
 
-  let wIri = 0, wPot = 0;
-  if (includeIri && includePotholes) {
-    const total = weightIri + weightPotholes || 1;
-    wIri = weightIri / total;
-    wPot = weightPotholes / total;
-  } else if (includeIri) {
-    wIri = 1;
-  } else {
-    wPot = 1;
-  }
-
-  return wIri * (props.iri_norm || 0) + wPot * (props.pothole_score_total || 0);
+function scoreForFeature(props: SegmentProperties | undefined): number {
+  const iri = props?.iri_norm ?? 0;
+  const pot = props?.pothole_score_total ?? 0;
+  return VISUAL_W_IRI * iri + VISUAL_W_POT * pot;
 }
 
 function scoreToColor(score: number): string {
@@ -55,12 +47,7 @@ function MapEvents({ onBoundsChange }: { onBoundsChange: (bbox: string) => void 
 }
 
 export default function MapView() {
-  const [controls, setControls] = useState<ControlState>({
-    includeIri: true,
-    includePotholes: true,
-    weightIri: 50,
-    weightPotholes: 50,
-  });
+  const [controls, setControls] = useState<ControlState>({} as ControlState);
   const [geojson, setGeojson] = useState<any>(null);
   const [bbox, setBbox] = useState("");
 
@@ -88,10 +75,10 @@ export default function MapView() {
         <MapEvents onBoundsChange={setBbox} />
         {geojson && (
           <GeoJSON
-            key={JSON.stringify(controls)}
+            key="segments"
             data={geojson}
             style={(feature) => {
-              const score = scoreForFeature(feature?.properties, controls);
+              const score = scoreForFeature(feature?.properties as SegmentProperties | undefined);
               return {
                 color: scoreToColor(score),
                 weight: 3,
@@ -104,6 +91,9 @@ export default function MapView() {
       <div className="absolute top-4 right-4 z-[1000] space-y-2">
         <ControlPanel state={controls} onChange={setControls} />
         <Legend />
+      </div>
+      <div className="absolute bottom-4 left-4 z-[1000] bg-white/90 rounded px-2 py-1 text-xs text-gray-500 max-w-md leading-snug shadow">
+        Crash data: LA City open-data through March 2024. Single-segment attribution; intersection distribution to be added in a future release.
       </div>
     </div>
   );

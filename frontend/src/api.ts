@@ -9,11 +9,16 @@ export async function fetchSegments(bbox: string) {
 export interface RouteRequestBody {
   origin: { lat: number; lon: number };
   destination: { lat: number; lon: number };
-  include_iri: boolean;
-  include_potholes: boolean;
-  weight_iri: number;
-  weight_potholes: number;
   max_extra_minutes: number;
+}
+
+// /segments returns FeatureCollection where every Feature.properties has at least:
+// (D-11-09) crash_norm typed-through from Phase 10 backend; default 0.0, non-null.
+// Type-only consumption — NOT visualized (D-11-07; anti-features D-11-10..D-11-12).
+export interface SegmentProperties {
+  iri_norm?: number;
+  pothole_score_total?: number;
+  crash_norm: number;
 }
 
 export async function fetchRoute(body: RouteRequestBody) {
