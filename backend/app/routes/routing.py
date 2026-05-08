@@ -269,6 +269,33 @@ def find_route(req: RouteRequest):
     if cached is not None:
         return RouteResponse(**cached)
 
+    # Phase 8 routing-performance contract — DO NOT "simplify" this back to a
+    # single full-graph pgr_ksp call. The structure here is load-bearing:
+    #
+    #   1. Pre-filter the OD-corridor edges via the GiST index on
+    #      road_segments.geom in an OUTER psycopg2 query that materializes
+    #      to TEMP TABLE rq_filtered_edges. RESEARCH §8 Pitfall A — putting
+    #      the spatial WHERE INSIDE pgr_ksp's edges_sql forces a full seq
+    #      scan because pgRouting evaluates that string via SPI which does
+    #      not invoke the GiST index. The 2026-04-29 attempt to do this
+    #      lost > 14× to the unfiltered baseline; commits 2278605 / 17bff0c
+    #      / 704a70c document the disaster.
+    #
+    #   2. Build btree indexes on rq_filtered_edges(source) and (target)
+    #      before calling pgr_ksp on it. RESEARCH §8 Pitfall G — without
+    #      these, Yen's inner Dijkstra degrades back to seq scan inside
+    #      the K=5 loop and the cross-LA budget slips by 5×+.
+    #
+    #   3. Fall back to a wider buffer (×ROUTE_FILTER_WIDEN_FACTOR), then
+    #      finally to KSP_FULL_SQL on the full road_segments table, when
+    #      the filtered subgraph yields no path. RESEARCH §4 — preserves
+    #      the correctness guarantee for OD pairs near the LA boundary.
+    #
+    #   4. The 12s SET LOCAL statement_timeout (db.py:97-98, commit 8bfd286)
+    #      is the safety net that bounds each attempt. Worst case is 3 × 12s.
+    #
+    # Tunable: set ROUTE_FILTER_BUFFER_DEG in the environment to widen the
+    # default 0.03° (~3.3 km) corridor at deploy time without a code change.
     with get_connection() as conn:
         with conn.cursor() as cur:
             # Snap to nearest nodes (UNCHANGED)
