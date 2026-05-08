@@ -18,6 +18,13 @@ from app.db import DATABASE_URL
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "integration: marks tests that need a live database")
+    # Phase 10 (Plan 10-02 / D-10-20): Registers the `smoke` marker for the
+    # histogram non-bimodal check (Pitfall 5 verification). Skipped in normal
+    # CI; run via `pytest -m smoke` from the Phase-12 runbook.
+    config.addinivalue_line(
+        "markers",
+        "smoke: marks tests run by Phase-12 runbook, skipped in normal CI",
+    )
     # Belt-and-suspenders: ensure AUTH_SIGNING_KEY is set even if a child process
     # or a test that monkeypatches the env didn't restore it. setdefault is
     # idempotent — won't clobber an explicit override from CI.
