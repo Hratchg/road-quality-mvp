@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: Crash-Aware Routing
-status: planning
-last_updated: "2026-05-08T03:30:00.000Z"
-last_activity: 2026-05-08
+status: Not started — defining plans
+stopped_at: Phase 9 context gathered
+last_updated: "2026-05-08T04:23:29.320Z"
+last_activity: 2026-05-08 — v0.4.0 ROADMAP created (4 phases / 7 reqs mapped, Option B thin slice)
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
-  percent: 0
 ---
 
 # Project State
@@ -129,9 +129,9 @@ Items acknowledged and deferred at milestone close — operator-runbook walkthro
 
 ## Session Continuity
 
-Last session: 2026-05-08T03:30:00.000Z
-Stopped at: ROADMAP for v0.4.0 written (Phases 9-12 / 7 reqs mapped, Option B thin slice)
-Resume file: None
+Last session: 2026-05-08T04:23:29.316Z
+Stopped at: Phase 9 context gathered
+Resume file: .planning/phases/09-crash-data-schema-la-city-ingest-naive-snap-match/09-CONTEXT.md
 
 **Planned Phase:** 9 (Crash-Data Schema + LA City Ingest + Naive Snap-Match) — plans TBD — 2026-05-08
 **Completed Phase (most recent):** 8 (Routing Performance) — 5/5 plans — 2026-05-07
