@@ -21,7 +21,7 @@ Add historical crash data as a third routing-cost factor and replace user-tunabl
 
 ### Crash-Data Ingest
 
-- [ ] **REQ-crash-ingest-lacity**: Automated pipeline pulls LA City open-data crash records (Socrata API, dataset `d5tf-ez2w`), maps the `mocodes` field to a three-tier severity (fatal / injury / pdo), snaps each point to the nearest road segment via `ST_DWithin + <-> KNN` (snap tolerance default 50m, env-tunable via `LACITY_SNAP_M`), and writes rows into a new `crash_records` table with `(source, source_record_id)` UNIQUE for idempotent re-ingest.
+- [x] **REQ-crash-ingest-lacity**: Automated pipeline pulls LA City open-data crash records (Socrata API, dataset `d5tf-ez2w`), maps the `mocodes` field to a three-tier severity (fatal / injury / pdo), snaps each point to the nearest road segment via `ST_DWithin + <-> KNN` (snap tolerance default 50m, env-tunable via `LACITY_SNAP_M`), and writes rows into a new `crash_records` table with `(source, source_record_id)` UNIQUE for idempotent re-ingest.
   - **Acceptance:**
     - `db/migrations/004_crash_records.sql` creates `crash_records` table + `segment_scores.crash_norm` column; idempotent (`CREATE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`); mounted into docker init flow
     - `data_pipeline/lacity_socrata.py` is a thin `requests`-based client mirroring `data_pipeline/mapillary.py` (env-var token via `LACITY_APP_TOKEN`, paged generator, no `sodapy` dependency)
@@ -33,7 +33,7 @@ Add historical crash data as a third routing-cost factor and replace user-tunabl
 
 ### Snap-Match
 
-- [ ] **REQ-crash-snap-match**: Each crash record is attributed to its nearest road segment (single-segment), with a snap-distance audit column for spot-checking. **Intersection fractional attribution is explicitly deferred to v0.4.1** — known limitation documented in the disclaimer copy.
+- [x] **REQ-crash-snap-match**: Each crash record is attributed to its nearest road segment (single-segment), with a snap-distance audit column for spot-checking. **Intersection fractional attribution is explicitly deferred to v0.4.1** — known limitation documented in the disclaimer copy.
   - **Acceptance:**
     - `crash_records.snapped_segment_id` is set to the nearest segment within `LACITY_SNAP_M` (FK to `road_segments(id) ON DELETE SET NULL`)
     - `crash_records.snap_distance_m` records the distance for audit
@@ -124,8 +124,8 @@ Mapped to phases by the roadmapper.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-crash-ingest-lacity | Phase 9 | Pending |
-| REQ-crash-snap-match | Phase 9 | Pending |
+| REQ-crash-ingest-lacity | Phase 9 | Complete |
+| REQ-crash-snap-match | Phase 9 | Complete |
 | REQ-crash-scoring-formula | Phase 10 | Pending |
 | REQ-route-api-locked-weights | Phase 10 | Pending |
 | REQ-frontend-slider-removal | Phase 11 | Pending |
