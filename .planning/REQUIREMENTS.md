@@ -43,7 +43,7 @@ Add historical crash data as a third routing-cost factor and replace user-tunabl
 
 ### Scoring & Routing
 
-- [ ] **REQ-crash-scoring-formula**: Per-segment `crash_norm` is pre-baked at ingest-time into `segment_scores`, computed from a severity-weighted sum normalized to `[0, 1]`. `cost_segment` formula extends to include the third term using locked weight constants. **Replaces v0.3.0's user-tunable weight normalization with module constants.**
+- [x] **REQ-crash-scoring-formula**: Per-segment `crash_norm` is pre-baked at ingest-time into `segment_scores`, computed from a severity-weighted sum normalized to `[0, 1]`. `cost_segment` formula extends to include the third term using locked weight constants. **Replaces v0.3.0's user-tunable weight normalization with module constants.**
   - **Acceptance:**
     - `scripts/compute_scores.py` extends `VALID_SOURCES` to include `'crash'`; adds `--source crash` and `--source all` paths; correlated subquery against `crash_records` (no cross-product blowup with `segment_defects`)
     - Severity weight constants live in one file (`backend/app/scoring.py`) starting at literature-converged ratio `fatal:injury:pdo = 8:3:1` (NOT academic `100:10:1` which saturates `crash_norm`); a single fatal's per-segment contribution is capped to keep one freak crash from dominating
@@ -54,7 +54,7 @@ Add historical crash data as a third routing-cost factor and replace user-tunabl
     - 8+ unit tests pin: severity-weighting math, length-normalization, p95 cap, locked constants, no-crash-segments default to 0
     - Note: PDO severity is supported in the schema but LA City `mocodes`-to-PDO mapping is lossy; documented in the runbook
 
-- [ ] **REQ-route-api-locked-weights**: `POST /route` continues to accept request bodies that include `weight_iri` / `weight_potholes` (per locked CON-route-api contract) but silently ignores the values; the server uses 40/35/25 regardless. A `Deprecation` response header signals the change.
+- [x] **REQ-route-api-locked-weights**: `POST /route` continues to accept request bodies that include `weight_iri` / `weight_potholes` (per locked CON-route-api contract) but silently ignores the values; the server uses 40/35/25 regardless. A `Deprecation` response header signals the change.
   - **Acceptance:**
     - `RouteRequest` Pydantic model gains `model_config = ConfigDict(extra='ignore')`
     - `routing.py` no longer calls `normalize_weights(req.weight_iri, req.weight_potholes)`; uses `W_IRI / W_POT / W_CRASH` constants
@@ -126,8 +126,8 @@ Mapped to phases by the roadmapper.
 |-------------|-------|--------|
 | REQ-crash-ingest-lacity | Phase 9 | Complete |
 | REQ-crash-snap-match | Phase 9 | Complete |
-| REQ-crash-scoring-formula | Phase 10 | Pending |
-| REQ-route-api-locked-weights | Phase 10 | Pending |
+| REQ-crash-scoring-formula | Phase 10 | Complete |
+| REQ-route-api-locked-weights | Phase 10 | Complete |
 | REQ-frontend-slider-removal | Phase 11 | Pending |
 | REQ-crash-cloud-deploy | Phase 12 | Pending |
 | REQ-route-filter-env-vars-doc | Phase 12 | Pending |

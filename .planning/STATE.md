@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: Crash-Aware Routing
 status: phase_complete
-stopped_at: Phase 9 verified complete
-last_updated: "2026-05-08T06:30:00.000Z"
-last_activity: 2026-05-08 -- Phase 9 verified (5/5 must-haves, 31/31 tests pass)
+stopped_at: Phase 10 verified complete
+last_updated: "2026-05-08T08:30:00.000Z"
+last_activity: 2026-05-08 -- Phase 10 verified (5/5 success criteria, REQ-crash-scoring-formula + REQ-route-api-locked-weights closed; 60 passed/1 skip-by-design)
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
-  percent: 25
+  completed_phases: 2
+  total_plans: 7
+  completed_plans: 7
+  percent: 50
 ---
 
 # Project State
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-05-08)
 
 ## Current Position
 
-Phase: 9 (Crash-Data Schema + LA City Ingest + Naive Snap-Match) — COMPLETE
-Plan: 4 of 4 complete
-Status: Phase 9 verified — passed (5/5 must-haves, 31/31 phase 9 tests pass on live PostGIS)
-Last activity: 2026-05-08 -- Phase 9 execution + verification complete; ready for Phase 10
-Next phase: 10 (Crash-Aware Scoring + Locked Weights)
+Phase: 10 (Crash Scoring Formula + Locked-Weight Routing API) — COMPLETE
+Plan: 3 of 3 complete (10-01, 10-02, 10-03)
+Status: Phase 10 verified — passed (5/5 success criteria, REQ-crash-scoring-formula + REQ-route-api-locked-weights closed)
+Last activity: 2026-05-08 -- Phase 10 execution + verification complete; ready for Phase 11
+Next phase: 11 (Frontend Slider Removal + Liability Disclaimer + Data-Vintage Caption)
 
 ## Performance Metrics
 
