@@ -65,16 +65,29 @@ def test_clear_all_caches():
 
 def test_make_route_cache_key_deterministic():
     """Same inputs should always produce the same hash."""
-    key1 = make_route_cache_key(34.05, -118.24, 34.06, -118.25, True, True, 50, 50, 5)
-    key2 = make_route_cache_key(34.05, -118.24, 34.06, -118.25, True, True, 50, 50, 5)
+    key1 = make_route_cache_key(34.05, -118.24, 34.06, -118.25, 5)
+    key2 = make_route_cache_key(34.05, -118.24, 34.06, -118.25, 5)
     assert key1 == key2
 
 
 def test_make_route_cache_key_differs_on_param_change():
     """Different parameters should produce different hashes."""
-    key1 = make_route_cache_key(34.05, -118.24, 34.06, -118.25, True, True, 50, 50, 5)
-    key2 = make_route_cache_key(34.05, -118.24, 34.06, -118.25, True, True, 60, 40, 5)
+    key1 = make_route_cache_key(34.05, -118.24, 34.06, -118.25, 5)
+    key2 = make_route_cache_key(34.05, -118.24, 34.06, -118.26, 5)  # diff dest_lon
     assert key1 != key2
+
+
+def test_make_route_cache_key_signature_is_5_params():
+    """Phase 10 (D-10-14): make_route_cache_key drops include_iri,
+    include_potholes, weight_iri, weight_potholes from the signature.
+    Pinned via inspect to guard against accidental re-introduction.
+    """
+    import inspect
+    sig = inspect.signature(make_route_cache_key)
+    params = list(sig.parameters.keys())
+    assert params == [
+        "origin_lat", "origin_lon", "dest_lat", "dest_lon", "max_extra_minutes"
+    ], f"signature drift: got {params}"
 
 
 def test_cache_stats_endpoint():
