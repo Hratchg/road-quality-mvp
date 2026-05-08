@@ -119,7 +119,7 @@ Full details in `milestones/v0.3.0-ROADMAP.md`. Audit: `milestones/v0.3.0-MILEST
 | 7. LA-Trained Detector | v0.3.0 | 7/8 | Complete (negative) | 2026-05-07 |
 | 8. Routing Performance | v0.3.0 | 5/5 | Complete | 2026-05-07 |
 | 9. Crash-Data Schema + LA City Ingest + Snap-Match | v0.4.0 | 4/4 | Complete   | 2026-05-08 |
-| 10. Crash Scoring Formula + Locked-Weight Routing API | v0.4.0 | 0/? | Not started | — |
+| 10. Crash Scoring Formula + Locked-Weight Routing API | v0.4.0 | 1/3 | In Progress|  |
 | 11. Frontend Slider Removal + Disclaimer + Caption | v0.4.0 | 0/? | Not started | — |
 | 12. Cloud Deploy + First Ingest + Verification + Doc Carryforward | v0.4.0 | 0/? | Not started | — |
 
