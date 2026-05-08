@@ -7,7 +7,7 @@ const DISCLAIMER = 'Routes incorporate historical crash data from LA City open-d
 
 beforeEach(() => {
   // Stub fetch so any AddressInput/route side effects do not crash the render.
-  global.fetch = vi.fn().mockResolvedValue({
+  globalThis.fetch = vi.fn().mockResolvedValue({
     ok: true,
     json: async () => ({ type: 'FeatureCollection', features: [] }),
   } as Response);

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { MapContainer, TileLayer, Polyline, Marker } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import ControlPanel, { ControlState } from "../components/ControlPanel";
 import RouteResults from "../components/RouteResults";
 import AddressInput from "../components/AddressInput";
 import { fetchRoute, RouteRequestBody } from "../api";
@@ -31,12 +30,6 @@ function geoJsonToLatLngs(geojson: any): [number, number][] {
 }
 
 export default function RouteFinder() {
-  const [controls, setControls] = useState<ControlState>({
-    includeIri: true,
-    includePotholes: true,
-    weightIri: 50,
-    weightPotholes: 50,
-  });
   const [origin, setOrigin] = useState<{ lat: number; lon: number } | null>(null);
   const [destination, setDestination] = useState<{ lat: number; lon: number } | null>(null);
   const [originText, setOriginText] = useState("");
@@ -61,10 +54,6 @@ export default function RouteFinder() {
       const body: RouteRequestBody = {
         origin,
         destination,
-        include_iri: controls.includeIri,
-        include_potholes: controls.includePotholes,
-        weight_iri: controls.weightIri,
-        weight_potholes: controls.weightPotholes,
         max_extra_minutes: maxExtra,
       };
       const data = await fetchRoute(body);
@@ -138,8 +127,6 @@ export default function RouteFinder() {
           />
         </label>
 
-        <ControlPanel state={controls} onChange={setControls} />
-
         <button
           onClick={handleSearch}
           disabled={!origin || !destination || loading}
@@ -147,6 +134,9 @@ export default function RouteFinder() {
         >
           {loading ? "Searching..." : "Find Best Route"}
         </button>
+        <p className="text-xs text-gray-500 mt-2 leading-snug">
+          Routes incorporate historical crash data from LA City open-data (through March 2024). This is informational, not a safety guarantee — always drive defensively.
+        </p>
 
         {error && <p className="text-red-600 text-sm">{error}</p>}
 

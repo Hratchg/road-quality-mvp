@@ -1,7 +1,7 @@
 import { vi, beforeEach, test, expect } from 'vitest';
 
 beforeEach(() => {
-  global.fetch = vi.fn().mockResolvedValue({
+  globalThis.fetch = vi.fn().mockResolvedValue({
     ok: true,
     json: async () => ({
       fastest_route: {
@@ -29,8 +29,8 @@ test('POST /route body has only origin/destination/max_extra_minutes (D-11-03, D
     max_extra_minutes: 5,
   });
 
-  expect(global.fetch).toHaveBeenCalledTimes(1);
-  const callArgs = (global.fetch as any).mock.calls[0];
+  expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+  const callArgs = (globalThis.fetch as any).mock.calls[0];
   const url = callArgs[0] as string;
   const init = callArgs[1] as RequestInit;
   expect(url).toMatch(/\/route$/);

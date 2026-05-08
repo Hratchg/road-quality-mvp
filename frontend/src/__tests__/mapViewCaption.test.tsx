@@ -6,7 +6,7 @@ const CAPTION = 'Crash data: LA City open-data through March 2024. Single-segmen
 
 beforeEach(() => {
   // Stub fetch so MapView's useEffect-driven segments fetch returns an empty FC and component mounts cleanly.
-  global.fetch = vi.fn().mockResolvedValue({
+  globalThis.fetch = vi.fn().mockResolvedValue({
     ok: true,
     json: async () => ({ type: 'FeatureCollection', features: [] }),
   } as Response);
