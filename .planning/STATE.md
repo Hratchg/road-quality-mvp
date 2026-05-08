@@ -4,14 +4,14 @@ milestone: v0.3.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 7 context gathered
-last_updated: "2026-05-08T00:04:36.509Z"
+last_updated: "2026-05-08T00:35:22.348Z"
 last_activity: 2026-05-08
 progress:
   total_phases: 8
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 41
-  completed_plans: 40
-  percent: 98
+  completed_plans: 42
+  percent: 100
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-23)
 ## Current Position
 
 Phase: 08 (routing-performance) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Plans: 4 of 4 complete
 Status: Ready to execute
 Last activity: 2026-05-08
@@ -61,6 +61,7 @@ Overall (M0 + M1): [██████░░░░] 62% (8 of 13 phases complete
 | Phase 08-routing-performance P01 | 12min | 1 tasks | 1 files |
 | Phase 08-routing-performance P02 | 3m 16s | 2 tasks | 2 files |
 | Phase 08-routing-performance P03 | 25min | 3 tasks | 3 files |
+| Phase 08-routing-performance P05 | 2 min | 2 tasks tasks | 2 files files |
 
 ## Accumulated Context
 
@@ -78,6 +79,7 @@ Recent decisions affecting current work:
 - [Phase ?]: psycopg2 named-parameter binding (%(o_lon)s style) mandatory for SQL with untrusted lat/lon — never f-string or .format() lat/lon into SQL. Test pins this contract (T-08-02-01 mitigation).
 - [Phase ?]: Plan 08-03 (replan): pgr_dijkstra x K with edge-weight perturbation (Yen's-style, linear in K) replaces pgr_ksp K=5 (super-linear, timed out at 12s on dense urban subgraphs). Industry-standard approach used by OSRM and Valhalla. K=5 output contract preserved (CON-route-selection-algorithm).
 - [Phase ?]: Plan 08-03: 3-attempt fallback chain catches BOTH psycopg2.errors.QueryCanceled AND empty-result conditions, with conn.rollback() between attempts. The reverted Plan 08-03 only caught empty results -- timeouts bubbled to HTTP 500 (08-PERF-NUMBERS.md Fallback Chain Observation).
+- [Phase ?]: Phase 8 docs closure: README perf claim cross-links 08-PERF-NUMBERS.md as source-of-truth; routing.py inline header at lines 272-298 cites RESEARCH §8 Pitfalls A and G to prevent re-introduction of the 2026-04-29 pgr_ksp-on-temp-table disaster.
 
 ### Pending Todos
 
@@ -112,7 +114,7 @@ Carried forward to later phases (not blockers now, will be addressed in-phase):
 
 ## Session Continuity
 
-Last session: 2026-05-08T00:04:36.505Z
+Last session: 2026-05-08T00:35:19.260Z
 Stopped at: Phase 7 context gathered
 Resume file: None
 
