@@ -77,6 +77,17 @@ Visit http://localhost:3000
 docker compose up --build
 ```
 
+## Configuration
+
+Environment variables are documented in [`.env.example`](.env.example). A few that operators may want to tune:
+
+- **`ROUTE_FILTER_BUFFER_DEG`** (default `0.03` ≈ 3.3 km) — Spatial buffer around the route bbox used by the `segment_scores` temp-table filter in [`backend/app/routes/routing.py:22`](backend/app/routes/routing.py). Wider covers more candidate detours; narrower keeps the temp-table small to honor the Phase 8 5s perf budget. Tuning rationale: see [`.planning/milestones/v0.3.0-phases/08-routing-performance/08-PERF-NUMBERS.md`](.planning/milestones/v0.3.0-phases/08-routing-performance/08-PERF-NUMBERS.md).
+- **`ROUTE_FILTER_WIDEN_FACTOR`** (default `2.0` → 6.6 km) — Multiplier for the wide-fallback buffer when the initial filter returns zero candidates. Part of the 3-attempt fallback chain: filter → wide → full ([`backend/app/routes/routing.py:23`](backend/app/routes/routing.py)). Tune up for sparse-corner routes; down for tight perf. Same tuning reference.
+- **`LACITY_APP_TOKEN`** (Phase 9, optional) — Socrata API token for `scripts/ingest_crashes.py`. Anonymous fetch works at a lower shared-IP rate limit; a token is recommended for the Phase 12 quarterly operator-driven re-pull.
+- **`LACITY_SNAP_M`** (Phase 9, default `50.0` meters) — Snap-match radius cap for crash → road-segment attribution.
+
+For the canonical v0.4.0 API contract (silent-ignore of legacy `weight_iri` / `weight_potholes`, `Deprecation` response header, locked weights `W_IRI=0.40 / W_POT=0.35 / W_CRASH=0.25`), see [`docs/API.md`](docs/API.md).
+
 ## How It Works
 
 ### Scoring
