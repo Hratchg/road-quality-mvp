@@ -78,7 +78,10 @@ Full details in `milestones/v0.3.0-ROADMAP.md`. Audit: `milestones/v0.3.0-MILEST
   3. `compute_segment_cost(travel_time_s, iri_norm, pothole_total, crash_norm)` returns `travel_time_s + 0.40*iri_norm + 0.35*pothole_total + 0.25*crash_norm` with no normalization step; `normalize_weights()` is removed or marked `# DEPRECATED v0.4.0` and unused
   4. `POST /route {... "weight_iri": 0.99, "weight_potholes": 0.01}` returns the SAME route geometry as `POST /route` without those fields (semantic ignore, not just accepted; Pitfall 7 fix), AND the response carries header `Deprecation: weight_iri,weight_potholes ignored as of v0.4.0`; truly-unexpected fields like `evil_field: true` still pass through `extra='ignore'` without 422 (silent compat is the locked CON-route-api contract)
   5. 8+ unit tests pin the scoring math (severity ratio, length floor, p95 cap, no-crash-segments default to 0, locked constants); all 6 v0.2.0 + Phase-8 routing integration tests pass unchanged
-**Plans**: TBD
+**Plans** (3 plans, 3 waves):
+- [x] 10-01-PLAN.md — Severity-weight constants (8:3:1, K=3 cap) + W_IRI/W_POT/W_CRASH=0.40/0.35/0.25 in backend/app/scoring.py + retained-but-deprecated normalize_weights [Wave 1]
+- [x] 10-02-PLAN.md — compute_scores.py --source crash + --source all (correlated subquery against crash_records, p95 cap, length floor) [Wave 2]
+- [x] 10-03-PLAN.md — routing.py locked-weights wiring + Deprecation header + extra='ignore' Pydantic config + /segments crash_norm field [Wave 3]
 
 ### Phase 11: Frontend Slider Removal + Liability Disclaimer + Data-Vintage Caption
 **Goal**: The Control Panel renders only the `max_extra_minutes` slider (IRI + pothole sliders gone), the Route Finder shows the locked liability disclaimer copy at the route-selection moment, the Map View carries a one-line crash-data-vintage caption, and `/segments` exposes `crash_norm` so future debugging is possible without backend redeploy.
@@ -104,7 +107,12 @@ Full details in `milestones/v0.3.0-ROADMAP.md`. Audit: `milestones/v0.3.0-MILEST
   3. Backend redeployed with locked-weights code; frontend redeployed with slider-removal + disclaimer; GH Actions deploy.yml passes for the v0.4.0 commit; cold cross-LA route via the live demo returns 200 with a route geometry in <5s (Phase 8 perf budget intact); 3-route manual spot-check (DTLA-local + cross-LA + a known-safe arterial like Wilshire) produces routes that "make sense to a local" (Pitfall 5 sanity gate against fatal-overweighting)
   4. `.env.example` lists `ROUTE_FILTER_BUFFER_DEG=0.03` and `ROUTE_FILTER_WIDEN_FACTOR=2.0` with one-line descriptions; `README.md` Configuration section documents both env vars and cross-links `08-PERF-NUMBERS.md` for the tuning rationale (carryforward from v0.3.0 Phase 8 tech debt)
   5. First-deploy delta report records: count of `crash_records` rows by source, count of segments with non-zero `crash_norm`, and the 3 spot-checked route URLs/screenshots — committed under `.planning/phases/12-*/` so the milestone-close audit can find it
-**Plans**: TBD
+**Plans** (5 plans, 4 waves):
+- [ ] 12-01-PLAN.md — Pre-deploy `df -h` rehearsal + Migration 004 cloud apply via `flyctl ssh console -C` + post-apply schema dump [Wave 2; human-action; depends 12-05]
+- [ ] 12-02-PLAN.md — First LA City ingest on prod via host-venv + `flyctl proxy` + `compute_scores.py --source all` recompute (≥100 crash-bearing segments) [Wave 3; human-action; depends 12-01]
+- [ ] 12-03-PLAN.md — Push-to-main → GH Actions deploy verification + 3-route live smoke (DTLA + cross-LA + Wilshire Pitfall 5 sanity) + delta-report sign-off [Wave 4; human-action; depends 12-02, 12-04]
+- [ ] 12-04-PLAN.md — REQ-route-filter-env-vars-doc carryforward (.env.example + README + routing.py:22-23 cross-link) + deploy.yml pytest-timeout bump [Wave 1; autonomous]
+- [ ] 12-05-PLAN.md — 12-DELTA-REPORT.md scaffold with all D-12-20 sections (operator-fillable placeholders for Plans 12-01/02/03) [Wave 1; autonomous]
 
 ## Progress
 
@@ -122,7 +130,7 @@ Full details in `milestones/v0.3.0-ROADMAP.md`. Audit: `milestones/v0.3.0-MILEST
 | 9. Crash-Data Schema + LA City Ingest + Snap-Match | v0.4.0 | 4/4 | Complete   | 2026-05-08 |
 | 10. Crash Scoring Formula + Locked-Weight Routing API | v0.4.0 | 3/3 | Complete   | 2026-05-08 |
 | 11. Frontend Slider Removal + Disclaimer + Caption | v0.4.0 | 1/1 | Complete   | 2026-05-08 |
-| 12. Cloud Deploy + First Ingest + Verification + Doc Carryforward | v0.4.0 | 0/? | Not started | — |
+| 12. Cloud Deploy + First Ingest + Verification + Doc Carryforward | v0.4.0 | 0/5 | Not started | — |
 
 ---
 *Roadmap initialized: 2026-04-23 after ingest synthesis + codebase map*
