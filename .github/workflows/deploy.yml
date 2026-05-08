@@ -150,9 +150,14 @@ jobs:
           AUTH_SIGNING_KEY: test_key_for_ci_only_padding_padding_padding
         run: |
           # Full suite incl. SC #6 (test_db_pool), SC #7 (test_seed_topology),
-          # SC #8 (test_migration_00{2,3} via parents[2] resolution),
-          # SC #9 (test_routing_pool_release), and Phase 5's CORS / health tests.
-          pytest -v
+          # SC #8 (test_migration_00{2,3,4} via parents[2] resolution),
+          # SC #9 (test_routing_pool_release), Phase 5's CORS / health tests,
+          # Phase 9's lacity_socrata + snap + ingest_crashes integration suite,
+          # and Phase 10's compute_scores --source crash + locked-weights routing.
+          # --timeout=180 added (Phase 12 carryforward) for the live-DB integration
+          # tests that grew with v0.4.0; pre-v0.4.0 default of 60s tripped the
+          # parallel-agent test_idempotent_reingest path (deferred-items.md).
+          pytest -v --timeout=180
       - name: Build smoke — deploy/db/Dockerfile (SC #1 + SC #7 foundation)
         if: needs.changes.outputs.db == 'true'
         run: bash deploy/db/test-build.sh
