@@ -76,11 +76,11 @@ Scope for the next milestone: post-MVP features + real-data accuracy + public de
 
 ### Authentication
 
-- [ ] **REQ-user-auth**: Backend authentication gates state-mutating and expensive endpoints. Acceptance:
-  - User can sign up and sign in via a minimal flow (API endpoints at minimum; UI optional for M1 demo).
-  - `POST /route` and `/cache/*` require a valid session/token; `GET /health` and `GET /segments` may remain public for the demo.
-  - Invalid/missing credentials return `401`; all responses stay within existing shapes elsewhere.
-  - Passwords (or equivalent secrets) are hashed; no plaintext credentials in the DB.
+- [~] **REQ-user-auth**: Backend authentication gates state-mutating and expensive endpoints. **SUPERSEDED by commit `d0ef452` (2026-04-28)** — operator decision to make the public demo fully open. Phase 4 originally satisfied this requirement (JWT + pwdlib argon2id + sign-in modal + demo account, validated 8-scenario curl UAT 2026-04-27); commit d0ef452 then unmounted the auth router, removed the frontend SignInModal, and dropped the `Depends(get_current_user_id)` gates from `/route` and `/cache/*` so the demo is reachable without sign-up. Backend auth modules (`backend/app/auth/{tokens,passwords,dependencies}.py`) remain in tree as dormant code, ready to re-mount as an env-var-gated toggle if the demo target ever shifts back to authenticated. Original acceptance criteria (registration, login, 401 on invalid creds, hashed passwords) preserved as historical record:
+  - ~~User can sign up and sign in via a minimal flow (API endpoints at minimum; UI optional for M1 demo).~~
+  - ~~`POST /route` and `/cache/*` require a valid session/token; `GET /health` and `GET /segments` may remain public for the demo.~~
+  - ~~Invalid/missing credentials return `401`; all responses stay within existing shapes elsewhere.~~
+  - ~~Passwords (or equivalent secrets) are hashed; no plaintext credentials in the DB.~~
 
 ### Production Deployment
 
@@ -151,7 +151,7 @@ Explicit exclusions for M1. Revisit post-M1 if demo validates the concept.
 | REQ-mvp-integrity-cleanup | Phase 1 | Pending |
 | REQ-real-data-accuracy | Phase 2 | Pending |
 | REQ-mapillary-pipeline | Phase 3 | Pending |
-| REQ-user-auth | Phase 4 | Pending |
+| REQ-user-auth | Phase 4 | Superseded (d0ef452 — public demo, no auth) |
 | REQ-prod-deploy | Phase 5 | Pending |
 | REQ-public-demo | Phase 6 | Pending |
 
