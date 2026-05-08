@@ -46,7 +46,7 @@ Full details in `milestones/v0.3.0-ROADMAP.md`. Audit: `milestones/v0.3.0-MILEST
 ### v0.4.0 M2 Crash-Aware Routing (Phases 9-12) — IN PROGRESS
 
 - [x] **Phase 9: Crash-Data Schema + LA City Ingest + Naive Snap-Match** — Migration 004, `scripts/ingest_crashes.py`, `data_pipeline/lacity_socrata.py`, `data_pipeline/lacity_mocodes.py`, `snap_match_crash()`; LA City rows land in `crash_records` with single-segment FK (completed 2026-05-08)
-- [ ] **Phase 10: Crash Scoring Formula + Locked-Weight Routing API** — `compute_scores.py --source crash`, `crash_norm` p95-capped, module constants `W_IRI/W_POT/W_CRASH = 0.40/0.35/0.25`, silent-ignore Pydantic `extra='ignore'`, deprecation header
+- [x] **Phase 10: Crash Scoring Formula + Locked-Weight Routing API** — `compute_scores.py --source crash`, `crash_norm` p95-capped, module constants `W_IRI/W_POT/W_CRASH = 0.40/0.35/0.25`, silent-ignore Pydantic `extra='ignore'`, deprecation header (completed 2026-05-08)
 - [ ] **Phase 11: Frontend Slider Removal + Liability Disclaimer + Data-Vintage Caption** — `ControlPanel.tsx` strips IRI/pothole sliders (max-extra-minutes preserved), `RouteFinder.tsx` drops the field from `/route` POST, disclaimer + caption rendered with locked copy
 - [ ] **Phase 12: Cloud Deploy + First LA City Ingest + Verification + Doc Carryforward** — Migration 004 applied via `flyctl ssh console -C` (locked anti-pattern), first ingest + recompute against live DB, backend+frontend redeploy, manual route spot-checks, `.env.example` + README document `ROUTE_FILTER_BUFFER_DEG` / `ROUTE_FILTER_WIDEN_FACTOR` (carryforward)
 
@@ -119,7 +119,7 @@ Full details in `milestones/v0.3.0-ROADMAP.md`. Audit: `milestones/v0.3.0-MILEST
 | 7. LA-Trained Detector | v0.3.0 | 7/8 | Complete (negative) | 2026-05-07 |
 | 8. Routing Performance | v0.3.0 | 5/5 | Complete | 2026-05-07 |
 | 9. Crash-Data Schema + LA City Ingest + Snap-Match | v0.4.0 | 4/4 | Complete   | 2026-05-08 |
-| 10. Crash Scoring Formula + Locked-Weight Routing API | v0.4.0 | 1/3 | In Progress|  |
+| 10. Crash Scoring Formula + Locked-Weight Routing API | v0.4.0 | 3/3 | Complete   | 2026-05-08 |
 | 11. Frontend Slider Removal + Disclaimer + Caption | v0.4.0 | 0/? | Not started | — |
 | 12. Cloud Deploy + First Ingest + Verification + Doc Carryforward | v0.4.0 | 0/? | Not started | — |
 
