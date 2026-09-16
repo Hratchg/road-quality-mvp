@@ -11,6 +11,16 @@ All tests use the committed CSV fixture at data/crashes_la/lacity_fixture.csv
 (per D-09-06: no live API in CI). Each test cleans up crash_records before
 running so re-running pytest is repeatable.
 
+Snap target: the driver snaps each crash to the nearest road_segments row
+within 50 m. CI's postgres service container has migrations only (no
+seed_data.py), so road_segments is EMPTY there and every fixture row would be
+dropped as outside-snap — inserted == 0, which broke test_idempotent_reingest
+on the first CI run of Phase 9 (2026-09-16). The clean_db fixture therefore
+guarantees at least one segment within snap range of the fixture's
+MIDBLOCK-001 point by inserting a short synthetic LineString when none exists,
+and removes it again on teardown. On a fully seeded local DB the real LA
+segments satisfy the check and nothing is inserted.
+
 Auto-skip when DATABASE_URL unreachable (db_available fixture in conftest.py).
 """
 from __future__ import annotations
@@ -46,13 +56,81 @@ def _wipe_lacity_crash_records(db_conn):
     db_conn.commit()
 
 
+# Coordinates of the fixture's MIDBLOCK-001 row (data/crashes_la/lacity_fixture.csv
+# line 2). The synthetic segment below passes straight through this point so
+# the driver snaps it at ~0 m, well inside the default 50 m radius.
+SNAP_TARGET_LAT = 34.0535
+SNAP_TARGET_LON = -118.2434
+SNAP_RADIUS_M = 50.0
+
+
+def _ensure_snap_target_segment(db_conn) -> int | None:
+    """Guarantee a road_segments row within SNAP_RADIUS_M of the snap target.
+
+    Returns the id of a synthetic segment if one had to be inserted (caller
+    must delete it on teardown), or None when an existing segment (seeded LA
+    data) already satisfies the check.
+    """
+    with db_conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT EXISTS (
+                SELECT 1 FROM road_segments
+                WHERE ST_DWithin(
+                    geom::geography,
+                    ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography,
+                    %s
+                )
+            ) AS present
+            """,
+            (SNAP_TARGET_LON, SNAP_TARGET_LAT, SNAP_RADIUS_M),
+        )
+        row = cur.fetchone()
+        present = row["present"] if isinstance(row, dict) else row[0]
+        if present:
+            return None
+        # ~0.001 deg of longitude at LA latitude is ~92 m; the line is
+        # centred on the target so the crash sits at its midpoint.
+        cur.execute(
+            """
+            INSERT INTO road_segments (osm_way_id, geom, length_m, travel_time_s)
+            VALUES (
+                NULL,
+                ST_SetSRID(ST_MakeLine(
+                    ST_MakePoint(%s, %s), ST_MakePoint(%s, %s)
+                ), 4326),
+                92.0,
+                7.0
+            )
+            RETURNING id
+            """,
+            (
+                SNAP_TARGET_LON - 0.0005, SNAP_TARGET_LAT,
+                SNAP_TARGET_LON + 0.0005, SNAP_TARGET_LAT,
+            ),
+        )
+        row = cur.fetchone()
+        seg_id = row["id"] if isinstance(row, dict) else row[0]
+    db_conn.commit()
+    return int(seg_id)
+
+
+def _delete_segment(db_conn, seg_id: int) -> None:
+    with db_conn.cursor() as cur:
+        cur.execute("DELETE FROM road_segments WHERE id = %s", (seg_id,))
+    db_conn.commit()
+
+
 @pytest.fixture
 def clean_db(db_conn):
-    """Apply migration + wipe crash_records before each test."""
+    """Apply migration + ensure a snap target + wipe crash_records before each test."""
     _ensure_migration_applied(db_conn)
+    synthetic_seg_id = _ensure_snap_target_segment(db_conn)
     _wipe_lacity_crash_records(db_conn)
     yield db_conn
     _wipe_lacity_crash_records(db_conn)
+    if synthetic_seg_id is not None:
+        _delete_segment(db_conn, synthetic_seg_id)
 
 
 def _run_driver(*extra_args: str) -> tuple[int, dict]:
