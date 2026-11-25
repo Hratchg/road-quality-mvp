@@ -12,6 +12,9 @@ from app.scoring import (
     W_IRI,
     W_POT,
     compute_segment_cost,
+    quality_cost_sql,
+    QUALITY_PENALTY_SCALE,
+    POTHOLE_SATURATION,
     normalize_weights,
 )
 
@@ -230,20 +233,21 @@ class TestCrashScoringMath:
 
 
 class TestComputeSegmentCostV4:
-    """Pin the new 4-arg compute_segment_cost (D-10-02): no normalization
-    step, exact arithmetic over locked outer weights.
+    """Pin compute_segment_cost: travel time scaled by a 0..1 quality
+    penalty built from the locked outer weights (pothole-detour fix).
     """
 
     def test_basic_arithmetic(self):
-        # 100 + 0.40*0.5 + 0.35*2.0 + 0.25*0.3
-        # = 100 + 0.20 + 0.70 + 0.075 = 100.975
+        # penalty = 0.40*0.5 + 0.35*min(2.0/2.0, 1) + 0.25*0.3
+        #         = 0.20 + 0.35 + 0.075 = 0.625
+        # cost = 100 * (1 + 5.0*0.625) = 412.5
         cost = compute_segment_cost(
             travel_time_s=100.0,
             iri_norm=0.5,
             pothole_total=2.0,
             crash_norm=0.3,
         )
-        assert abs(cost - 100.975) < 1e-9
+        assert abs(cost - 412.5) < 1e-9
 
     def test_signature_is_four_args_no_kwargs(self):
         # D-10-02: drop the v0.2.0 w_iri/w_pot params. Pin exact parameter
@@ -267,49 +271,57 @@ class TestComputeSegmentCostV4:
         )
         assert abs(cost - 200.0) < 1e-9
 
-    def test_no_normalization_step(self):
-        # D-10-02: constants already sum to 1.0; no renormalization.
-        # If the implementer accidentally divided by (W_IRI+W_POT+W_CRASH)
-        # this case alone wouldn't catch it (1.0 stays 1.0), but combined
-        # with test_basic_arithmetic above (heterogeneous values diverge
-        # under double-normalization) the contract is fully pinned.
+    def test_worst_segment_costs_one_plus_scale(self):
+        # Weights sum to 1, so the worst segment costs (1 + SCALE) x time.
         cost = compute_segment_cost(
-            travel_time_s=0.0,
+            travel_time_s=10.0,
             iri_norm=1.0,
-            pothole_total=1.0,
+            pothole_total=99.0,
             crash_norm=1.0,
         )
-        assert abs(cost - 1.0) < 1e-9
+        assert abs(cost - 10.0 * (1 + QUALITY_PENALTY_SCALE)) < 1e-9
 
-    def test_iri_only_contribution(self):
-        # 10 * W_IRI = 10 * 0.40 = 4.0. Confirms multiply-not-add.
-        cost = compute_segment_cost(
-            travel_time_s=0.0,
-            iri_norm=10.0,
-            pothole_total=0.0,
-            crash_norm=0.0,
-        )
-        assert abs(cost - 4.0) < 1e-9
+    def test_inputs_are_clamped(self):
+        # Out-of-range inputs saturate instead of exploding the cost.
+        hi = compute_segment_cost(10.0, 5.0, 1000.0, 5.0)
+        assert abs(hi - 10.0 * (1 + QUALITY_PENALTY_SCALE)) < 1e-9
+        lo = compute_segment_cost(10.0, -1.0, -1.0, -1.0)
+        assert abs(lo - 10.0) < 1e-9
 
-    def test_pothole_only_contribution(self):
-        # 10 * W_POT = 10 * 0.35 = 3.5.
-        cost = compute_segment_cost(
-            travel_time_s=0.0,
-            iri_norm=0.0,
-            pothole_total=10.0,
-            crash_norm=0.0,
-        )
-        assert abs(cost - 3.5) < 1e-9
+    def test_pothole_penalty_is_material(self):
+        # The original bug: potholes added ~1 second to a 30-second segment,
+        # so the "best" route never detoured. A saturated pothole segment
+        # must now cost substantially more than a clean one.
+        clean = compute_segment_cost(30.0, 0.0, 0.0, 0.0)
+        potholed = compute_segment_cost(30.0, 0.0, POTHOLE_SATURATION, 0.0)
+        assert potholed >= 1.5 * clean
 
-    def test_crash_only_contribution(self):
-        # 10 * W_CRASH = 10 * 0.25 = 2.5.
-        cost = compute_segment_cost(
-            travel_time_s=0.0,
-            iri_norm=0.0,
-            pothole_total=0.0,
-            crash_norm=10.0,
+    def test_cost_scales_with_travel_time(self):
+        # Same road quality, twice as long -> twice the cost.
+        a = compute_segment_cost(10.0, 0.3, 1.0, 0.2)
+        b = compute_segment_cost(20.0, 0.3, 1.0, 0.2)
+        assert abs(b - 2 * a) < 1e-9
+
+    def test_sql_expression_matches_python(self):
+        # quality_cost_sql must compute the same number as the Python cost,
+        # otherwise the quality dijkstra optimises something other than the
+        # total_cost the API reports. Evaluate the SQL with Python shims for
+        # LEAST / GREATEST / COALESCE.
+        expr = (
+            quality_cost_sql("t", "i", "p", "c")
+            .replace("LEAST", "min")
+            .replace("GREATEST", "max")
+            .replace("COALESCE", "_coalesce")
         )
-        assert abs(cost - 2.5) < 1e-9
+        env = {"min": min, "max": max, "_coalesce": lambda v, d: d if v is None else v}
+        for t, i, p, c in [
+            (100.0, 0.5, 2.0, 0.3),
+            (30.0, 0.0, 7.5, 0.0),
+            (12.0, 1.4, 0.4, 0.9),
+            (8.0, -0.2, 0.0, 0.0),
+        ]:
+            got = eval(expr, {**env, "t": t, "i": i, "p": p, "c": c})
+            assert abs(got - compute_segment_cost(t, i, p, c)) < 1e-9
 
 
 class TestNormalizeWeightsDeprecated:

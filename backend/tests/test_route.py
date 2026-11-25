@@ -86,6 +86,16 @@ def _mock_dijkstra_empty():
     return []
 
 
+def _mock_quality_path():
+    """find_quality_path() result: the quality-weighted dijkstra picks the
+    smooth path (edges 3, 4). It duplicates path 2, so find_route() dedupes
+    it rather than adding a third candidate."""
+    return [
+        {"seq": 1, "edge": 3, "cost": 70.0},
+        {"seq": 2, "edge": 4, "cost": 70.0},
+    ]
+
+
 def _setup_mock_conn(mock_conn):
     """Wire up mock connection with cursor context managers."""
     mock_cursor = MagicMock()
@@ -104,6 +114,7 @@ def test_route_returns_best_and_fastest(mock_conn):
     mock_cursor.fetchone.side_effect = [
         {"id": 100},  # origin node
         {"id": 200},  # destination node
+        {"t": 140.0},  # quality path travel time (fits the 5 min budget)
     ]
     # find_route() now calls find_k_shortest_via_dijkstra (K=5 iterations).
     # Mock iteration 1 returns path 1, iteration 2 returns path 2, iteration 3
@@ -115,6 +126,7 @@ def test_route_returns_best_and_fastest(mock_conn):
         _mock_dijkstra_iteration_1(),  # K=1 dijkstra result (path 1)
         _mock_dijkstra_iteration_2(),  # K=2 dijkstra result (path 2)
         _mock_dijkstra_empty(),         # K=3 dijkstra returns empty -> helper breaks
+        _mock_quality_path(),           # find_quality_path (quality-weighted dijkstra)
         _mock_segment_data(),           # SEGMENTS_BY_IDS_SQL
     ]
 
@@ -138,6 +150,11 @@ def test_route_returns_best_and_fastest(mock_conn):
            data["fastest_route"]["total_time_s"] == data["best_route"]["total_time_s"]
     # Path 2 should have lower cost (smoother road)
     assert data["best_route"]["total_cost"] <= data["fastest_route"]["total_cost"]
+    # Regression (pothole-detour fix): with 20s of slack in a 5-minute budget,
+    # the best route must actually take the smooth detour, not echo fastest.
+    assert data["fastest_route"]["total_time_s"] == 120.0
+    assert data["best_route"]["total_time_s"] == 140.0
+    assert data["best_route"]["geojson"] != data["fastest_route"]["geojson"]
 
 
 @patch("app.routes.routing.get_connection")
@@ -147,6 +164,8 @@ def test_route_returns_warning_with_zero_budget(mock_conn):
     mock_cursor.fetchone.side_effect = [
         {"id": 100},
         {"id": 200},
+        {"t": 140.0},  # scale-3 quality path: over the 0 min budget
+        {"t": 140.0},  # gentler scale: still over budget
     ]
     # See test_route_returns_best_and_fastest above for the per-iteration mock
     # rationale. Same 4-element fetchall.side_effect: 3 dijkstra iterations
@@ -155,6 +174,8 @@ def test_route_returns_warning_with_zero_budget(mock_conn):
         _mock_dijkstra_iteration_1(),
         _mock_dijkstra_iteration_2(),
         _mock_dijkstra_empty(),
+        _mock_quality_path(),
+        _mock_quality_path(),   # gentler-scale retry (same smooth path)
         _mock_segment_data(),
     ]
 
@@ -192,14 +213,14 @@ def test_identical_route_with_legacy_weight_fields(mock_conn):
     # Two requests, each: 2 SNAP fetchone + 4 fetchall calls
     # (3 dijkstra iterations + 1 segment data).
     mock_cursor.fetchone.side_effect = [
-        {"id": 100}, {"id": 200},
-        {"id": 100}, {"id": 200},
+        {"id": 100}, {"id": 200}, {"t": 140.0},
+        {"id": 100}, {"id": 200}, {"t": 140.0},
     ]
     mock_cursor.fetchall.side_effect = [
         _mock_dijkstra_iteration_1(), _mock_dijkstra_iteration_2(),
-        _mock_dijkstra_empty(), _mock_segment_data(),
+        _mock_dijkstra_empty(), _mock_quality_path(), _mock_segment_data(),
         _mock_dijkstra_iteration_1(), _mock_dijkstra_iteration_2(),
-        _mock_dijkstra_empty(), _mock_segment_data(),
+        _mock_dijkstra_empty(), _mock_quality_path(), _mock_segment_data(),
     ]
 
     client = TestClient(app)
@@ -248,10 +269,10 @@ def test_deprecation_header_on_success(mock_conn):
     """D-10-15: every /route response carries Deprecation header
     with the EXACT locked-string value. Success path."""
     mock_cursor = _setup_mock_conn(mock_conn)
-    mock_cursor.fetchone.side_effect = [{"id": 100}, {"id": 200}]
+    mock_cursor.fetchone.side_effect = [{"id": 100}, {"id": 200}, {"t": 140.0}]
     mock_cursor.fetchall.side_effect = [
         _mock_dijkstra_iteration_1(), _mock_dijkstra_iteration_2(),
-        _mock_dijkstra_empty(), _mock_segment_data(),
+        _mock_dijkstra_empty(), _mock_quality_path(), _mock_segment_data(),
     ]
     from app.cache import clear_all_caches
     clear_all_caches()
@@ -278,12 +299,12 @@ def test_deprecation_header_on_cache_hit(mock_conn):
     # Second request: 2 SNAP fetchone (audit log path) and then cache hit
     # (no fetchall consumed beyond the first request's allocation).
     mock_cursor.fetchone.side_effect = [
-        {"id": 100}, {"id": 200},
-        {"id": 100}, {"id": 200},
+        {"id": 100}, {"id": 200}, {"t": 140.0},
+        {"id": 100}, {"id": 200}, {"t": 140.0},
     ]
     mock_cursor.fetchall.side_effect = [
         _mock_dijkstra_iteration_1(), _mock_dijkstra_iteration_2(),
-        _mock_dijkstra_empty(), _mock_segment_data(),
+        _mock_dijkstra_empty(), _mock_quality_path(), _mock_segment_data(),
     ]
     from app.cache import clear_all_caches
     clear_all_caches()
@@ -348,14 +369,14 @@ def test_cache_key_ignores_weight_fields(mock_conn):
     INSERT."""
     mock_cursor = _setup_mock_conn(mock_conn)
     mock_cursor.fetchone.side_effect = [
-        {"id": 100}, {"id": 200},  # first request snap
+        {"id": 100}, {"id": 200}, {"t": 140.0},  # first request snap + quality time
         {"id": 100}, {"id": 200},  # second request snap (only audit, then cache hit)
     ]
     # Provide segment data ONLY for the first request — if the second
     # request is NOT a cache hit, fetchall will run out and StopIteration.
     mock_cursor.fetchall.side_effect = [
         _mock_dijkstra_iteration_1(), _mock_dijkstra_iteration_2(),
-        _mock_dijkstra_empty(), _mock_segment_data(),
+        _mock_dijkstra_empty(), _mock_quality_path(), _mock_segment_data(),
         # Intentionally NO further side effects — second request must hit cache.
     ]
     from app.cache import clear_all_caches
@@ -383,3 +404,66 @@ def test_cache_key_ignores_weight_fields(mock_conn):
     assert resp_b.status_code == 200
     # Same response (cache hit).
     assert resp_a.json() == resp_b.json()
+
+
+@patch("app.routes.routing.get_connection")
+def test_quality_path_adds_detour_missing_from_time_candidates(mock_conn):
+    """Pothole-detour regression: the time-only K-shortest search returns
+    just the fastest (pothole-heavy) path. The quality-weighted dijkstra
+    finds the smooth path; find_route() must add it as a candidate and pick
+    it as best_route when it fits the time budget."""
+    from app.cache import clear_all_caches
+    clear_all_caches()
+    mock_cursor = _setup_mock_conn(mock_conn)
+    mock_cursor.fetchone.side_effect = [{"id": 100}, {"id": 200}, {"t": 140.0}]
+    mock_cursor.fetchall.side_effect = [
+        _mock_dijkstra_iteration_1(),  # time-based path 1 (potholes)
+        _mock_dijkstra_empty(),        # no time-based alternative
+        _mock_quality_path(),          # quality dijkstra -> smooth path
+        _mock_segment_data(),
+    ]
+
+    client = TestClient(app)
+    response = client.post("/route", json={
+        "origin": {"lat": 34.051, "lon": -118.241},
+        "destination": {"lat": 34.061, "lon": -118.251},
+        "max_extra_minutes": 5,
+    })
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["warning"] is None
+    assert data["fastest_route"]["total_time_s"] == 120.0
+    assert data["best_route"]["total_time_s"] == 140.0
+    assert data["best_route"]["total_cost"] < data["fastest_route"]["total_cost"]
+    assert [m["id"] for m in data["per_segment_metrics"]] == [3, 4]
+
+
+@patch("app.routes.routing.get_connection")
+def test_quality_path_outside_budget_falls_back_to_fastest(mock_conn):
+    """The quality path is only a candidate: the time budget still wins."""
+    from app.cache import clear_all_caches
+    clear_all_caches()
+    mock_cursor = _setup_mock_conn(mock_conn)
+    mock_cursor.fetchone.side_effect = [
+        {"id": 100}, {"id": 200}, {"t": 140.0}, {"t": 140.0},
+    ]
+    mock_cursor.fetchall.side_effect = [
+        _mock_dijkstra_iteration_1(),
+        _mock_dijkstra_empty(),
+        _mock_quality_path(),
+        _mock_quality_path(),  # gentler-scale retry, still over budget
+        _mock_segment_data(),
+    ]
+
+    client = TestClient(app)
+    response = client.post("/route", json={
+        "origin": {"lat": 34.052, "lon": -118.242},
+        "destination": {"lat": 34.062, "lon": -118.252},
+        "max_extra_minutes": 0,
+    })
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["best_route"]["total_time_s"] == 120.0
+    assert data["best_route"]["geojson"] == data["fastest_route"]["geojson"]

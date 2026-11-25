@@ -257,3 +257,46 @@ def test_dijkstra_helper_early_exit_at_none_runs_full_k():
     # All 5 iterations executed, all 5 path_ids present.
     assert sorted({r["path_id"] for r in rows}) == [1, 2, 3, 4, 5]
     assert cur.execute.call_count == 5
+
+
+# ---------------------------------------------------------------------------
+# Pothole-detour fix -- find_quality_path unit tests
+# ---------------------------------------------------------------------------
+
+
+def test_filtered_edges_carry_quality_penalty():
+    """The temp table must carry the quality penalty so the quality dijkstra
+    can run on the same corridor without re-joining segment_scores."""
+    from app.routes import routing
+    sql = routing.CREATE_FILTERED_EDGES_SQL
+    assert "AS quality_penalty" in sql
+    assert "LEFT JOIN segment_scores" in sql
+
+
+def test_quality_path_uses_scaled_penalty_on_filtered_table():
+    from app.routes import routing
+    cur = _make_cursor([[{"seq": 1, "edge": 7, "cost": 12.0}]])
+    rows = routing.find_quality_path(cur, 1, 2, edges_table="rq_filtered_edges", scale=3.0)
+    assert [r["edge"] for r in rows] == [7]
+    inner = cur.execute.call_args[0][1]["inner_sql"]
+    assert "FROM rq_filtered_edges" in inner
+    assert "travel_time_s * (1 + 3.0 * quality_penalty)" in inner
+
+
+def test_quality_path_full_graph_fallback_joins_scores():
+    from app.routes import routing
+    cur = _make_cursor([[]])
+    routing.find_quality_path(cur, 1, 2, edges_table="road_segments", scale=1.0)
+    inner = cur.execute.call_args[0][1]["inner_sql"]
+    assert "FROM road_segments rs" in inner
+    assert "LEFT JOIN segment_scores ss" in inner
+    assert "(1 + 1.0 * " in inner
+
+
+def test_quality_scales_start_at_scoring_scale():
+    """The first quality pass must optimise exactly what the API reports as
+    total_cost, so it uses the scoring module's scale."""
+    from app.routes import routing
+    from app.scoring import QUALITY_PENALTY_SCALE
+    assert routing.QUALITY_SCALES[0] == QUALITY_PENALTY_SCALE
+    assert all(b < a for a, b in zip(routing.QUALITY_SCALES, routing.QUALITY_SCALES[1:]))

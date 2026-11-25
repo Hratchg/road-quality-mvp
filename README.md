@@ -28,10 +28,11 @@ flowchart LR
 Each road segment carries a roughness score (IRI, normalized 0 to 1) and pothole scores (moderate and severe, from detection count and confidence). A route's cost is:
 
 ```
-cost = travel_time + w_IRI * IRI_norm + w_pothole * pothole_score_total
+penalty = w_IRI * IRI_norm + w_pothole * pothole_score + w_crash * crash_norm   (0 to 1)
+cost    = travel_time * (1 + 5 * penalty)
 ```
 
-The API finds several candidate paths, drops any that exceed the fastest route's time by more than your budget, and returns the lowest-cost one as the "best" route. Details: [docs/API.md](docs/API.md).
+So a minute on a pothole-heavy street counts as almost three minutes. The API takes the fastest paths plus the path that minimizes this cost, drops any that exceed the fastest route's time by more than your budget, and returns the lowest-cost one as the "best" route. Details: [docs/API.md](docs/API.md).
 
 ## Tech Stack
 

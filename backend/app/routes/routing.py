@@ -5,7 +5,11 @@ import psycopg2  # for psycopg2.errors.QueryCanceled in find_route() Task 2
 from fastapi import APIRouter, Response
 from app.db import get_connection
 from app.models import RouteRequest, RouteResponse, RouteInfo, SegmentMetric
-from app.scoring import compute_segment_cost
+from app.scoring import (
+    QUALITY_PENALTY_SCALE,
+    compute_segment_cost,
+    quality_penalty_sql,
+)
 from app.cache import get_route_cached, set_route_cached, make_route_cache_key
 
 router = APIRouter()
@@ -40,17 +44,23 @@ KSP_FULL_SQL = """
 # pgr_createTopology failed to wire up — those would be useless to pgr_ksp.
 CREATE_FILTERED_EDGES_SQL = """
     CREATE TEMP TABLE rq_filtered_edges ON COMMIT DROP AS
-    SELECT id, source, target, travel_time_s
-    FROM road_segments
-    WHERE geom && ST_MakeEnvelope(
+    SELECT rs.id, rs.source, rs.target, rs.travel_time_s,
+           """ + quality_penalty_sql(
+               iri="rs.iri_norm",
+               pothole="ss.pothole_score_total",
+               crash="ss.crash_norm",
+           ) + """ AS quality_penalty
+    FROM road_segments rs
+    LEFT JOIN segment_scores ss ON ss.segment_id = rs.id
+    WHERE rs.geom && ST_MakeEnvelope(
         LEAST(%(o_lon)s, %(d_lon)s) - %(buf)s,
         LEAST(%(o_lat)s, %(d_lat)s) - %(buf)s,
         GREATEST(%(o_lon)s, %(d_lon)s) + %(buf)s,
         GREATEST(%(o_lat)s, %(d_lat)s) + %(buf)s,
         4326
     )
-    AND source IS NOT NULL
-    AND target IS NOT NULL
+    AND rs.source IS NOT NULL
+    AND rs.target IS NOT NULL
 """
 
 # Phase 8 Pitfall G: pgr_ksp's inner Dijkstra joins on source/target. Without
@@ -243,6 +253,84 @@ def find_k_shortest_via_dijkstra(
     return rows
 
 
+# Inner edge SQL for the quality-aware Dijkstra. rq_filtered_edges already
+# carries a precomputed quality_penalty column (see CREATE_FILTERED_EDGES_SQL);
+# the full-graph fallback joins segment_scores on the fly. {scale} is filled
+# in with a float() from QUALITY_SCALES below, never user input.
+QUALITY_EDGES_SQL = {
+    "rq_filtered_edges": (
+        "SELECT id, source, target, "
+        "travel_time_s * (1 + {scale} * quality_penalty) AS cost "
+        "FROM rq_filtered_edges"
+    ),
+    "road_segments": (
+        "SELECT rs.id, rs.source, rs.target, "
+        "rs.travel_time_s * (1 + {scale} * "
+        + quality_penalty_sql(
+            iri="rs.iri_norm",
+            pothole="ss.pothole_score_total",
+            crash="ss.crash_norm",
+        )
+        + ") AS cost FROM road_segments rs "
+        "LEFT JOIN segment_scores ss ON ss.segment_id = rs.id "
+        "WHERE rs.source IS NOT NULL AND rs.target IS NOT NULL"
+    ),
+}
+
+# Penalty scales tried in order by find_route(). The first is the scale the
+# API scores routes with (compute_segment_cost). If that path blows the
+# user's time budget, one gentler pass looks for a smaller detour that still
+# dodges the worst segments, instead of giving up and echoing the fastest.
+QUALITY_SCALES = (QUALITY_PENALTY_SCALE, QUALITY_PENALTY_SCALE / 3)
+
+PATH_TRAVEL_TIME_SQL = {
+    "rq_filtered_edges": (
+        "SELECT COALESCE(SUM(travel_time_s), 0) AS t "
+        "FROM rq_filtered_edges WHERE id = ANY(%s)"
+    ),
+    "road_segments": (
+        "SELECT COALESCE(SUM(travel_time_s), 0) AS t "
+        "FROM road_segments WHERE id = ANY(%s)"
+    ),
+}
+
+
+def find_quality_path(
+    cur,
+    origin_node: int,
+    dest_node: int,
+    edges_table: str = "rq_filtered_edges",
+    scale: float = QUALITY_PENALTY_SCALE,
+) -> list[dict]:
+    """Run one pgr_dijkstra over the quality-weighted cost.
+
+    Why this exists (pothole-detour fix): the K candidate paths from
+    find_k_shortest_via_dijkstra() are all generated from travel time alone.
+    Path 1 is the fastest, and paths 2..k avoid *every* edge of earlier
+    paths (1000x penalty), so they are big detours that usually blow the
+    time budget. None of them is steered by road quality, so the API had
+    nothing pothole-avoiding to pick from and "best" == "fastest".
+
+    This adds the candidate that minimises
+    travel_time * (1 + scale * quality_penalty) over the same edge set.
+    At the default scale that is exactly compute_segment_cost().
+    find_route() then applies the time budget as before.
+
+    Returns rows shaped like pgr_dijkstra output: [{"seq", "edge", "cost"}].
+    `edges_table` is caller-controlled (a key of QUALITY_EDGES_SQL), never
+    user input.
+    """
+    cur.execute(
+        PGR_DIJKSTRA_OUTER_SQL,
+        {
+            "inner_sql": QUALITY_EDGES_SQL[edges_table].format(scale=float(scale)),
+            "origin": origin_node,
+            "dest": dest_node,
+        },
+    )
+    return cur.fetchall()
+
+
 @router.post("/route", response_model=RouteResponse)
 def find_route(req: RouteRequest, response: Response):
     # D-10-15 + Pitfall 4: set Deprecation header at the TOP of the handler,
@@ -313,6 +401,7 @@ def find_route(req: RouteRequest, response: Response):
             dest_node = cur.fetchone()["id"]
 
             ksp_rows: list[dict] = []
+            edges_table_used = "rq_filtered_edges"
             bbox_params = {
                 "o_lon": req.origin.lon, "o_lat": req.origin.lat,
                 "d_lon": req.destination.lon, "d_lat": req.destination.lat,
@@ -371,6 +460,7 @@ def find_route(req: RouteRequest, response: Response):
             if not ksp_rows:
                 try:
                     cur.execute("DROP TABLE IF EXISTS rq_filtered_edges")
+                    edges_table_used = "road_segments"
                     ksp_rows = find_k_shortest_via_dijkstra(
                         cur, origin_node, dest_node, k=K,
                         edges_table="road_segments",
@@ -384,6 +474,37 @@ def find_route(req: RouteRequest, response: Response):
             paths: dict[int, list[int]] = {}
             for row in ksp_rows:
                 paths.setdefault(row["path_id"], []).append(row["edge"])
+
+            # Pothole-detour fix: add the quality-optimal path as a candidate,
+            # on the same edge set that produced the time-based candidates.
+            # A timeout here is not fatal -- we still have the time-based
+            # candidates, so log nothing and carry on.
+            if paths:
+                # Path 1 is the unperturbed travel-time dijkstra, so its
+                # summed cost is the fastest travel time.
+                fastest_s = sum(
+                    r["cost"] for r in ksp_rows if r["path_id"] == 1
+                )
+                budget_s = fastest_s + req.max_extra_minutes * 60
+                try:
+                    for scale in QUALITY_SCALES:
+                        q_rows = find_quality_path(
+                            cur, origin_node, dest_node,
+                            edges_table=edges_table_used, scale=scale,
+                        )
+                        q_edges = [r["edge"] for r in q_rows]
+                        if not q_edges:
+                            break
+                        if q_edges not in paths.values():
+                            paths[max(paths) + 1] = q_edges
+                        cur.execute(
+                            PATH_TRAVEL_TIME_SQL[edges_table_used], (q_edges,)
+                        )
+                        if cur.fetchone()["t"] <= budget_s:
+                            break
+                except psycopg2.errors.QueryCanceled:
+                    # Not fatal: the time-based candidates are still usable.
+                    conn.rollback()
 
             if not paths:
                 return RouteResponse(

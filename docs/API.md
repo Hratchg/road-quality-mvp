@@ -58,7 +58,31 @@ The cost-segment formula uses three module constants from `backend/app/scoring.p
 
 Sum = 1.0 by construction (no normalization step).
 
-`compute_segment_cost(travel_time_s, iri_norm, pothole_total, crash_norm) = travel_time_s + 0.40*iri_norm + 0.35*pothole_total + 0.25*crash_norm`.
+```
+penalty = 0.40*iri_norm + 0.35*min(pothole_total / 2.0, 1) + 0.25*crash_norm   # 0..1, each term clamped
+compute_segment_cost = travel_time_s * (1 + 5.0 * penalty)
+```
+
+`QUALITY_PENALTY_SCALE = 5.0` and `POTHOLE_SATURATION = 2.0` live next to the
+weights. A segment with a saturated pothole score alone costs 2.75x its travel
+time; the worst possible segment costs 6x.
+
+Earlier versions added the weighted terms to `travel_time_s` directly
+(`t + 0.40*iri + 0.35*pot + 0.25*crash`). Quality terms of ~0..1 next to travel
+times of tens of seconds meant potholes changed the cost by about a second, so
+the "best" route was almost always the fastest one.
+
+### Candidate paths
+
+`/route` builds its candidates on the origin-destination corridor:
+
+1. Up to 3 travel-time paths (`pgr_dijkstra` with edge-weight perturbation).
+2. The quality-optimal path: one `pgr_dijkstra` over `compute_segment_cost`.
+   If it exceeds the time budget, one more pass at a third of the scale looks
+   for a smaller detour.
+
+The fastest candidate is `fastest_route`; the lowest-cost candidate within
+`fastest + max_extra_minutes` is `best_route`.
 
 These constants REPLACE the user-tunable `weight_iri` / `weight_potholes`
 sliders shipped in v0.2.0. Rationale: a single recommendation that respects
