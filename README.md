@@ -1,32 +1,48 @@
-# Road Quality / Pothole Tracker MVP
+# Road Quality Router
 
-A web application for road-quality-aware route optimization in Los Angeles. Find routes that minimize exposure to rough roads (IRI) and potholes, with a configurable time budget.
+**Pothole-aware driving routes for Los Angeles.** Pick a start and a destination and compare the fastest route with one that avoids rough roads and potholes detected by YOLOv8 in real street-level imagery, within a time budget you set.
 
-## Live Demo
+**Live demo:** [road-quality-frontend.fly.dev](https://road-quality-frontend.fly.dev/) (no sign-in; LA only)
 
-**🌐 https://road-quality-frontend.fly.dev/**
+![Demo: road segments colored by quality, then a route search from Silver Lake to Exposition Park](docs/media/road-quality-demo.gif)
 
-A public LA pothole-aware routing demo. Pick two points on the map; get a "fastest" route alongside a "best" route that detours around real Mapillary-detected potholes within a configurable time budget.
+## What's interesting
 
-**What you can do (no sign-in needed):**
-- **Map view** — Zoom around LA. Road segments are color-coded by their pothole + roughness scores.
-- **Route Finder** (`/route`) — Click two LA points and compare the fastest vs. best route side-by-side.
+- **Computer vision on real data.** Street-level photos from Mapillary across 12 LA zones run through a YOLOv8 pothole segmentation model. Detections become per-segment pothole scores that feed routing end to end.
+- **An honest negative result.** I hand-labelled 1,322 LA images and fine-tuned the detector twice; neither beat the public baseline on a held-out split, so I shipped the baseline and [documented why](docs/DETECTOR_EVAL.md).
+- **Fast routing over a big graph.** Cross-LA routes over ~209k road segments return in ~2.5s (short downtown trips ~0.4s). The fix: pre-filter an origin-destination corridor through a GiST index, then run `pgr_dijkstra` K times with edge-weight perturbation instead of Yen's k-shortest-paths.
+- **Production-shaped.** Three Fly.io apps (Postgres, API, frontend) deploy from `main` via GitHub Actions, with 200+ backend tests.
 
-**Pipeline:**
-- Imagery: real Mapillary CC-BY-SA street-level captures from 12 LA zones spanning DTLA, the Westside, the Valley fringe, and known-bad-pavement corridors (Mid-City east of La Brea, Boyle Heights, parts of South LA)
-- Detector: `keremberke/yolov8s-pothole-segmentation` (public baseline, revision-pinned). LA-specific fine-tuning was attempted in Phase 7 (1322 hand-labelled images, 171 positive bboxes, 2 training iterations) and closed as a documented negative result — both iterations failed the win-check against the public baseline on a held-out test split. Both attempted models are public on HF at `hratcho/road-quality-la-yolov8` for reproducibility. Methodology + numbers + failure analysis in [`docs/DETECTOR_EVAL.md`](docs/DETECTOR_EVAL.md).
-- Routing: real Mapillary detections drive the pothole-score signal end-to-end; segments outside the ingested coverage fall back to the synthetic IRI baseline so the routing diff stays visible LA-wide.
-- Reproducibility: dataset rebuild is one command (`python scripts/fetch_eval_data.py --build`); model weights load from a revision-pinned HuggingFace repo (pickle-ACE drift protection in `data_pipeline/detector_factory.py`); training is a single `scripts/finetune_detector.py` invocation across laptop CPU / Colab T4 / EC2 g5.xlarge recipes.
+## How it works
 
-**Scope:** LA only (bbox ≈ 20 km around `(34.0522, -118.2437)`). No account required — Map View and Route Finder are both open.
+```mermaid
+flowchart LR
+  A[Mapillary street images] --> B[YOLOv8 pothole detector]
+  B --> C[(PostGIS road segments<br/>IRI + pothole scores)]
+  D[OSM road network] --> C
+  C --> E[pgRouting: K candidate paths]
+  E --> F[FastAPI: score paths, apply time budget]
+  F --> G[React + Leaflet map]
+```
 
-## Current Status
+Each road segment carries a roughness score (IRI, normalized 0 to 1) and pothole scores (moderate and severe, from detection count and confidence). A route's cost is:
 
-**M1 shipped.** Public demo URL is live with real Mapillary detections (detected with the public-baseline YOLOv8 pothole model) and a Fly.io tri-app cloud deploy (db + backend + frontend) reproducible from `main`. Phase 7's LA-specific fine-tune was attempted and closed as documented negative — see `docs/DETECTOR_EVAL.md` for the full retrospective.
+```
+cost = travel_time + w_IRI * IRI_norm + w_pothole * pothole_score_total
+```
 
-**Routing performance (Phase 8):** cross-LA routes (~20 km, e.g. West LA → Pasadena) return in ~2.47s uncached on a fully-seeded local DB (~209k segments); short DTLA-local trips remain ~0.385s. Phase 8 fix — pre-filter the OD corridor via the GiST index into a temp table, then run pgr_dijkstra × K with edge-weight perturbation (linear in K) instead of pgr_ksp's super-linear-in-K Yen's enumeration. See [`.planning/phases/08-routing-performance/08-PERF-NUMBERS.md`](.planning/phases/08-routing-performance/08-PERF-NUMBERS.md) for the full measurement run.
+The API finds several candidate paths, drops any that exceed the fastest route's time by more than your budget, and returns the lowest-cost one as the "best" route. Details: [docs/API.md](docs/API.md).
 
-19/19 M0 backend tests + 200+ M1 backend tests passing. See `.planning/ROADMAP.md` for the full phase status.
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, react-leaflet |
+| Backend | FastAPI, Python 3.12, psycopg2 |
+| Database | PostgreSQL 16 + PostGIS 3.4 + pgRouting 3.6 |
+| ML | YOLOv8 (`keremberke/yolov8s-pothole-segmentation`), Hugging Face Hub, revision-pinned weights |
+| Data | Mapillary imagery, OSMnx road network, LA City open data |
+| Deploy | Docker Compose (local), Fly.io (production), GitHub Actions |
 
 ## Quick Start
 
@@ -87,33 +103,6 @@ Environment variables are documented in [`.env.example`](.env.example). A few th
 - **`LACITY_SNAP_M`** (Phase 9, default `50.0` meters) — Snap-match radius cap for crash → road-segment attribution.
 
 For the canonical v0.4.0 API contract (silent-ignore of legacy `weight_iri` / `weight_potholes`, `Deprecation` response header, locked weights `W_IRI=0.40 / W_POT=0.35 / W_CRASH=0.25`), see [`docs/API.md`](docs/API.md).
-
-## How It Works
-
-### Scoring
-
-Each road segment has:
-- **IRI** (International Roughness Index): normalized 0-1, where 1 = roughest
-- **Pothole scores**: moderate (0.5 weight) and severe (1.0 weight), computed from detection count and confidence
-
-Route cost per segment:
-```
-cost = travel_time + w_IRI * IRI_norm + w_pothole * pothole_score_total
-```
-
-### Weight Normalization
-
-- One metric enabled: that metric gets 100% weight
-- Both enabled: user slider values normalized to sum to 100%
-- Neither enabled: cost = travel time only
-
-### Route Selection
-
-1. Find k=5 shortest paths via pgRouting (`pgr_ksp`)
-2. Score each path using the weighted cost formula
-3. Filter by max extra time budget over the fastest route
-4. Return the lowest-cost path as "best route"
-5. If no path fits the time budget, return the fastest route with a warning
 
 ## API Endpoints
 
@@ -213,138 +202,9 @@ cd backend && python -m pytest -v
 
 19 tests covering scoring logic, models, health endpoint, segments endpoint, route endpoint, and ML detector stub.
 
-## Deploy
-
-The stack deploys to Fly.io as three apps — `road-quality-db`,
-`road-quality-backend`, `road-quality-frontend` — via a GitHub Actions
-workflow on push to `main`. The workflow lives at
-`.github/workflows/deploy.yml`; the per-app Fly configs live under
-`deploy/{db,backend,frontend}/fly.toml`. Phase 5 ships this path; Phase 6
-will use it to put the demo on a public URL.
-
-### Prerequisites
-
-1. **Fly.io account** with billing set up. Sign up at <https://fly.io/app/sign-up>.
-2. **flyctl CLI** installed locally for hotfix deploys + secret management:
-
-    ```bash
-    curl -L https://fly.io/install.sh | sh
-    flyctl auth login
-    ```
-
-3. **GitHub repo secret** `FLY_API_TOKEN` configured. Generate the token via:
-
-    ```bash
-    fly tokens create deploy -x 999999h --name "github-actions-deploy"
-    ```
-
-    Copy the output, then in GitHub: Settings → Secrets and variables → Actions → New repository secret. Name: `FLY_API_TOKEN`. Value: the token output.
-
-### Initial deploy
-
-Run these once, in order, from your local machine. After this, every push to `main` redeploys whichever app changed.
-
-1. Create the three Fly apps (one-time):
-
-    ```bash
-    flyctl apps create road-quality-db
-    flyctl apps create road-quality-backend
-    flyctl apps create road-quality-frontend
-    ```
-
-2. Generate a Postgres password and an auth signing key (32+ chars), and stash them in your shell:
-
-    ```bash
-    PG_PASSWORD=$(python3 -c "import secrets; print(secrets.token_urlsafe(24))")
-    AUTH_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
-    ```
-
-3. Set Fly secrets per [05-RESEARCH §2](.planning/phases/05-cloud-deployment/05-RESEARCH.md):
-
-    ```bash
-    # DB app
-    flyctl secrets set --app road-quality-db POSTGRES_PASSWORD="$PG_PASSWORD"
-
-    # Backend app
-    flyctl secrets set --app road-quality-backend \
-      DATABASE_URL="postgres://rq:$PG_PASSWORD@road-quality-db.internal:5432/roadquality" \
-      AUTH_SIGNING_KEY="$AUTH_KEY" \
-      ALLOWED_ORIGINS="https://road-quality-frontend.fly.dev"
-
-    # Optional: Mapillary token if you want to ingest real imagery later (Phase 6).
-    # flyctl secrets set --app road-quality-backend MAPILLARY_ACCESS_TOKEN="..."
-    ```
-
-4. Push to `main` (or trigger manually via the GitHub Actions UI). The workflow will deploy db → backend → frontend in order. Watch progress at `https://github.com/<org>/<repo>/actions`.
-
-5. After the first deploy completes, populate the routable graph (one-time; SC #7):
-
-    ```bash
-    gh workflow run deploy.yml --ref main -f seed=true
-    ```
-
-    This triggers the `seed-on-demand` job which runs `python scripts/seed_data.py` from the GH Actions runner (host venv) against the deployed Fly DB via `flyctl proxy`. The seed takes ~5 minutes (downloads OSMnx data + inserts ~10k segments + builds pgRouting topology).
-
-6. Verify the deploy:
-
-    ```bash
-    curl https://road-quality-backend.fly.dev/health
-    # Expected: {"status":"ok","db":"reachable"}
-
-    curl -I https://road-quality-frontend.fly.dev/
-    # Expected: HTTP/2 200, content-type: text/html
-    ```
-
-7. Open <https://road-quality-frontend.fly.dev/> in a browser and confirm the map renders LA segments. Sign in with the demo account (see [Public Demo Account](#public-demo-account) above).
-
-### Hotfix
-
-For urgent fixes that bypass the GH Actions queue:
-
-```bash
-# Build + deploy a single app from your local checkout
-flyctl deploy --remote-only --config deploy/backend/fly.toml --app road-quality-backend .
-```
-
-This builds on Fly's remote builder (no local Docker required) and pushes the new image. Fly does a rolling restart by default.
-
-### Rollback
-
-```bash
-# List recent images
-flyctl image list --app road-quality-backend
-
-# Roll back to the previous image
-flyctl deploy --image <previous-image-ref> --app road-quality-backend
-```
-
-There is no automated rollback — operators trigger this manually after observing a regression in Fly logs (`flyctl logs --app road-quality-backend`).
-
-### Volume snapshot caveat
-
-Fly takes nightly volume snapshots of the db app (5-day retention by default). If you ever restore a snapshot, the migrations baked into the db image will NOT re-run (Postgres' init scripts are first-boot-only). Apply migrations manually post-restore:
-
-```bash
-flyctl ssh console --app road-quality-db -C \
-  "psql -U rq -d roadquality -f /docker-entrypoint-initdb.d/01-schema.sql"
-# Repeat for 02-mapillary.sql, 03-users.sql, etc.
-```
-
-All migrations use `CREATE TABLE IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS` so manual re-application is safe.
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Backend | FastAPI, Python 3.12+, psycopg2 |
-| Database | PostgreSQL 16 + PostGIS 3.4 + pgRouting 3.6 |
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS, react-leaflet |
-| Routing | pgRouting `pgr_ksp` (k-shortest paths) |
-| Data | OSMnx for road network, synthetic IRI + pothole data |
-| ML (stub) | PotholeDetector protocol — YOLOv8 to be plugged in |
-| Deploy | Docker Compose (local) + Fly.io (production) |
-
 ## Documentation
+
+- [Deploying to Fly.io](docs/DEPLOY.md)
 
 - [Setup, Run & Usage Guide](docs/SETUP.md) — complete guide for installation, running, and using the application
 - [PRD](docs/PRD.md) — implemented vs. planned features
